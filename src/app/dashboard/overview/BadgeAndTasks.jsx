@@ -18,17 +18,17 @@ const BadgeAndTasks = () => {
   ];
 
   return (
-    <div className="bg-gray-800 p-6 rounded-lg text-white">
+    <div className="bg-gray-800 p-8 rounded-lg text-white shadow-lg">
       {/* Badge Section */}
-      <div className="flex flex-col items-center mb-6">
+      <div className="flex flex-col items-center mb-8">
         <Image src="/images/b1.png" alt="Badge" width={164} height={164} />
-        <p className="mt-4 text-lg font-semibold">Newbie</p>
+        <p className="mt-4 text-xl font-semibold">Newbie</p>
         <div className="flex justify-between w-full mt-2">
           <p className="text-gray-400 text-sm">3 Tasks Left</p>
           <p className="text-white text-sm font-semibold">64%</p>
         </div>
         <div className="bg-gray-700 rounded-full h-2 w-full mt-2">
-          <div className="bg-purple-600 h-2 rounded-full w-2/3"></div>
+          <div className="bg-purple-600 h-2 rounded-full w-2/3 transition-all duration-300 ease-in-out"></div>
         </div>
         <div className="mt-4 w-full">
           <p className="text-gray-400 text-sm">Next Level</p>
@@ -39,13 +39,13 @@ const BadgeAndTasks = () => {
       {/* Task List Section */}
       <div>
         {tasks.map((task, index) => (
-          <div key={index} className="mb-4">
-            <div className="flex justify-between">
-              <p className="text-sm">{task.title}</p>
-              <p className="text-sm">{task.progress}%</p>
+          <div key={index} className="mb-6">
+            <div className="flex justify-between items-center">
+              <p className="text-sm font-medium">{task.title}</p>
+              <p className="text-sm font-semibold">{task.progress}%</p>
             </div>
-            <p className="text-gray-500 text-xs mb-2">{task.points}</p>
-            <div className="bg-gray-700 rounded-full h-2">
+            <p className="text-gray-500 text-xs mt-1">{task.points}</p>
+            <div className="bg-gray-700 rounded-full h-2 mt-2">
               <div
                 className="bg-purple-600 h-2 rounded-full"
                 style={{ width: `${task.progress}%` }}></div>

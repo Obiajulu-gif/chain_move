@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import BadgeAndTasks from "./BadgeAndTasks";
-import WalletInfo from "./WalletInfo";
 import VideoTutorial from "./VideoTutorial";
 import TripHistory from "./TripHistory";
 
@@ -30,9 +29,6 @@ const Overview = () => {
         }}>
         <div style={{ gridArea: "badge" }}>
           <BadgeAndTasks />
-        </div>
-        <div style={{ gridArea: "wallet" }}>
-          <WalletInfo />
         </div>
         <div style={{ gridArea: "video" }}>
           <VideoTutorial />

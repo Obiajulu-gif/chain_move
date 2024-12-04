@@ -22,7 +22,7 @@ export async function GET(request) {
 
     console.log(`Number of transactions fetched: ${requests.length}`);
 
-    // Extract and filter necessary fields for frontend
+    // Extract and filter necessary fields for frontend, including transaction status
     const requestDatas = requests.map((request) => {
       const data = request.getData();
 
@@ -34,10 +34,12 @@ export async function GET(request) {
         currency: data.currency,
         payee: data.payee?.value || "N/A",
         timestamp: new Date(data.timestamp * 1000).toISOString(), // Convert to readable date
+        transactionStatus: data.state || "Unknown", // Add the transaction status
+        errorDetails: data.balance?.error?.message || "No error", // If any error, include it
       };
     });
 
-    console.log("Returning filtered transactions");
+    console.log("Returning filtered transactions with status");
     return NextResponse.json(requestDatas, { status: 200 });
   } catch (error) {
     console.error("Error fetching transactions:", error);
