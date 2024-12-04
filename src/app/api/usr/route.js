@@ -9,7 +9,7 @@ export async function POST(request) {
     await connectDb();
     console.log("Database connected.");
 
-    const { fullName, email, password } = await request.json();
+    const { fullName, email, password, userType } = await request.json();
 
     // Check if user already exists
     console.log(`Checking if the user with email ${email} exists...`);
@@ -22,9 +22,21 @@ export async function POST(request) {
       );
     }
 
+    // Validate userType
+    const validUserTypes = ["admin", "user", "driver", "mixed"];
+    if (!validUserTypes.includes(userType)) {
+      console.log("Invalid user type provided.");
+      return NextResponse.json(
+        {
+          error: "Invalid user type.",
+        },
+        { status: 400 }
+      );
+    }
+
     // Create new user
     console.log("Creating a new user...");
-    const newUser = await User.create({ fullName, email, password });
+    const newUser = await User.create({ fullName, email, password, userType });
     console.log("New user created successfully.");
 
     return NextResponse.json(
@@ -34,6 +46,7 @@ export async function POST(request) {
           id: newUser._id,
           fullName: newUser.fullName,
           email: newUser.email,
+          userType: newUser.userType,
         },
       },
       { status: 201 }
@@ -80,6 +93,7 @@ export async function GET(request) {
           id: user._id,
           fullName: user.fullName,
           email: user.email,
+          userType: user.userType,
         },
       },
       { status: 200 }

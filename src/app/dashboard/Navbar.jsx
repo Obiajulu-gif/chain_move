@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FaBell, FaSearch, FaWallet } from "react-icons/fa";
 import { MdExpandMore } from "react-icons/md";
+import { ConnectBtn } from "@app/app/web3/ConnectBtn";
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -14,40 +15,24 @@ const Navbar = () => {
     const principal = localStorage.getItem("userPrincipal");
     if (principal) {
       // Format principal to show only first and last few characters
-      const formattedPrincipal = `${principal.slice(0, 5)}...${principal.slice(-5)}`;
+      const formattedPrincipal = `${principal.slice(0, 5)}...${principal.slice(
+        -5
+      )}`;
       setUserPrincipal(formattedPrincipal);
     }
   }, []);
 
   return (
     <div className="bg-gray-900 px-6 py-4 flex justify-between items-center lg:pl-72">
-      {/* Left Section - Filters and Search bar */}
+      {/* Left Section - Search bar */}
       <div className="flex items-center space-x-2 w-full lg:w-auto">
-        {/* Dropdown Filter Button */}
-        <div
-          className="relative flex items-center bg-gray-800 text-white px-3 py-2 rounded-lg cursor-pointer select-none"
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-          <span>All Filters</span>
-          <MdExpandMore className="ml-1" />
-          {/* Dropdown Menu */}
-          {isDropdownOpen && (
-            <div className="absolute top-12 left-0 w-40 bg-gray-800 rounded shadow-lg z-10">
-              <ul>
-                <li className="px-4 py-2 hover:bg-gray-700">Option 1</li>
-                <li className="px-4 py-2 hover:bg-gray-700">Option 2</li>
-                <li className="px-4 py-2 hover:bg-gray-700">Option 3</li>
-              </ul>
-            </div>
-          )}
-        </div>
-
         {/* Search Bar */}
         <div className="flex items-center bg-gray-800 px-4 py-2 rounded-lg w-full lg:w-96">
           <FaSearch className="text-orange-500 mr-2" />
           <input
             type="text"
-            placeholder="Search for any assets here..."
-            className="bg-transparent text-white placeholder-gray-500 focus:outline-none w-full"
+            placeholder="Search for any ride here..."
+            className="bg-transparent text-white placeholder-gray-500 focus:outline-none lg:w-full w-52"
           />
         </div>
       </div>
@@ -55,12 +40,10 @@ const Navbar = () => {
       {/* Right Section - Wallet, Notifications, and Profile */}
       <div className="flex items-center space-x-4">
         {userPrincipal && (
-            <span className="text-white font-medium text-sm bg-orange-700 px-3 py-1 rounded-lg">
-              {userPrincipal}
-            </span>
-          )}
-        {/* Connect Wallet Button */}
-        <FaWallet className="mr-2" />
+          <span className="text-white font-medium text-sm bg-orange-700 px-3 py-1 rounded-lg">
+            {userPrincipal}
+          </span>
+        )}
 
         {/* Notification Bell with Badge */}
         <div className="relative">
@@ -69,18 +52,8 @@ const Navbar = () => {
             4
           </span>
         </div>
-
-        {/* User Profile */}
-        <div className="flex items-center space-x-2">
-          <Image
-            src="/images/av1.png" // Replace with user's profile image URL if available
-            alt="User Profile"
-            width={40}
-            height={40}
-            className="rounded-full cursor-pointer"
-          />
-          
-        </div>
+        {/* rainbowkit connect button */}
+        <ConnectBtn />
       </div>
     </div>
   );

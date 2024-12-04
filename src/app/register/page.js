@@ -12,53 +12,53 @@ const RegisterPage = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(""); 
+  const [userType, setUserType] = useState("user");
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
- const handleRegister = async () => {
-   if (!fullName || !email || !password) {
-     setError("All fields are required!");
-     return;
-   }
+  const handleRegister = async () => {
+    if (!fullName || !email || !password || !userType) {
+      setError("All fields are required!");
+      return;
+    }
 
-   if (password.length < 8) {
-     setError("Password must be at least 8 characters long.");
-     return;
-   }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
 
-   setError("");
-   setSuccess("");
-   setIsLoading(true);
+    setError("");
+    setSuccess("");
+    setIsLoading(true);
 
-   try {
-     const response = await fetch("/api/usr", {
-       method: "POST",
-       headers: {
-         "Content-Type": "application/json",
-       },
-       body: JSON.stringify({ fullName, email, password }),
-     });
+    try {
+      const response = await fetch("/api/usr", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ fullName, email, password, userType }),
+      });
 
-     if (response.ok) {
-       const data = await response.json();
-       setSuccess("Registration successful! Redirecting to login in 10s...");
+      if (response.ok) {
+        const data = await response.json();
+        setSuccess("Registration successful! Redirecting to login in 10s...");
 
-       setTimeout(() => {
-         router.push("/login");
-       }, 10000);
-     } else {
-       const errorData = await response.json();
-       setError(errorData.error || "Failed to register. Please try again.");
-     }
-   } catch (error) {
-     console.error("Error during registration:", error);
-     setError("Something went wrong. Please try again later.");
-   } finally {
-     setIsLoading(false);
-   }
- };
-
+        setTimeout(() => {
+          router.push("/login");
+        }, 10000);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || "Failed to register. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error during registration:", error);
+      setError("Something went wrong. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-900">
@@ -125,6 +125,20 @@ const RegisterPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-10 p-3 rounded-md bg-gray-800 text-white placeholder-gray-500"
               />
+            </div>
+            <div className="relative">
+              <label htmlFor="userType" className="block text-gray-400 mb-1">
+                Do you want to register as a user or as a driver?
+              </label>
+              <select
+                id="userType"
+                value={userType}
+                onChange={(e) => setUserType(e.target.value)}
+                className="w-full p-3 rounded-md bg-gray-800 text-white">
+                <option value="user">User</option>
+                <option value="driver">Driver</option>
+                <option value="mixed">Both</option>
+              </select>
             </div>
             {error && <div className="text-red-500 text-sm">{error}</div>}
             {success && <div className="text-green-500 text-sm">{success}</div>}

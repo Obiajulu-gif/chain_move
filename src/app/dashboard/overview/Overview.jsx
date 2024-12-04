@@ -1,15 +1,23 @@
 "use client";
+import { useEffect, useState } from "react";
 import BadgeAndTasks from "./BadgeAndTasks";
 import WalletInfo from "./WalletInfo";
 import VideoTutorial from "./VideoTutorial";
 import TripHistory from "./TripHistory";
 
-const CANISTER_ID = process.env.NEXT_PUBLIC_CANISTER_ID || "rdmx6-jaaaa-aaaaa-aaadq-cai";
-
 const Overview = () => {
+  const [userName, setUserName] = useState("Guest");
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && user.fullName) {
+      setUserName(user.fullName);
+    }
+  }, []);
+
   return (
     <div className="p-6 space-y-6 bg-gray-900 min-h-screen text-white">
-      <h1 className="text-2xl font-semibold mb-4">Welcome, David</h1>
+      <h1 className="text-2xl font-semibold mb-4">Welcome back, {userName}</h1>
       <div
         className="grid gap-6"
         style={{

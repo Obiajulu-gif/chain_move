@@ -46,7 +46,9 @@ const BadgeAndTasks = () => {
             </div>
             <p className="text-gray-500 text-xs mb-2">{task.points}</p>
             <div className="bg-gray-700 rounded-full h-2">
-              <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${task.progress}%` }}></div>
+              <div
+                className="bg-purple-600 h-2 rounded-full"
+                style={{ width: `${task.progress}%` }}></div>
             </div>
           </div>
         ))}
