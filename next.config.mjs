@@ -1,10 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
-  distDir: "build",
-  images: {
-    unoptimized: true, // Disable image optimization for compatibility with static export
-  },
+	// Static export configuration
+	output: process.env.NODE_ENV === "production" ? "export" : undefined,
+	distDir: "build",
+	images: {
+		unoptimized: true,
+	}
 };
 
 export default nextConfig;

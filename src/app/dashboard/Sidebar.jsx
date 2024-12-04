@@ -94,45 +94,47 @@ const Sidebar = () => {
   ];
 
   return (
-    <motion.div
-      className="bg-gray-900 text-white max-h-screen p-4 flex flex-col justify-between fixed md:relative z-50 shadow-lg "
-      style={{ height: "100vh" }}
-      animate={isSidebarOpen ? "open" : "closed"}
-      variants={sidebarVariants}>
-      {/* Sidebar Header */}
-      <div>
-        <Link href="/">
-          <h2 className="text-3xl font-bold text-orange-500">
-            {isSidebarOpen && "ChainMove"}
-          </h2>
-        </Link>
+		<motion.div
+			className="bg-gray-900 text-white max-h-screen p-4 flex flex-col justify-between fixed md:relative z-50 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 scrollbar-thumb-rounded"
+			style={{ height: "100vh" }}
+			animate={isSidebarOpen ? "open" : "closed"}
+			variants={sidebarVariants}
+		>
+			{/* Sidebar Header */}
+			<div>
+				<Link href="/">
+					<h2 className="text-3xl font-bold text-orange-500">
+						{isSidebarOpen && "ChainMove"}
+					</h2>
+				</Link>
 
-        {/* Main Navigation */}
-        <SidebarSection links={mainLinks} isSidebarOpen={isSidebarOpen} />
+				{/* Main Navigation */}
+				<SidebarSection links={mainLinks} isSidebarOpen={isSidebarOpen} />
 
-        {/* Profile Section */}
-        <SidebarSection
-          title="Access Other Profiles"
-          links={profileLinks}
-          isSidebarOpen={isSidebarOpen}
-        />
-      </div>
+				{/* Profile Section */}
+				<SidebarSection
+					title="Access Other Profiles"
+					links={profileLinks}
+					isSidebarOpen={isSidebarOpen}
+				/>
+			</div>
 
-      {/* Bottom Section */}
-      <SidebarSection links={bottomLinks} isSidebarOpen={isSidebarOpen} />
+			{/* Bottom Section */}
+			<SidebarSection links={bottomLinks} isSidebarOpen={isSidebarOpen} />
 
-      {/* Toggle Button */}
-      <button
-        className="absolute top-4 right-4 text-orange-500"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-        {isSidebarOpen ? (
-          <FaChevronLeft size={24} />
-        ) : (
-          <FaChevronRight size={24} />
-        )}
-      </button>
-    </motion.div>
-  );
+			{/* Toggle Button */}
+			<button
+				className="absolute top-4 right-4 text-orange-500"
+				onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+			>
+				{isSidebarOpen ? (
+					<FaChevronLeft size={24} />
+				) : (
+					<FaChevronRight size={24} />
+				)}
+			</button>
+		</motion.div>
+	);
 };
 
 export default Sidebar;

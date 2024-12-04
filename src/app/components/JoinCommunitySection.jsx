@@ -31,12 +31,7 @@ const JoinCommunitySection = () => {
 						the current and upcoming generations.
 					</h2>
 					<motion.button
-						onClick={() =>
-							window.open(
-								"https://x.com/BlockRide__1?t=gQMAlmOnQoeGgXShmJ6Wfw&s=09",
-								"_blank"
-							)
-						}
+						onClick={() => window.open("https://x.com/ChainMove1", "_blank")}
 						whileHover={{ scale: 1.05 }}
 						whileTap={{ scale: 0.95 }}
 						className="mt-4 bg-orange-500 text-white font-semibold py-3 px-6 rounded-full hover:bg-orange-600 transition duration-300"
@@ -45,7 +40,6 @@ const JoinCommunitySection = () => {
 					</motion.button>
 				</motion.div>
 
-			
 				<motion.div
 					className="flex-1 relative"
 					initial={{ scale: 1.1 }}
@@ -54,11 +48,10 @@ const JoinCommunitySection = () => {
 					viewport={{ once: true }}
 				>
 					<Image
-						src="/images/community.png" // Replace with the actual path to your image
+						src="/images/community.png"
+						fill
+						style={{ objectFit: "cover" }}
 						alt="Community"
-						layout="fill"
-						objectFit="cover"
-						className="opacity-80"
 					/>
 				</motion.div>
 			</motion.div>
