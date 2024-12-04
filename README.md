@@ -120,10 +120,10 @@ Meet the talented team behind ChainMove:
 
 - **Emmanuel Okoye** – *Team lead and Full Stack Developer*: Developed the Next.js frontend and implemented responsive UI components.
 - **Damian Olebuezie** – *Lead Blockchain Developer*: Spearheaded the development of ChainMove's Motoko smart contracts, ensuring seamless and secure transaction flows.
-- **Victoria Nwogu** – *Product Manager*: Managed project timelines and feature planning, ensuring ChainMove meets user needs effectively.
+- **Victoria Nwogu** – *Product Manager and social media manager*: Managed project timelines and feature planning, ensuring ChainMove meets user needs effectively.
 - **David Emulo** – *UI/UX Designer*: Designed an intuitive user experience, from ride booking to payment confirmation, and crafted all visual assets.
-- **Engr. Mikailu Nadro**- **Technical Advisor**: Provided guidance on blockchain technology and smart contract development, ensuring ChainMove's security and scalability.
-- **Isreal Nwafor** – **Community Manager**: Managed the ChainMove community, fostering a supportive and engaged user base.
+- **Engr. Mikailu Nadro**- *Technical Advisor*: Provided guidance on blockchain technology and smart contract development, ensuring ChainMove's security and scalability.
+- **Isreal Nwafor** – *Community Manager*: Managed the ChainMove community, fostering a supportive and engaged user base.
 
 ## 🤝 Contributing
 

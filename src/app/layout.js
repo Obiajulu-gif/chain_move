@@ -6,7 +6,7 @@ import LayoutHandler from "./LayoutHandler";
 
 export const metadata = {
   title: "ChainMove",
-  description: "The decentralized transport system on Internet Computer Blockchain",
+  description: "The decentralized transport system on  Blockchain",
   icons: {
     icon: "/images/blockridelogo.svg", 
     
