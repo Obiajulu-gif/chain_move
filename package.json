@@ -24,7 +24,7 @@
     "jspdf": "^2.5.2",
     "mongodb": "^6.11.0",
     "mongoose": "^8.8.3",
-    "next": "^14.2.4",
+    "next": "^14.2.19",
     "pino-pretty": "^13.0.0",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",
