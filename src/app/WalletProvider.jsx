@@ -17,10 +17,10 @@ import {
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 
 const config = getDefaultConfig({
-  appName: "Chain Move",
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_ID,
-  chains: [mainnet, goerli, polygon, optimism, arbitrum, base],
-  ssr: true, // If your dApp uses server side rendering (SSR)
+	appName: "Chain Move",
+	projectId: "24911ae43d4f2f85e9408da2d8c99868",
+	chains: [mainnet, goerli, polygon, optimism, arbitrum, base],
+	ssr: true, // If your dApp uses server side rendering (SSR)
 });
 
 const queryClient = new QueryClient();

@@ -1,7 +1,8 @@
 //connectDb.js
 import mongoose from "mongoose";
 
-const MONGO_URI = process.env.MONGODB_URI; 
+const MONGO_URI =
+	"mongodb+srv://devczdamian:FRfph7dbLupn70qJ@chainmove.0ohyt.mongodb.net/?retryWrites=true&w=majority&appName=ChainMove"; 
 if (!MONGO_URI) {
   throw new Error(
     "MONGo DB uri missing"
