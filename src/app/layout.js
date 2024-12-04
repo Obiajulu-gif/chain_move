@@ -6,7 +6,7 @@ import WalletProvider from "./WalletProvider";
 
 export const metadata = {
   title: "ChainMove",
-  description: "The decentralized transport system on Request Protocol",
+  description: "The decentralized transport system on  Blockchain",
   icons: {
     icon: "/images/blockridelogo.svg",
   },
