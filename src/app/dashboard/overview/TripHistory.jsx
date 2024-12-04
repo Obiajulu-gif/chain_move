@@ -2,11 +2,19 @@
 
 import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
+import { useAccount, useWaitForTransaction } from "wagmi";
+import {
+  RequestNetwork,
+  Types,
+  Utils,
+} from "@requestnetwork/request-client.js";
 
 const TripHistory = () => {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const account = useAccount(); // Current connected wallet address
+  const signer = account?.address;
+  console.log("signer", signer);
   // Helper function to format timestamp to "minutes ago" or "hours ago"
   const getTimeAgo = (timestamp) => {
     const now = Date.now();
@@ -32,39 +40,74 @@ const TripHistory = () => {
     );
   };
 
-  useEffect(() => {
-    async function fetchTrips() {
-      try {
-        const response = await fetch("/api/transactions");
-        if (!response.ok) {
-          throw new Error("Failed to fetch trip data");
-        }
-
-        const data = await response.json();
-
-        // Map data to the desired format
-        const formattedTrips = data.map((trip) => ({
-          pickUp: trip.departure,
-          destination: trip.destination,
-          payment: `${trip.expectedAmount.toFixed(2)}`,
-          date: getTimeAgo(trip.timestamp),
-          requestId: trip.requestId.slice(0, 10), // Trim requestId to the first 10 characters
-          state: trip.transactionStatus, // State of the transaction
-          timestamp: trip.timestamp, // Add timestamp to check for today's trips
-        }));
-
-        setTrips(formattedTrips);
-      } catch (error) {
-        console.error("Error fetching trip history:", error);
-      } finally {
-        setLoading(false);
+  const fetchTrips = async () => {
+    try {
+      const response = await fetch("/api/transactions");
+      if (!response.ok) {
+        throw new Error("Failed to fetch trip data");
       }
+
+      const data = await response.json();
+
+      // Map data to the desired format
+      const formattedTrips = data.map((trip) => ({
+        pickUp: trip.departure,
+        payee: trip.payee,
+        destination: trip.destination,
+        payment: `${trip.expectedAmount.toFixed(2)}`,
+        date: getTimeAgo(trip.timestamp),
+        requestId: trip.requestId.slice(0, 10), // Trim requestId to the first 10 characters
+        state: trip.transactionStatus, // State of the transaction
+        timestamp: trip.timestamp, // Add timestamp to check for today's trips
+      }));
+
+      setTrips(formattedTrips);
+    } catch (error) {
+      console.error("Error fetching trip history:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const payRequest = async (requestId, amount) => {
+    if (!signer) {
+      alert("Please connect your wallet");
+      return;
     }
 
+    // Initialize the RequestNetwork client
+    const requestClient = new RequestNetwork({
+      nodeConnectionConfig: {
+        baseURL: "https://sepolia.gateway.request.network/", // Adjust URL if needed
+      },
+      signatureProvider: signer,
+    });
+
+    try {
+      const requestData = await requestClient.getRequest({ requestId });
+
+      const paymentTx = await requestClient.payRequest({
+        requestId,
+        amount: Utils.toBN(amount), // Convert to the appropriate format if needed
+        signer,
+      });
+
+      await paymentTx.wait(2);
+      console.log(`Payment complete. ${paymentTx.hash}`);
+      alert(`Payment complete. ${paymentTx.hash}`);
+
+      // Optionally refresh trips after payment is made
+      fetchTrips();
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      alert("Payment failed. Please try again.");
+    }
+  };
+
+  useEffect(() => {
     fetchTrips();
   }, []);
 
-  // Calculate total trips and trips created today
   const totalTrips = trips.length;
   const tripsToday = trips.filter((trip) => isToday(trip.timestamp)).length;
 
@@ -104,6 +147,8 @@ const TripHistory = () => {
               <th className="p-4 text-left">Time</th>
               <th className="p-4 text-left">Transaction ID</th>
               <th className="p-4 text-left">State</th>
+              <th className="p-4 text-left">Action</th>
+              {/* Add action column */}
             </tr>
           </thead>
           <tbody>
@@ -119,10 +164,17 @@ const TripHistory = () => {
                 <td className="p-4 text-white">{trip.destination}</td>
                 <td className="p-4 text-white">{trip.payment}</td>
                 <td className="p-4 text-white">{trip.date}</td>
-                <td className="p-4 text-white">{trip.requestId}</td>{" "}
+                <td className="p-4 text-white">{trip.requestId}</td>
                 {/* Display trimmed requestId */}
-                <td className="p-4 text-white">{trip.state}</td>{" "}
+                <td className="p-4 text-white">{trip.state}</td>
                 {/* Display transaction state */}
+                <td className="p-4 text-white">
+                  <button
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+                    onClick={() => payRequest(trip.requestId, trip.payment)}>
+                    Pay
+                  </button>
+                </td>
               </motion.tr>
             ))}
           </tbody>
