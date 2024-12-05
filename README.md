@@ -1,4 +1,4 @@
-# 🚗 ChainMove – Decentralized Transportation on the Internet Computer
+# 🚗 ChainMove – Decentralized Transportation on the Request Network
 
 Welcome to **ChainMove**, a decentralized, blockchain-powered transportation platform that brings transparency, efficiency, and security to mobility services. ChainMove leverages blockchain technology to create a seamless and trusted experience for drivers and passengers alike, ensuring secure payments, driver incentives, and ride transparency.
 
@@ -8,19 +8,19 @@ Welcome to **ChainMove**, a decentralized, blockchain-powered transportation pla
 
 ## 🌟 Overview
 
-ChainMove provides a decentralized platform for booking and managing rides, securely handled through smart contracts on the Internet Computer. With transparent payments and blockchain-based confirmations, riders and drivers can rely on secure, immutable transaction records.
+ChainMove provides a decentralized platform for booking and managing rides, securely handled through smart contracts on the Request Network. With transparent payments and blockchain-based confirmations, riders and drivers can rely on secure, immutable transaction records.
 
 Our platform ensures:
 - **Initial payment security**: Drivers receive an upfront 10% payment upon booking.
 - **Completion incentives**: Remaining payment is sent upon ride confirmation by the passenger.
-- **User authentication**: All users are authenticated via **Internet Identity** for enhanced security.
+- **User authentication**: All users are authenticated via **Request network** for enhanced security.
 
 ## 🎯 Key Features
 
 1. **Decentralized Ride Booking**: Passengers can book rides with secure, blockchain-based payment and confirmations.
 2. **Driver Incentive Structure**: Drivers receive 10% of the fare immediately upon booking, and the remaining 90% upon passenger confirmation.
 3. **Real-time Ride Updates**: Passengers and drivers can view ride status updates via the ChainMove interface.
-4. **Internet Identity Integration**: Users are securely authenticated using Internet Identity, ensuring a safe and seamless experience.
+4. **Request Network Integration**: Users are securely authenticated using Internet Identity, ensuring a safe and seamless experience.
 
 ## 🛠️ Technologies Used
 
@@ -28,7 +28,7 @@ ChainMove utilizes a modern technology stack to deliver a robust, decentralized 
 
 - **Next.js** – Frontend framework for fast, responsive UI and seamless routing.
 - **Request Network** – Backend smart contract language for securely handling ride bookings and payments.
-- **Internet Identity** – Decentralized authentication provided by the Internet Computer for secure user login and identity management.
+- **Wagmi** – Decentralized authentication provided by the Internet Computer for secure user login and identity management.
 - **Tailwind CSS** – A utility-first CSS framework for rapid and flexible UI development.
 
 ## 📐 Project Architecture
@@ -92,8 +92,8 @@ The ChainMove backend is implemented in **Request Network** and handles the foll
 
 Here's a brief look at the core logic for ride booking and payments:
 
-```motoko
-   import { NextResponse } from "next/server";
+```
+import { NextResponse } from "next/server";
 import { RequestNetwork } from "@requestnetwork/request-client.js";
 
 // Initialize Request Network client
