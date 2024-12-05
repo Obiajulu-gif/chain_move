@@ -155,13 +155,6 @@ const generatePDF = (data, setPdfPreviewUrl) => {
       <div>
         <h1 className="text-3xl font-bold mb-4">Checkout</h1>
         <div className="mb-6">
-          <p>
-            <strong>Request ID:</strong> {validRequest?.requestId || "N/A"}
-          </p>
-          <p>
-            <strong>Amount to Pay:</strong>{" "}
-            {validRequest?.estimatedCost || "N/A"} ETH
-          </p>
           <button
             className="bg-green-500 rounded-lg mt-4 hover:bg-green-600 px-6 py-2.5"
             onClick={() =>
