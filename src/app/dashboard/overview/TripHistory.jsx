@@ -4,17 +4,17 @@ import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { useWalletClient } from "wagmi";
 import {
-	RequestNetwork,
-	Types,
-	Utils,
+  RequestNetwork,
+  Types,
+  Utils,
 } from "@requestnetwork/request-client.js";
 import { payRequest } from "@requestnetwork/payment-processor";
 import { ethers } from "ethers";
 
 const TripHistory = () => {
-	const [trip, setTrip] = useState(null); // Single trip object
-	const [loading, setLoading] = useState(true);
-	const { data: walletClient } = useWalletClient();
+  const [trip, setTrip] = useState(null); // Single trip object
+  const [loading, setLoading] = useState(true);
+  const { data: walletClient } = useWalletClient();
 
 	// Helper function to format timestamp to "minutes ago" or "hours ago"
 	const getTimeAgo = (timestamp) => {
@@ -69,128 +69,131 @@ const TripHistory = () => {
 				state: trip.state,
 			}));
 
-			console.log("Formatted trips:", formattedTrips);
-			setTrip(formattedTrips);
-		} catch (error) {
-			console.error("Error fetching trip data:", error);
-		} finally {
-			setLoading(false);
-		}
-	};
+      console.log("Formatted trips:", formattedTrips);
+      setTrip(formattedTrips);
+    } catch (error) {
+      console.error("Error fetching trip data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-	const paymentRequest = async (requestId, amount) => {
-		const provider = new ethers.providers.Web3Provider(walletClient);
-		const signer = provider.getSigner();
+  const paymentRequest = async (requestId, amount) => {
+    const provider = new ethers.providers.Web3Provider(walletClient);
+    const signer = provider.getSigner();
 
-		if (!signer) {
-			alert("Please connect your wallet");
-			return;
-		}
+    if (!signer) {
+      alert("Please connect your wallet");
+      return;
+    }
 
-		if (!walletClient) {
-			alert("Wallet client not available. Ensure your wallet is connected.");
-			return;
-		}
+    if (!walletClient) {
+      alert("Wallet client not available. Ensure your wallet is connected.");
+      return;
+    }
 
-		const requestClient = new RequestNetwork({
-			nodeConnectionConfig: {
-				baseURL: "https://sepolia.gateway.request.network/",
-			},
-		});
+    const requestClient = new RequestNetwork({
+      nodeConnectionConfig: {
+        baseURL: "https://sepolia.gateway.request.network/",
+      },
+    });
 
-		try {
-			console.log("Fetching request:", requestId);
-			const request = await requestClient.fromRequestId(requestId);
-			const requestData = request.getData();
+    try {
+      console.log("Fetching request:", requestId);
+      const request = await requestClient.fromRequestId(requestId);
+      const requestData = request.getData();
 
-			console.log("Fetched Request Data:", requestData);
-			if (!requestData.expectedAmount) {
-				throw new Error("Invalid request data: Missing expected amount.");
-			}
+      console.log("Fetched Request Data:", requestData);
+      if (!requestData.expectedAmount) {
+        throw new Error("Invalid request data: Missing expected amount.");
+      }
 
-			const paymentTx = await payRequest(requestData, signer);
-			console.log(`Paying. ${paymentTx.hash}`);
+      const paymentTx = await payRequest(requestData, signer);
+      console.log(`Paying. ${paymentTx.hash}`);
 
-			await paymentTx.wait(2);
-			console.log(`Payment complete. ${paymentTx.hash}`);
-			alert(`Payment complete. ${paymentTx.hash}`);
+      await paymentTx.wait(2);
+      console.log(`Payment complete. ${paymentTx.hash}`);
+      alert(`Payment complete. ${paymentTx.hash}`);
 
-			// Refresh trip after payment
-			fetchTrip();
-		} catch (error) {
-			console.error("Error processing payment:", error);
-			alert(`Payment failed: ${error.message}`);
-		}
-	};
+      // Refresh trip after payment
+      fetchTrip();
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      alert(`Payment failed: ${error.message}`);
+    }
+  };
 
 	useEffect(() => {
 		fetchTrips();
 	}, []);
 
-	return (
-		<div className="bg-gray-900 p-8 rounded-lg shadow-md max-w-4xl mx-auto">
-			<h2 className="text-3xl font-bold text-white mb-6">Trip History</h2>
-			{loading ? (
-				<p className="text-white">Loading trip history...</p>
-			) : trip && trip.length > 0 ? (
-				<motion.table
-					className="w-full text-md bg-gray-800 rounded-lg overflow-hidden border border-gray-700"
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					transition={{ duration: 0.5 }}
-				>
-					<thead>
-						<tr className="text-gray-400 bg-gray-900">
-							<th className="p-4 text-left border-b border-gray-700">
-								Pick-Up Point
-							</th>
-							<th className="p-4 text-left border-b border-gray-700">
-								Destination
-							</th>
-							<th className="p-4 text-left border-b border-gray-700">
-								Estimated Cost (ETH)
-							</th>
-							<th className="p-4 text-left border-b border-gray-700">Date</th>
-							<th className="p-4 text-left border-b border-gray-700">
-								Request ID
-							</th>
-							<th className="p-4 text-left border-b border-gray-700">Status</th>
-							<th className="p-4 text-left border-b border-gray-700">Action</th>
-						</tr>
-					</thead>
-					<tbody>
-						{trip.map((t, index) => (
-							<motion.tr
-								key={index}
-								className="border-b border-gray-700 hover:bg-gray-700 transition duration-300"
-								initial={{ opacity: 0, y: 10 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ duration: 0.3 }}
-								whileHover={{ scale: 1.02 }}
-							>
-								<td className="p-4 text-white">{t.pickUp}</td>
-								<td className="p-4 text-white">{t.destination}</td>
-								<td className="p-4 text-white">{t.payment}</td>
-								<td className="p-4 text-white">{t.date}</td>
-								<td className="p-4 text-white">{t.trimmedRequestId}</td>
-								<td className="p-4 text-white">{t.state}</td>
-								<td className="p-4 text-white">
-									<button
-										className="bg-green-600 hover:bg-green-700 text-black font-semibold px-4 py-2 rounded-lg"
-										onClick={() => paymentRequest(t.requestId, t.payment)}
-									>
-										Pay
-									</button>
-								</td>
-							</motion.tr>
-						))}
-					</tbody>
-				</motion.table>
-			) : (
-				<p className="text-white">No trip history available.</p>
-			)}
-		</div>
-	);
+  return (
+    <div className="bg-neutral-900 p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+      <h2 className="text-3xl font-bold text-white mb-6">Trip History</h2>
+      {loading ? (
+        <p className="text-white">Loading trip history...</p>
+      ) : trip && trip.length > 0 ? (
+        <motion.table
+          className="w-full text-md bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}>
+          <thead>
+            <tr className="text-gray-400 bg-neutral-900">
+              <th className="p-4 text-left border-b border-neutral-700">
+                Pick-Up Point
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Destination
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Estimated Cost (ETH)
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Date
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Request ID
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Status
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {trip.map((t, index) => (
+              <motion.tr
+                key={index}
+                className="border-b border-neutral-700 hover:bg-neutral-700 transition duration-300"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                whileHover={{ scale: 1.02 }}>
+                <td className="p-4 text-white">{t.pickUp}</td>
+                <td className="p-4 text-white">{t.destination}</td>
+                <td className="p-4 text-white">{t.payment}</td>
+                <td className="p-4 text-white">{t.date}</td>
+                <td className="p-4 text-white">{t.trimmedRequestId}</td>
+                <td className="p-4 text-white">{t.state}</td>
+                <td className="p-4 text-white">
+                  <button
+                    className="bg-green-600 hover:bg-green-700 text-black font-semibold px-4 py-2 rounded-lg"
+                    onClick={() => paymentRequest(t.requestId, t.payment)}>
+                    Pay
+                  </button>
+                </td>
+              </motion.tr>
+            ))}
+          </tbody>
+        </motion.table>
+      ) : (
+        <p className="text-white">No trip history available.</p>
+      )}
+    </div>
+  );
 };
 
 export default TripHistory;
