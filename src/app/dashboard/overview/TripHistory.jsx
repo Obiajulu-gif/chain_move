@@ -1,65 +1,73 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import React, { useEffect, useState } from "react";
+import { useWalletClient } from "wagmi";
+import {
+  RequestNetwork,
+  Types,
+  Utils,
+} from "@requestnetwork/request-client.js";
+import { payRequest } from "@requestnetwork/payment-processor";
+import { ethers } from "ethers";
 
 const TripHistory = () => {
   const [trip, setTrip] = useState(null); // Single trip object
   const [loading, setLoading] = useState(true);
+  const { data: walletClient } = useWalletClient();
 
-  // Helper function to format timestamp to "minutes ago" or "hours ago"
-  const getTimeAgo = (timestamp) => {
-    const now = Date.now();
-    const tripTime = new Date(timestamp).getTime();
-    const differenceInMs = tripTime - now;
+	// Helper function to format timestamp to "minutes ago" or "hours ago"
+	const getTimeAgo = (timestamp) => {
+		const now = Date.now();
+		const tripTime = new Date(timestamp).getTime();
+		const differenceInMs = tripTime - now;
 
-    if (differenceInMs > 0) {
-      // Future date
-      const daysAhead = Math.ceil(differenceInMs / (1000 * 60 * 60 * 24));
-      return daysAhead === 1 ? "in 1 day" : `in ${daysAhead} days`;
-    } else {
-      // Past date
-      const differenceInPast = Math.abs(differenceInMs);
-      const minutesAgo = Math.floor(differenceInPast / (1000 * 60));
-      const hoursAgo = Math.floor(differenceInPast / (1000 * 60 * 60));
-      const daysAgo = Math.floor(differenceInPast / (1000 * 60 * 60 * 24));
+		if (differenceInMs > 0) {
+			// Future date
+			const daysAhead = Math.ceil(differenceInMs / (1000 * 60 * 60 * 24));
+			return daysAhead === 1 ? "in 1 day" : `in ${daysAhead} days`;
+		} else {
+			// Past date
+			const differenceInPast = Math.abs(differenceInMs);
+			const minutesAgo = Math.floor(differenceInPast / (1000 * 60));
+			const hoursAgo = Math.floor(differenceInPast / (1000 * 60 * 60));
+			const daysAgo = Math.floor(differenceInPast / (1000 * 60 * 60 * 24));
 
-      if (minutesAgo < 60) {
-        return minutesAgo > 0 ? `${minutesAgo} minutes ago` : "Just now";
-      } else if (hoursAgo < 24) {
-        return `${hoursAgo} hours ago`;
-      } else {
-        return `${daysAgo} days ago`;
-      }
-    }
-  };
+			if (minutesAgo < 60) {
+				return minutesAgo > 0 ? `${minutesAgo} minutes ago` : "Just now";
+			} else if (hoursAgo < 24) {
+				return `${hoursAgo} hours ago`;
+			} else {
+				return `${daysAgo} days ago`;
+			}
+		}
+	};
 
-  const fetchTrips = async () => {
-    try {
-      const response = await fetch("/api/drivers/destination");
-      if (!response.ok) {
-        throw new Error("Failed to fetch trip data");
-      }
+	const fetchTrips = async () => {
+		try {
+			const response = await fetch("/api/drivers/destination");
+			if (!response.ok) {
+				throw new Error("Failed to fetch trip data");
+			}
 
-      const data = await response.json();
-      console.log("Fetched trip data:", data);
+			const data = await response.json();
+			console.log("Fetched trip data:", data);
 
-      if (!data.invoices || data.invoices.length === 0) {
-        setTrip([]);
-        return;
-      }
+			if (!data.invoices || data.invoices.length === 0) {
+				setTrip([]);
+				return;
+			}
 
-      // Format all trips
-      const formattedTrips = data.invoices.map((trip) => ({
-        pickUp: trip.pickupLocation,
-        destination: trip.destination,
-        payment: `${trip.estimatedCost.toFixed(2)}`,
-        date: getTimeAgo(trip.date),
-        requestId: trip.requestId,
-        trimmedRequestId: trip.requestId?.slice(0, 10) || "none",
-        state: trip.state,
-      }));
+			// Format all trips
+			const formattedTrips = data.invoices.map((trip) => ({
+				pickUp: trip.pickupLocation,
+				destination: trip.destination,
+				payment: `${trip.estimatedCost.toFixed(2)}`,
+				date: getTimeAgo(trip.date),
+				requestId: trip.requestId,
+				trimmedRequestId: trip.requestId?.slice(0, 10) || "none",
+				state: trip.state,
+			}));
 
       console.log("Formatted trips:", formattedTrips);
       setTrip(formattedTrips);
@@ -70,9 +78,54 @@ const TripHistory = () => {
     }
   };
 
-  useEffect(() => {
-    fetchTrips();
-  }, []);
+  const paymentRequest = async (requestId, amount) => {
+    const provider = new ethers.providers.Web3Provider(walletClient);
+    const signer = provider.getSigner();
+
+    if (!signer) {
+      alert("Please connect your wallet");
+      return;
+    }
+
+    if (!walletClient) {
+      alert("Wallet client not available. Ensure your wallet is connected.");
+      return;
+    }
+
+    const requestClient = new RequestNetwork({
+      nodeConnectionConfig: {
+        baseURL: "https://sepolia.gateway.request.network/",
+      },
+    });
+
+    try {
+      console.log("Fetching request:", requestId);
+      const request = await requestClient.fromRequestId(requestId);
+      const requestData = request.getData();
+
+      console.log("Fetched Request Data:", requestData);
+      if (!requestData.expectedAmount) {
+        throw new Error("Invalid request data: Missing expected amount.");
+      }
+
+      const paymentTx = await payRequest(requestData, signer);
+      console.log(`Paying. ${paymentTx.hash}`);
+
+      await paymentTx.wait(2);
+      console.log(`Payment complete. ${paymentTx.hash}`);
+      alert(`Payment complete. ${paymentTx.hash}`);
+
+      // Refresh trip after payment
+      fetchTrip();
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      alert(`Payment failed: ${error.message}`);
+    }
+  };
+
+	useEffect(() => {
+		fetchTrips();
+	}, []);
 
   return (
     <div className="bg-neutral-900 p-8 rounded-lg shadow-md max-w-4xl mx-auto">
@@ -126,11 +179,11 @@ const TripHistory = () => {
                 <td className="p-4 text-white">{t.trimmedRequestId}</td>
                 <td className="p-4 text-white">{t.state}</td>
                 <td className="p-4 text-white">
-                  <Link
-                    href={`/dashboard/checkout/${t.requestId}`}
-                    className="bg-green-600 hover:bg-green-700 text-black font-semibold px-4 py-2 rounded-lg">
-                    Book
-                  </Link>
+                  <button
+                    className="bg-green-600 hover:bg-green-700 text-black font-semibold px-4 py-2 rounded-lg"
+                    onClick={() => paymentRequest(t.requestId, t.payment)}>
+                    Pay
+                  </button>
                 </td>
               </motion.tr>
             ))}
