@@ -27,7 +27,7 @@ Our platform ensures:
 ChainMove utilizes a modern technology stack to deliver a robust, decentralized platform on the Internet Computer.
 
 - **Next.js** – Frontend framework for fast, responsive UI and seamless routing.
-- **Motoko** – Backend smart contract language for securely handling ride bookings and payments.
+- **Request Network** – Backend smart contract language for securely handling ride bookings and payments.
 - **Internet Identity** – Decentralized authentication provided by the Internet Computer for secure user login and identity management.
 - **Tailwind CSS** – A utility-first CSS framework for rapid and flexible UI development.
 
@@ -82,7 +82,7 @@ Visit `http://localhost:3000` in your browser to access ChainMove.
 
 ## 💡 Smart Contract Overview
 
-The ChainMove backend is implemented in **Motoko** and handles the following tasks:
+The ChainMove backend is implemented in **Request Network** and handles the following tasks:
 
 1. **Ride Booking**: The contract logs ride details, including driver, passenger, and fare, and releases an initial payment (10%) to the driver upon booking.
 2. **Ride Completion**: When the passenger confirms the ride completion, the contract transfers the remaining 90% of the fare to the driver.
@@ -93,6 +93,60 @@ The ChainMove backend is implemented in **Motoko** and handles the following tas
 Here's a brief look at the core logic for ride booking and payments:
 
 ```motoko
+   import { NextResponse } from "next/server";
+import { RequestNetwork } from "@requestnetwork/request-client.js";
+
+// Initialize Request Network client
+const requestClient = new RequestNetwork({
+  nodeConnectionConfig: {
+    baseURL: "https://sepolia.gateway.request.network/",
+  },
+});
+
+// Unique topic for your platform
+const PLATFORM_TOPIC = "chainmove-dapp";
+
+export async function GET(request) {
+  console.log("Request received at /api/transactions");
+
+  try {
+    console.log(`Fetching transactions for topic: ${PLATFORM_TOPIC}`);
+
+    // Fetch all requests associated with the platform topic
+    const requests = await requestClient.fromTopic(PLATFORM_TOPIC);
+
+    console.log(`Number of transactions fetched: ${requests.length}`);
+
+    // Extract and filter necessary fields for frontend, including transaction status
+    const requestDatas = requests.map((request) => {
+      const data = request.getData();
+
+      return {
+        requestId: data.requestId,
+        departure: data.contentData?.departure || "N/A",
+        destination: data.contentData?.destination || "N/A",
+        expectedAmount: parseFloat(data.expectedAmount) / 1e18, // Convert to ETH
+        currency: data.currency,
+        payee: data.payee?.value || "N/A",
+        timestamp: new Date(data.timestamp * 1000).toISOString(), // Convert to readable date
+        transactionStatus: data.state || "Unknown", // Add the transaction status
+        errorDetails: data.balance?.error?.message || "No error", // If any error, include it
+      };
+    });
+
+    console.log("Returning filtered transactions with status");
+    return NextResponse.json(requestDatas, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
+    return NextResponse.json(
+      {
+        error: "An error occurred while fetching transactions",
+        details: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
 
 ```
 
@@ -100,7 +154,7 @@ Here's a brief look at the core logic for ride booking and payments:
 
 ## 🔒 Authentication with Internet Identity
 
-Internet Identity is used to authenticate both drivers and passengers on ChainMove. This integration ensures that user sessions are secure, decentralized, and managed entirely on the Internet Computer blockchain.
+Internet Identity is used to authenticate both drivers and passengers on ChainMove. This integration ensures that user sessions are secure, decentralized, and managed entirely on the Request Network blockchain.
 
 1. **Login**: Internet Identity prompts users to authenticate when they access the platform.
 2. **Session Management**: Once logged in, users can access their profiles, book rides, and manage their transactions.
