@@ -28,7 +28,7 @@ async function connectDb() {
       })
       .then((mongoose) => mongoose);
   }
-
+  
   cached.conn = await cached.promise;
   return cached.conn;
 }

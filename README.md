@@ -1,4 +1,4 @@
-# 🚗 ChainMove – Decentralized Transportation on the Request Network
+# 🚗 ChainMove – Decentralized Transportation on the EVM-compatible chains
 
 Welcome to **ChainMove**, a decentralized, blockchain-powered transportation platform that brings transparency, efficiency, and security to mobility services. ChainMove leverages blockchain technology to create a seamless and trusted experience for drivers and passengers alike, ensuring secure payments, driver incentives, and ride transparency.
 
