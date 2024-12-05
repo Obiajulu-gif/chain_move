@@ -1,20 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
-import { useWalletClient } from "wagmi";
-import {
-  RequestNetwork,
-  Types,
-  Utils,
-} from "@requestnetwork/request-client.js";
-import { payRequest } from "@requestnetwork/payment-processor";
-import { ethers } from "ethers";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const TripHistory = () => {
   const [trip, setTrip] = useState(null); // Single trip object
   const [loading, setLoading] = useState(true);
-  const { data: walletClient } = useWalletClient();
 
   // Helper function to format timestamp to "minutes ago" or "hours ago"
   const getTimeAgo = (timestamp) => {
@@ -78,51 +70,6 @@ const TripHistory = () => {
     }
   };
 
-  const paymentRequest = async (requestId, amount) => {
-    const provider = new ethers.providers.Web3Provider(walletClient);
-    const signer = provider.getSigner();
-
-    if (!signer) {
-      alert("Please connect your wallet");
-      return;
-    }
-
-    if (!walletClient) {
-      alert("Wallet client not available. Ensure your wallet is connected.");
-      return;
-    }
-
-    const requestClient = new RequestNetwork({
-      nodeConnectionConfig: {
-        baseURL: "https://sepolia.gateway.request.network/",
-      },
-    });
-
-    try {
-      console.log("Fetching request:", requestId);
-      const request = await requestClient.fromRequestId(requestId);
-      const requestData = request.getData();
-
-      console.log("Fetched Request Data:", requestData);
-      if (!requestData.expectedAmount) {
-        throw new Error("Invalid request data: Missing expected amount.");
-      }
-
-      const paymentTx = await payRequest(requestData, signer);
-      console.log(`Paying. ${paymentTx.hash}`);
-
-      await paymentTx.wait(2);
-      console.log(`Payment complete. ${paymentTx.hash}`);
-      alert(`Payment complete. ${paymentTx.hash}`);
-
-      // Refresh trip after payment
-      fetchTrip();
-    } catch (error) {
-      console.error("Error processing payment:", error);
-      alert(`Payment failed: ${error.message}`);
-    }
-  };
-
   useEffect(() => {
     fetchTrips();
   }, []);
@@ -179,11 +126,11 @@ const TripHistory = () => {
                 <td className="p-4 text-white">{t.trimmedRequestId}</td>
                 <td className="p-4 text-white">{t.state}</td>
                 <td className="p-4 text-white">
-                  <button
-                    className="bg-green-600 hover:bg-green-700 text-black font-semibold px-4 py-2 rounded-lg"
-                    onClick={() => paymentRequest(t.requestId, t.payment)}>
-                    Pay
-                  </button>
+                  <Link
+                    href={`/dashboard/checkout/${t.requestId}`}
+                    className="bg-green-600 hover:bg-green-700 text-black font-semibold px-4 py-2 rounded-lg">
+                    Book
+                  </Link>
                 </td>
               </motion.tr>
             ))}
