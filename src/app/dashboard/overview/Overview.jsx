@@ -1,65 +1,34 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import BadgeAndTasks from "./BadgeAndTasks";
-import VideoTutorial from "./VideoTutorial";
 import TripHistory from "./TripHistory";
 
 const Overview = () => {
-  const [userName, setUserName] = useState("Guest");
+  const [userName, setUserName] = useState(" Guest");
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
-    if (user && user.fullName) {
+    if (user?.fullName) {
       setUserName(user.fullName);
     }
   }, []);
 
   return (
-    <div className="p-6 space-y-6 bg-gray-900 min-h-screen text-white">
+    <div className="p-6 space-y-6 bg-neutral-950 min-h-screen text-white">
       <h1 className="text-2xl font-semibold mb-4 text-center md:text-left">
-        Welcome back, {userName}
+        Welcome back, <span className="text-yellow-500"> {userName} </span>
       </h1>
-      <div
-        className="grid gap-6 md:grid-cols-3"
-        style={{
-          gridTemplateAreas: `
-            "badge wallet wallet"
-            "badge video video"
-            "badge history history"
-          `,
-        }}>
-        <div
-          className="md:col-span-1"
-          style={{
-            gridArea: "badge",
-          }}>
+      <div className="flex flex-col md:flex-row md:space-x-6">
+        {/* Left Section */}
+        <div className="md:w-1/3">
           <BadgeAndTasks />
         </div>
-        <div
-          className="md:col-span-2"
-          style={{
-            gridArea: "video",
-          }}>
-          <VideoTutorial />
-        </div>
-        <div
-          className="md:col-span-2"
-          style={{
-            gridArea: "history",
-          }}>
+        {/* Right Section */}
+        <div className="md:w-2/3 mt-6 md:mt-0">
           <TripHistory />
         </div>
       </div>
-
-      {/* Mobile-specific layout */}
-      <style jsx>{`
-        @media (max-width: 768px) {
-          div[style*="grid-template-areas"] {
-            display: flex;
-            flex-direction: column;
-          }
-        }
-      `}</style>
     </div>
   );
 };
