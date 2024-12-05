@@ -23,12 +23,12 @@ const TripHistory = () => {
     const minutesAgo = Math.floor(differenceInMs / (1000 * 60));
     const hoursAgo = Math.floor(differenceInMs / (1000 * 60 * 60));
 
-    if (minutesAgo < 60) {
-      return minutesAgo > 0 ? `${minutesAgo} minutes ago` : "Just now";
-    } else {
-      return hoursAgo > 0 ? `${hoursAgo} hours ago` : "Just now";
-    }
-  };
+		if (minutesAgo < 60) {
+			return minutesAgo > 0 ? `${minutesAgo} minutes ago` : "Just now";
+		} else {
+			return hoursAgo > 0 ? `${hoursAgo} hours ago` : "Just now";
+		}
+	};
 
   const fetchTrip = async () => {
     try {

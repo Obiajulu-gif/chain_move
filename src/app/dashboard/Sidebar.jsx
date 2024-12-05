@@ -26,10 +26,10 @@ const SidebarLink = ({ href, icon, label, badge, isSidebarOpen }) => (
 	>
 		<Link
 			href={href}
-			className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-800 transition-colors !text-base"
+			className="flex items-center justify-between p-2 rounded hover:bg-gray-800 transition-colors"
 		>
 			<div className="flex items-center space-x-4">
-				<span className="text-xl">{icon}</span>
+				<span className="text-2xl">{icon}</span>
 				{isSidebarOpen && <span className="text-lg font-medium">{label}</span>}
 			</div>
 			{isSidebarOpen && badge && (
@@ -66,11 +66,16 @@ const SidebarSection = ({ title, links, isSidebarOpen }) => (
 );
 
 const Sidebar = () => {
-	const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
 	const sidebarVariants = {
 		open: { width: "16rem", transition: { duration: 0.5 } },
 		closed: { width: "4rem", transition: { duration: 0.5 } },
+	};
+
+	const linkVariants = {
+		hover: { scale: 1.05 },
+		tap: { scale: 0.95 },
 	};
 
 	const mainLinks = [
@@ -107,62 +112,117 @@ const Sidebar = () => {
 	];
 
 	return (
-		<>
-			{/* Sidebar */}
-			<motion.div
-				className={`bg-gray-900 text-white max-h-screen p-4 flex flex-col justify-between fixed z-50 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 scrollbar-thumb-rounded
-          ${isSidebarOpen ? "block" : "hidden"} sm:hidden md:block`}
-				style={{ height: "100vh" }}
-				animate={isSidebarOpen ? "open" : "closed"}
-				variants={sidebarVariants}
-			>
-				{/* Sidebar Header */}
-				<div>
-					<Link href="/">
-						<h2 className="text-3xl font-bold text-orange-500">
-							{isSidebarOpen && "ChainMove"}
-						</h2>
-					</Link>
+		<motion.div
+			className="bg-gray-900 text-white max-h-screen p-4 flex flex-col justify-between fixed md:relative z-50 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 scrollbar-thumb-rounded"
+			style={{ height: "100vh" }}
+			animate={isSidebarOpen ? "open" : "closed"}
+			variants={sidebarVariants}
+		>
+			{/* Sidebar Header */}
+			<div>
+				<Link href="/">
+					<h2 className="text-3xl font-bold text-orange-500">
+						{isSidebarOpen && "ChainMove"}
+					</h2>
+				</Link>
 
-					{/* Main Navigation */}
-					<SidebarSection links={mainLinks} isSidebarOpen={isSidebarOpen} />
+				{/* Main Navigation */}
+				<nav className="mt-8 flex flex-col space-y-4">
+					{mainLinks.map(({ href, icon, label, badge }) => (
+						<motion.div
+							key={href}
+							whileHover="hover"
+							whileTap="tap"
+							variants={linkVariants}
+						>
+							<Link
+								href={href}
+								className="flex items-center justify-between p-2 rounded hover:bg-gray-800 transition-colors"
+							>
+								<div className="flex items-center space-x-4">
+									<span className="text-2xl">{icon}</span>
+									{isSidebarOpen && (
+										<span className="text-lg font-medium">{label}</span>
+									)}
+								</div>
+								{isSidebarOpen && badge && (
+									<motion.span
+										className="bg-orange-500 text-xs text-white px-2 py-1 rounded-full"
+										animate={{ y: [0, -2, 0] }}
+										transition={{ repeat: Infinity, duration: 1.5 }}
+									>
+										{badge}
+									</motion.span>
+								)}
+							</Link>
+						</motion.div>
+					))}
+				</nav>
 
-					{/* Profile Section */}
-					<SidebarSection
-						title="Access Other Profiles"
-						links={profileLinks}
-						isSidebarOpen={isSidebarOpen}
-					/>
-				</div>
+				{/* Profile Section */}
+				{isSidebarOpen && (
+					<div className="text-sm text-gray-400 mt-6">
+						Access Other Profiles
+					</div>
+				)}
+				<nav className="mt-4 space-y-4">
+					{profileLinks.map(({ href, icon, label }) => (
+						<motion.div
+							key={href}
+							whileHover="hover"
+							whileTap="tap"
+							variants={linkVariants}
+						>
+							<Link
+								href={href}
+								className="flex items-center space-x-4 p-2 rounded hover:bg-gray-800 transition-colors"
+							>
+								<span className="text-2xl">{icon}</span>
+								{isSidebarOpen && (
+									<span className="text-lg font-medium">{label}</span>
+								)}
+							</Link>
+						</motion.div>
+					))}
+				</nav>
+			</div>
 
-				{/* Bottom Section */}
-				<SidebarSection links={bottomLinks} isSidebarOpen={isSidebarOpen} />
+			{/* Bottom Section */}
+			<div className="flex flex-col space-y-4 mt-auto">
+				{bottomLinks.map(({ href, icon, label }) => (
+					<motion.div
+						key={href}
+						whileHover="hover"
+						whileTap="tap"
+						variants={linkVariants}
+					>
+						<Link
+							href={href}
+							className="flex items-center space-x-4 p-2 rounded hover:bg-gray-800 transition-colors"
+						>
+							<span className="text-2xl">{icon}</span>
+							{isSidebarOpen && (
+								<span className="text-lg font-medium">{label}</span>
+							)}
+						</Link>
+					</motion.div>
+				))}
+			</div>
 
-				{/* Toggle Button */}
-				<motion.button
-					className="absolute top-4 right-4 text-orange-500"
-					onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-					whileHover={{ scale: 1.2 }}
-					whileTap={{ scale: 0.9 }}
-				>
-					{isSidebarOpen ? (
-						<FaChevronLeft size={24} />
-					) : (
-						<FaChevronRight size={24} />
-					)}
-				</motion.button>
-			</motion.div>
-
-			{/* Mobile Toggle Button */}
+			{/* Toggle Button */}
 			<motion.button
-				className="fixed top-4 left-4 bg-orange-500 text-white p-3 rounded-full shadow-lg sm:block md:hidden"
+				className="absolute top-4 right-4 text-orange-500"
 				onClick={() => setIsSidebarOpen(!isSidebarOpen)}
 				whileHover={{ scale: 1.2 }}
 				whileTap={{ scale: 0.9 }}
 			>
-				<FaBars size={24} />
+				{isSidebarOpen ? (
+					<FaChevronLeft size={24} />
+				) : (
+					<FaChevronRight size={24} />
+				)}
 			</motion.button>
-		</>
+		</motion.div>
 	);
 };
 
