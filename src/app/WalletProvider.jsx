@@ -8,6 +8,7 @@ import {
 import { WagmiProvider } from "wagmi";
 import {
   mainnet,
+  sepolia,
   goerli,
   polygon,
   optimism,
@@ -17,10 +18,10 @@ import {
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 
 const config = getDefaultConfig({
-	appName: "Chain Move",
-	projectId: "24911ae43d4f2f85e9408da2d8c99868",
-	chains: [mainnet, goerli, polygon, optimism, arbitrum, base],
-	ssr: true, // If your dApp uses server side rendering (SSR)
+  appName: "Chain Move",
+  projectId: "24911ae43d4f2f85e9408da2d8c99868",
+  chains: [mainnet, sepolia, goerli, polygon, optimism, arbitrum, base],
+  ssr: true, // If your dApp uses server side rendering (SSR)
 });
 
 const queryClient = new QueryClient();

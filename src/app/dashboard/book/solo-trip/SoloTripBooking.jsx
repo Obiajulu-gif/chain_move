@@ -35,6 +35,7 @@ export default function CreateTransportInvoice() {
     try {
       setMessage(""); // Clear previous messages
       setMessageType("");
+      setStatus("");
 
       if (!walletClient) {
         setMessage("Wallet client not available. Please connect your wallet.");
@@ -71,6 +72,10 @@ export default function CreateTransportInvoice() {
             type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
             value: address,
           },
+          payer: {
+            type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+            value: address,
+          },
           timestamp: Utils.getCurrentTimestampInSecond(),
         },
         paymentNetwork: {
@@ -88,13 +93,14 @@ export default function CreateTransportInvoice() {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
           value: address,
         },
-        topics: ["chainmove-dapp"],
+        topics: ["chainmove-dapp-v1"],
       };
-
+      console.log("req params", requestCreateParameters);
       // Create the request
       const request = await requestClient.createRequest(
         requestCreateParameters
       );
+      console.log("req ", request);
 
       setStatus("Waiting for Confirmation");
       const confirmedRequestData = await request.waitForConfirmation();
@@ -128,6 +134,7 @@ export default function CreateTransportInvoice() {
     doc.text(`From: ${departure || "N/A"}`, 10, 30);
     doc.text(`To: ${destination || "N/A"}`, 10, 40);
     doc.text(`Amount: ${amount || "0"} ETH`, 10, 50);
+    doc.text(`To be paid by: ${address || "0x"}`, 10, 40);
 
     doc.setDrawColor(0); // Black border
     doc.setLineWidth(0.5);
@@ -155,6 +162,7 @@ export default function CreateTransportInvoice() {
               {message}
             </div>
           )}
+          {status && <div className={`p-4 rounded text-sm`}>{status}</div>}
           <div>
             <label className="block mb-2">Departure</label>
             <input

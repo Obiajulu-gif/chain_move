@@ -8,44 +8,44 @@ const requestClient = new RequestNetwork({
   },
 });
 
-// Unique topic for your platform
-const PLATFORM_TOPIC = "chainmove-dapp";
+// Unique topic for your platform (commented out for this implementation)
+// const PLATFORM_TOPIC = "chainmove-dapp-v1";
 
 export async function GET(request) {
   console.log("Request received at /api/transactions");
 
   try {
-    console.log(`Fetching transactions for topic: ${PLATFORM_TOPIC}`);
+    // Fetch the specific transaction using its request ID
+    const requestId =
+      "01c350e3c7109924eeb0e87d40128fc00b2127979aaac7440ac302393e3ad75c70";
 
-    // Fetch all requests associated with the platform topic
-    const requests = await requestClient.fromTopic(PLATFORM_TOPIC);
+    console.log(`Fetching transaction with request ID: ${requestId}`);
 
-    console.log(`Number of transactions fetched: ${requests.length}`);
+    // Fetch the request data for the specified request ID
+    const request = await requestClient.fromRequestId(requestId);
 
-    // Extract and filter necessary fields for frontend, including transaction status
-    const requestDatas = requests.map((request) => {
-      const data = request.getData();
+    // Extract necessary fields for the response
+    const data = request.getData();
 
-      return {
-        requestId: data.requestId,
-        departure: data.contentData?.departure || "N/A",
-        destination: data.contentData?.destination || "N/A",
-        expectedAmount: parseFloat(data.expectedAmount) / 1e18, // Convert to ETH
-        currency: data.currency,
-        payee: data.payee?.value || "N/A",
-        timestamp: new Date(data.timestamp * 1000).toISOString(), // Convert to readable date
-        transactionStatus: data.state || "Unknown", // Add the transaction status
-        errorDetails: data.balance?.error?.message || "No error", // If any error, include it
-      };
-    });
+    const requestData = {
+      requestId: data.requestId,
+      departure: data.contentData?.departure || "N/A",
+      destination: data.contentData?.destination || "N/A",
+      expectedAmount: parseFloat(data.expectedAmount) / 1e18, // Convert to ETH
+      currency: data.currency,
+      payee: data.payee?.value || "N/A",
+      timestamp: new Date(data.timestamp * 1000).toISOString(), // Convert to readable date
+      transactionStatus: data.state || "Unknown", // Add the transaction status
+      errorDetails: data.balance?.error?.message || "No error", // If any error, include it
+    };
 
-    console.log("Returning filtered transactions with status");
-    return NextResponse.json(requestDatas, { status: 200 });
+    console.log("Returning specific transaction data", requestData);
+    return NextResponse.json(requestData, { status: 200 });
   } catch (error) {
-    console.error("Error fetching transactions:", error);
+    console.error("Error fetching transaction:", error);
     return NextResponse.json(
       {
-        error: "An error occurred while fetching transactions",
+        error: "An error occurred while fetching the transaction",
         details: error.message,
       },
       { status: 500 }
