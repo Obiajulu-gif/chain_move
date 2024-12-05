@@ -19,20 +19,33 @@ const TripHistory = () => {
   // Helper function to format timestamp to "minutes ago" or "hours ago"
   const getTimeAgo = (timestamp) => {
     const now = Date.now();
-    const differenceInMs = now - new Date(timestamp).getTime();
-    const minutesAgo = Math.floor(differenceInMs / (1000 * 60));
-    const hoursAgo = Math.floor(differenceInMs / (1000 * 60 * 60));
+    const tripTime = new Date(timestamp).getTime();
+    const differenceInMs = tripTime - now;
 
-		if (minutesAgo < 60) {
-			return minutesAgo > 0 ? `${minutesAgo} minutes ago` : "Just now";
-		} else {
-			return hoursAgo > 0 ? `${hoursAgo} hours ago` : "Just now";
-		}
-	};
+    if (differenceInMs > 0) {
+      // Future date
+      const daysAhead = Math.ceil(differenceInMs / (1000 * 60 * 60 * 24));
+      return daysAhead === 1 ? "in 1 day" : `in ${daysAhead} days`;
+    } else {
+      // Past date
+      const differenceInPast = Math.abs(differenceInMs);
+      const minutesAgo = Math.floor(differenceInPast / (1000 * 60));
+      const hoursAgo = Math.floor(differenceInPast / (1000 * 60 * 60));
+      const daysAgo = Math.floor(differenceInPast / (1000 * 60 * 60 * 24));
 
-  const fetchTrip = async () => {
+      if (minutesAgo < 60) {
+        return minutesAgo > 0 ? `${minutesAgo} minutes ago` : "Just now";
+      } else if (hoursAgo < 24) {
+        return `${hoursAgo} hours ago`;
+      } else {
+        return `${daysAgo} days ago`;
+      }
+    }
+  };
+
+  const fetchTrips = async () => {
     try {
-      const response = await fetch("/api/transactions");
+      const response = await fetch("/api/drivers/destination");
       if (!response.ok) {
         throw new Error("Failed to fetch trip data");
       }
@@ -40,21 +53,24 @@ const TripHistory = () => {
       const data = await response.json();
       console.log("Fetched trip data:", data);
 
-      // Format the single trip data
-      const formattedTrip = {
-        pickUp: data.departure,
-        payee: data.payee,
-        destination: data.destination,
-        payment: `${data.expectedAmount.toFixed(2)}`,
-        date: getTimeAgo(data.timestamp),
-        requestId: data.requestId,
-        trimmedRequestId: data.requestId.slice(0, 10),
-        state: data.transactionStatus,
-        timestamp: data.timestamp,
-      };
+      if (!data.invoices || data.invoices.length === 0) {
+        setTrip([]);
+        return;
+      }
 
-      console.log("Formatted trip:", formattedTrip);
-      setTrip(formattedTrip);
+      // Format all trips
+      const formattedTrips = data.invoices.map((trip) => ({
+        pickUp: trip.pickupLocation,
+        destination: trip.destination,
+        payment: `${trip.estimatedCost.toFixed(2)}`,
+        date: getTimeAgo(trip.date),
+        requestId: trip.requestId,
+        trimmedRequestId: trip.requestId?.slice(0, 10) || "none",
+        state: trip.state,
+      }));
+
+      console.log("Formatted trips:", formattedTrips);
+      setTrip(formattedTrips);
     } catch (error) {
       console.error("Error fetching trip data:", error);
     } finally {
@@ -108,52 +124,69 @@ const TripHistory = () => {
   };
 
   useEffect(() => {
-    fetchTrip();
+    fetchTrips();
   }, []);
 
   return (
-    <div className="bg-gray-900 p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
-      <h2 className="text-2xl font-semibold text-white mb-6">Trip History</h2>
+    <div className="bg-neutral-900 p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+      <h2 className="text-3xl font-bold text-white mb-6">Trip History</h2>
       {loading ? (
         <p className="text-white">Loading trip history...</p>
-      ) : trip ? (
+      ) : trip && trip.length > 0 ? (
         <motion.table
-          className="w-full text-lg bg-gray-800 rounded-lg overflow-hidden"
+          className="w-full text-md bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}>
           <thead>
-            <tr className="text-gray-400 bg-gray-700">
-              <th className="p-4 text-left">Pick-Up Point</th>
-              <th className="p-4 text-left">Destination</th>
-              <th className="p-4 text-left">Amount (ETH)</th>
-              <th className="p-4 text-left">Time</th>
-              <th className="p-4 text-left">Transaction ID</th>
-              <th className="p-4 text-left">State</th>
-              <th className="p-4 text-left">Action</th>
+            <tr className="text-gray-400 bg-neutral-900">
+              <th className="p-4 text-left border-b border-neutral-700">
+                Pick-Up Point
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Destination
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Estimated Cost (ETH)
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Date
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Request ID
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Status
+              </th>
+              <th className="p-4 text-left border-b border-neutral-700">
+                Action
+              </th>
             </tr>
           </thead>
           <tbody>
-            <motion.tr
-              className="border-b border-gray-700 hover:bg-gray-700 transition duration-300"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              whileHover={{ scale: 1.02 }}>
-              <td className="p-4 text-white">{trip.pickUp}</td>
-              <td className="p-4 text-white">{trip.destination}</td>
-              <td className="p-4 text-white">{trip.payment}</td>
-              <td className="p-4 text-white">{trip.date}</td>
-              <td className="p-4 text-white">{trip.trimmedRequestId}</td>
-              <td className="p-4 text-white">{trip.state}</td>
-              <td className="p-4 text-white">
-                <button
-                  className="bg-yellow-800 text-white px-4 py-2 rounded-lg"
-                  onClick={() => paymentRequest(trip.requestId, trip.payment)}>
-                  Pay
-                </button>
-              </td>
-            </motion.tr>
+            {trip.map((t, index) => (
+              <motion.tr
+                key={index}
+                className="border-b border-neutral-700 hover:bg-neutral-700 transition duration-300"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                whileHover={{ scale: 1.02 }}>
+                <td className="p-4 text-white">{t.pickUp}</td>
+                <td className="p-4 text-white">{t.destination}</td>
+                <td className="p-4 text-white">{t.payment}</td>
+                <td className="p-4 text-white">{t.date}</td>
+                <td className="p-4 text-white">{t.trimmedRequestId}</td>
+                <td className="p-4 text-white">{t.state}</td>
+                <td className="p-4 text-white">
+                  <button
+                    className="bg-green-600 hover:bg-green-700 text-black font-semibold px-4 py-2 rounded-lg"
+                    onClick={() => paymentRequest(t.requestId, t.payment)}>
+                    Pay
+                  </button>
+                </td>
+              </motion.tr>
+            ))}
           </tbody>
         </motion.table>
       ) : (

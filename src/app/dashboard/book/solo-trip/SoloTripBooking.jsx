@@ -11,218 +11,323 @@ import {
 import { Web3SignatureProvider } from "@requestnetwork/web3-signature";
 import { jsPDF } from "jspdf";
 
+function InputField({ label, type, value, onChange, placeholder }) {
+  return (
+    <div className="my-4 md:my-5 ">
+      <label className="block mb-1">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        className="w-full p-3 capitalize bg-neutral-900 text-white rounded-lg border border-gray-700"
+        placeholder={placeholder}
+      />
+    </div>
+  );
+}
+
+function PDFPreview({ pdfPreviewUrl }) {
+  return (
+    pdfPreviewUrl && (
+      <div className="w-full">
+        <h3 className="text-xl text-center font-bold mb-4 text-white">
+          Preview
+        </h3>
+        <iframe
+          src={pdfPreviewUrl}
+          title="PDF Preview"
+          style={{
+            width: "100mm",
+            height: "150mm",
+            border: "1px solid #4a5568",
+            borderRadius: "8px",
+            overflow: "hidden",
+            margin: "0 auto",
+          }}></iframe>
+      </div>
+    )
+  );
+}
+
 export default function CreateTransportInvoice() {
-  const [departure, setDeparture] = useState("");
+  const [pickup, setPickup] = useState("");
   const [destination, setDestination] = useState("");
   const [amount, setAmount] = useState("");
-  const [status, setStatus] = useState("Awaiting Input");
+  const [avgTime, setAvgTime] = useState("");
+  const [date, setDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0]; // Format the date as YYYY-MM-DD
+  });
+  const [status, setStatus] = useState(" ");
   const [requestData, setRequestData] = useState(null);
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null); // Blob URL for PDF preview
-  const [message, setMessage] = useState(""); // For success or error messages
-  const [messageType, setMessageType] = useState(""); // "success" or "error"
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
 
   const { data: walletClient } = useWalletClient();
   const { address } = useAccount();
 
   // Generate PDF Preview as the user types
   useEffect(() => {
-    if (departure || destination || amount) {
+    if (pickup || destination || amount || avgTime || date) {
       generatePDFPreview();
     }
-  }, [departure, destination, amount]);
+  }, [pickup, destination, amount, avgTime, date]);
 
-  async function createRequest() {
-    try {
-      setMessage(""); // Clear previous messages
-      setMessageType("");
-      setStatus("");
+async function createRequest() {
+  const user = JSON.parse(localStorage.getItem("user"));
+  if (!user) {
+    alert("Sign up before creating requests");
+    return;
+  }
 
-      if (!walletClient) {
-        setMessage("Wallet client not available. Please connect your wallet.");
-        setMessageType("error");
-        return;
-      }
+  try {
+    setStatus("");
 
-      if (!departure || !destination || !amount) {
-        setMessage("Please fill in all required fields.");
-        setMessageType("error");
-        return;
-      }
+    if (!walletClient) {
+      setStatus("Wallet client not available. Please connect your wallet.");
+      return;
+    }
 
-      setStatus("Submitting");
+    if (!pickup || !destination || !amount || !avgTime || !date) {
+      setStatus("Please fill in all required fields.");
+      return;
+    }
 
-      // Initialize Request Network client
-      const signatureProvider = new Web3SignatureProvider(walletClient);
-      const requestClient = new RequestNetwork({
-        nodeConnectionConfig: {
-          baseURL: "https://sepolia.gateway.request.network/",
+    setStatus("Uploading to IPFS...");
+
+    const signatureProvider = new Web3SignatureProvider(walletClient);
+    const requestClient = new RequestNetwork({
+      nodeConnectionConfig: {
+        baseURL: "https://sepolia.gateway.request.network/",
+      },
+      signatureProvider,
+    });
+
+    const requestCreateParameters = {
+      requestInfo: {
+        currency: {
+          type: Types.RequestLogic.CURRENCY.ETH,
+          network: "sepolia",
         },
-        signatureProvider,
-      });
-
-      // Prepare the request parameters
-      const requestCreateParameters = {
-        requestInfo: {
-          currency: {
-            type: Types.RequestLogic.CURRENCY.ETH,
-            network: "sepolia",
-          },
-          expectedAmount: parseUnits(amount || "0", 18).toString(), // Convert ETH to Wei
-          payee: {
-            type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-            value: address,
-          },
-          payer: {
-            type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-            value: address,
-          },
-          timestamp: Utils.getCurrentTimestampInSecond(),
-        },
-        paymentNetwork: {
-          id: Types.Extension.PAYMENT_NETWORK_ID.ETH_INPUT_DATA,
-          parameters: {
-            paymentAddress: address,
-          },
-        },
-        contentData: {
-          reason: "Ride booking invoice",
-          departure,
-          destination,
-        },
-        signer: {
+        expectedAmount: parseUnits(amount || "0", 18).toString(),
+        payee: {
           type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
           value: address,
         },
-        topics: ["chainmove-dapp-v1"],
-      };
-      console.log("req params", requestCreateParameters);
-      // Create the request
-      const request = await requestClient.createRequest(
-        requestCreateParameters
-      );
-      console.log("req ", request);
+        timestamp: Utils.getCurrentTimestampInSecond(),
+      },
+      paymentNetwork: {
+        id: Types.Extension.PAYMENT_NETWORK_ID.ETH_INPUT_DATA,
+        parameters: {
+          paymentAddress: address,
+        },
+      },
+      contentData: {
+        reason: "Create Ride booking invoice",
+        pickup,
+        destination,
+        avgTime,
+        date,
+      },
+      signer: {
+        type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+        value: address,
+      },
+      topics: ["chainmove-dapp-v1"],
+    };
 
-      setStatus("Waiting for Confirmation");
-      const confirmedRequestData = await request.waitForConfirmation();
+    const request = await requestClient.createRequest(requestCreateParameters);
+    console.log("Request:", request);
 
-      setStatus("Request Confirmed");
-      setRequestData(confirmedRequestData);
-      setMessage("Invoice created successfully!");
-      setMessageType("success");
-    } catch (error) {
-      console.error("Error creating request:", error);
-      setStatus("Error Occurred");
-      setMessage(error.message || "Failed to create the request.");
-      setMessageType("error");
-    }
-  }
+    // Retrieve the requestId
+    const requestId = request.requestId;
 
-  function generatePDFPreview() {
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: [100, 150], // Custom paper size
+    console.log("Request ID:", requestId);
+
+    setStatus("Waiting for Confirmation...");
+    const confirmedRequestData = await request.waitForConfirmation();
+
+    setStatus("Request Confirmed. Saving to backend...");
+
+    // Prepare data for backend
+    const invoiceData = {
+      driver: {
+        fullName: user?.fullName || "Unknown Driver",
+        email: user?.email || "Unknown Email",
+      },
+      pickupLocation: pickup,
+      destination: destination,
+      estimatedCost: amount,
+      date: date,
+      averageTime: avgTime,
+      status: "available", // Default to "available" when created
+      requestId, // Add requestId
+      address, // Use connected wallet address
+    };
+
+    // POST request to the backend route
+    const response = await fetch("/api/drivers/destination", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(invoiceData),
     });
 
-    // Styling and formatting
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("Ride Booking Invoice Preview", 50, 10, { align: "center" });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to save invoice to backend");
+    }
 
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.text(`From: ${departure || "N/A"}`, 10, 30);
-    doc.text(`To: ${destination || "N/A"}`, 10, 40);
-    doc.text(`Amount: ${amount || "0"} ETH`, 10, 50);
-    doc.text(`To be paid by: ${address || "0x"}`, 10, 40);
+    const responseData = await response.json();
+    console.log("Invoice saved successfully:", responseData);
 
-    doc.setDrawColor(0); // Black border
-    doc.setLineWidth(0.5);
-    doc.rect(5, 5, 90, 140); // Draw a border for the PDF
+    setStatus("Destination created and saved to backend successfully!");
+  } catch (error) {
+    console.error("Error creating request:", error);
+    setStatus(error.message || "Failed to create the request.");
+  }
+}
 
-    const blob = doc.output("blob");
-    const blobUrl = URL.createObjectURL(blob);
 
-    setPdfPreviewUrl(blobUrl); // Update the preview URL
+  function generatePDFPreview() {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userEmail = user?.email || "N/A";
+    const userFullName = user?.fullName || "N/A";
+    const logoUrl = "/images/blockridelogo.png"; // Path to your logo in the public folder
+
+    // Preload the image and generate the PDF
+    const loadImage = (url) =>
+      new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; // Avoid CORS issues
+        img.src = url; // Use relative URL for the public folder
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL("image/png")); // Convert to Base64
+        };
+        img.onerror = (err) => reject(err);
+      });
+
+    loadImage(logoUrl)
+      .then((base64Logo) => {
+        const doc = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4", // A4 paper size
+        });
+
+        // Set background color
+        doc.setFillColor(0, 0, 0); // Black background
+        doc.rect(0, 0, 210, 297, "F"); // A4 size: 210mm x 297mm
+
+        // Add logo
+        const imgWidth = 50; // Adjust size as needed
+        const imgHeight = 20;
+        doc.addImage(base64Logo, "PNG", 80, 10, imgWidth, imgHeight); // Centered at the top
+
+        // Set text color to white
+        doc.setTextColor(255, 255, 255);
+
+        // Invoice Header
+        doc.setFontSize(40); // Increased font size for header
+        doc.setFont("helvetica", "bold");
+        doc.text("Driver's Booking Invoice", 105, 50, { align: "center" });
+
+        // User Information Section
+        doc.setFontSize(24); // Larger section headers
+        doc.setFont("helvetica", "bold");
+        doc.text("About The Driver", 20, 80);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(18); // Larger font for content
+        doc.text(`Name: ${userFullName}`, 20, 100);
+        doc.text(`Email: ${userEmail}`, 20, 115);
+
+        // Ride Information Section
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(24);
+        doc.text("Ride Details", 20, 140);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(18);
+        doc.text(`Pickup Location: ${pickup || "N/A"}`, 20, 160);
+        doc.text(`Destination: ${destination || "N/A"}`, 20, 175);
+        doc.text(`Estimated Cost: ${amount || "0"} ETH`, 20, 190);
+        doc.text(`Date: ${date || "N/A"}`, 20, 205);
+        doc.text(`Average Time: ${avgTime || "N/A"} hours`, 20, 220);
+
+        // Footer Section
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text("Thank you for using our service!", 105, 280, {
+          align: "center",
+        });
+
+        // Generate the PDF Blob
+        const blob = doc.output("blob");
+        const blobUrl = URL.createObjectURL(blob);
+
+        setPdfPreviewUrl(blobUrl);
+      })
+      .catch((error) => {
+        console.error("Error loading image:", error);
+        alert("Failed to load the logo. Please check the image path.");
+      });
   }
 
-  const isSubmitting = status === "Submitting";
-
   return (
-    <div className="p-8 bg-gray-900 min-h-screen flex flex-col md:flex-row gap-4 text-white ">
-      <div className=" w-full">
+    <div className="p-8 bg-neutral-950 min-h-screen flex flex-col md:flex-row gap-4 text-white">
+      <div className="w-full">
         <h1 className="text-3xl font-bold mb-4">Create Ride Invoice</h1>
-        <div className="">
-          {/* Message Display */}
-          {message && (
-            <div
-              className={`p-4 rounded text-sm ${
-                messageType === "success" ? "bg-green-500" : "bg-red-500"
-              }`}>
-              {message}
-            </div>
-          )}
-          {status && <div className={`p-4 rounded text-sm`}>{status}</div>}
-          <div>
-            <label className="block mb-2">Departure</label>
-            <input
-              type="text"
-              value={departure}
-              onChange={(e) => setDeparture(e.target.value)}
-              className="w-full p-4 bg-gray-800 text-white rounded-lg"
-              placeholder="Enter departure location"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">Destination</label>
-            <input
-              type="text"
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              className="w-full p-4 bg-gray-800 text-white rounded-lg"
-              placeholder="Enter destination"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">Amount (ETH)</label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full p-4 bg-gray-800 text-white rounded-lg"
-              placeholder="Enter amount in ETH"
-            />
-          </div>
+        <div>
+          <InputField
+            label="Pick Up Location"
+            type="text"
+            value={pickup}
+            onChange={(e) => setPickup(e.target.value)}
+            placeholder="Enter pick up location"
+          />
+          <InputField
+            label="Destination"
+            type="text"
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            placeholder="Enter destination"
+          />
+          <InputField
+            label="Estimated Trip Cost (ETH)"
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Enter estimated trip cost"
+          />
+          <InputField
+            label="Average Time (hours)"
+            type="number"
+            value={avgTime}
+            onChange={(e) => setAvgTime(e.target.value)}
+            placeholder="Enter average time to complete journey"
+          />
+          <InputField
+            label="Date"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            placeholder="Select date"
+          />
+          {status && <div className=" text-sm">{status}</div>}{" "}
           <button
             onClick={createRequest}
-            disabled={isSubmitting}
-            className={`w-full py-4 mt-4 rounded-lg text-lg font-semibold transition ${
-              isSubmitting
-                ? "bg-gray-500 cursor-not-allowed"
-                : "bg-orange-500 hover:bg-orange-600"
-            }`}>
-            {isSubmitting ? "Creating Invoice..." : "Create Invoice"}
+            className="w-full py-3 mt-4 rounded-lg text-lg font-semibold bg-orange-500 hover:bg-orange-600">
+            Generate Invoice
           </button>
         </div>
       </div>
-
-      {/* PDF Preview */}
-      {pdfPreviewUrl && (
-        <div className=" w-full">
-          <h3 className="text-xl ml-12 font-bold mb-4">Invoice Preview</h3>
-          <iframe
-            src={pdfPreviewUrl}
-            title="PDF Preview"
-            style={{
-              width: "100mm",
-              height: "100mm", // Match the custom PDF size
-              border: "2px solid #4a5568", // Optional border styling
-              borderRadius: "8px",
-              overflow: "hidden",
-              margin: "0 auto",
-            }}></iframe>
-        </div>
-      )}
+      <PDFPreview pdfPreviewUrl={pdfPreviewUrl} />
     </div>
   );
 }

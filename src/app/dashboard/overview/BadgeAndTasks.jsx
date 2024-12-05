@@ -18,7 +18,7 @@ const BadgeAndTasks = () => {
   ];
 
   return (
-    <div className="bg-gray-800 p-8 rounded-lg text-white shadow-lg">
+    <div className="bg-neutral-900 p-8 rounded-lg text-white shadow-lg">
       {/* Badge Section */}
       <div className="flex flex-col items-center mb-8">
         <Image src="/images/b1.png" alt="Badge" width={164} height={164} />
