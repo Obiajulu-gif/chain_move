@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react"; // Added useCallback here
 import { parseUnits } from "viem";
 import { useWalletClient, useAccount } from "wagmi";
 import {
@@ -67,12 +67,102 @@ export default function CreateTransportInvoice() {
   const { data: walletClient } = useWalletClient();
   const { address } = useAccount();
 
+  const generatePDFPreview = useCallback(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userEmail = user?.email || "N/A";
+    const userFullName = user?.fullName || "N/A";
+    const logoUrl = "/images/blockridelogo.png"; // Path to your logo in the public folder
+
+    // Preload the image and generate the PDF
+    const loadImage = (url) =>
+      new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; // Avoid CORS issues
+        img.src = url; // Use relative URL for the public folder
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL("image/png")); // Convert to Base64
+        };
+        img.onerror = (err) => reject(err);
+      });
+
+    loadImage(logoUrl)
+      .then((base64Logo) => {
+        const doc = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4", // A4 paper size
+        });
+
+        // Set background color
+        doc.setFillColor(17, 24, 39); // Black background
+        doc.rect(0, 0, 210, 297, "F"); // A4 size: 210mm x 297mm
+
+        // Add logo
+        const imgWidth = 50; // Adjust size as needed
+        const imgHeight = 20;
+        doc.addImage(base64Logo, "PNG", 80, 10, imgWidth, imgHeight); // Centered at the top
+
+        // Set text color to white
+        doc.setTextColor(255, 255, 255);
+
+        // Invoice Header
+        doc.setFontSize(40); // Increased font size for header
+        doc.setFont("helvetica", "bold");
+        doc.text("Driver's Booking Invoice", 105, 50, { align: "center" });
+
+        // User Information Section
+        doc.setFontSize(24); // Larger section headers
+        doc.setFont("helvetica", "bold");
+        doc.text("About The Driver", 20, 80);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(18); // Larger font for content
+        doc.text(`Name: ${userFullName}`, 20, 100);
+        doc.text(`Email: ${userEmail}`, 20, 115);
+
+        // Ride Information Section
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(24);
+        doc.text("Ride Details", 20, 140);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(18);
+        doc.text(`Pickup Location: ${pickup || "N/A"}`, 20, 160);
+        doc.text(`Destination: ${destination || "N/A"}`, 20, 175);
+        doc.text(`Estimated Cost: ${amount || "0"} ETH`, 20, 190);
+        doc.text(`Date: ${date || "N/A"}`, 20, 205);
+        doc.text(`Average Time: ${avgTime || "N/A"} hours`, 20, 220);
+
+        // Footer Section
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text("Thank you for using our service!", 105, 280, {
+          align: "center",
+        });
+
+        // Generate the PDF Blob
+        const blob = doc.output("blob");
+        const blobUrl = URL.createObjectURL(blob);
+
+        setPdfPreviewUrl(blobUrl);
+      })
+      .catch((error) => {
+        console.error("Error loading image:", error);
+        alert("Failed to load the logo. Please check the image path.");
+      });
+  }, [pickup, destination, amount, avgTime, date]);
+
   // Generate PDF Preview as the user types
   useEffect(() => {
     if (pickup || destination || amount || avgTime || date) {
       generatePDFPreview();
     }
-  }, [pickup, destination, amount, avgTime, date]);
+  }, [pickup, destination, amount, avgTime, date, generatePDFPreview]);
 
   async function createRequest() {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -204,98 +294,9 @@ export default function CreateTransportInvoice() {
     }
   }
 
-  function generatePDFPreview() {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const userEmail = user?.email || "N/A";
-    const userFullName = user?.fullName || "N/A";
-    const logoUrl = "/images/blockridelogo.png"; // Path to your logo in the public folder
-
-    // Preload the image and generate the PDF
-    const loadImage = (url) =>
-      new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "Anonymous"; // Avoid CORS issues
-        img.src = url; // Use relative URL for the public folder
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL("image/png")); // Convert to Base64
-        };
-        img.onerror = (err) => reject(err);
-      });
-
-    loadImage(logoUrl)
-      .then((base64Logo) => {
-        const doc = new jsPDF({
-          orientation: "portrait",
-          unit: "mm",
-          format: "a4", // A4 paper size
-        });
-
-        // Set background color
-        doc.setFillColor(0, 0, 0); // Black background
-        doc.rect(0, 0, 210, 297, "F"); // A4 size: 210mm x 297mm
-
-        // Add logo
-        const imgWidth = 50; // Adjust size as needed
-        const imgHeight = 20;
-        doc.addImage(base64Logo, "PNG", 80, 10, imgWidth, imgHeight); // Centered at the top
-
-        // Set text color to white
-        doc.setTextColor(255, 255, 255);
-
-        // Invoice Header
-        doc.setFontSize(40); // Increased font size for header
-        doc.setFont("helvetica", "bold");
-        doc.text("Driver's Booking Invoice", 105, 50, { align: "center" });
-
-        // User Information Section
-        doc.setFontSize(24); // Larger section headers
-        doc.setFont("helvetica", "bold");
-        doc.text("About The Driver", 20, 80);
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(18); // Larger font for content
-        doc.text(`Name: ${userFullName}`, 20, 100);
-        doc.text(`Email: ${userEmail}`, 20, 115);
-
-        // Ride Information Section
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(24);
-        doc.text("Ride Details", 20, 140);
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(18);
-        doc.text(`Pickup Location: ${pickup || "N/A"}`, 20, 160);
-        doc.text(`Destination: ${destination || "N/A"}`, 20, 175);
-        doc.text(`Estimated Cost: ${amount || "0"} ETH`, 20, 190);
-        doc.text(`Date: ${date || "N/A"}`, 20, 205);
-        doc.text(`Average Time: ${avgTime || "N/A"} hours`, 20, 220);
-
-        // Footer Section
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(18);
-        doc.text("Thank you for using our service!", 105, 280, {
-          align: "center",
-        });
-
-        // Generate the PDF Blob
-        const blob = doc.output("blob");
-        const blobUrl = URL.createObjectURL(blob);
-
-        setPdfPreviewUrl(blobUrl);
-      })
-      .catch((error) => {
-        console.error("Error loading image:", error);
-        alert("Failed to load the logo. Please check the image path.");
-      });
-  }
 
   return (
-    <div className="p-8 bg-gray-950 min-h-screen flex flex-col md:flex-row gap-4 text-white">
+    <div className="p-8 bg-gray-900 min-h-screen flex flex-col md:flex-row gap-4 text-white">
       <div className="w-full">
         <h1 className="text-3xl font-bold mb-4">Create Ride Invoice</h1>
         <div>

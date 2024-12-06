@@ -126,10 +126,10 @@ const BookTrip = () => {
 						onClick={() =>
 							handleSelect("/dashboard/book/shared-ride", "shared")
 						}
-						className={`relative bg-green-500 text-white py-3 px-8 rounded-full text-lg font-semibold transition duration-300 ${
+						className={`relative bg-orange-500 text-white py-3 px-8 rounded-full text-lg font-semibold transition duration-300 ${
 							loading === "shared"
-								? "bg-green-600 cursor-not-allowed"
-								: "hover:bg-green-600"
+								? "bg-orange-600 cursor-not-allowed"
+								: "hover:bg-orange-600"
 						}`}
 					>
 						{loading === "shared" ? (

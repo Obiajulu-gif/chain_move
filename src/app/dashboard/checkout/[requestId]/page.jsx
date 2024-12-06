@@ -65,63 +65,78 @@ const Page = () => {
 
 	return (
 		<div className="p-6 flex flex-col lg:flex-row gap-6 bg-gray-900 min-h-screen text-white">
-			<div className="flex-1 bg-gray-800 p-6 rounded-lg shadow-lg">
+			{/* Invoice Details */}
+			<div className="flex flex-col bg-gray-800 p-6 rounded-lg shadow-lg lg:w-1/2 animate-fadeIn overflow-x-auto">
 				<h1 className="text-3xl font-bold mb-6 text-orange-500 flex items-center gap-2">
 					<FaInfoCircle /> Invoice Details
 				</h1>
-				<div className="space-y-4 text-lg">
-					<p className="flex items-center gap-2">
+				<div className="space-y-6 text-lg">
+					<p className="flex items-center gap-3">
 						<FaLink className="text-blue-400" />
-						<strong>Request ID:</strong> {invoiceData.requestId}
+						<span className="font-semibold text-gray-200">Request ID:</span>
+						<span>{invoiceData.requestId}</span>
 					</p>
-					<p className="flex items-center gap-2">
+					<p className="flex items-center gap-3">
 						<FaUser className="text-green-400" />
-						<strong>Driver Name:</strong>{" "}
-						{invoiceData.driver?.fullName || "N/A"}
+						<span className="font-semibold text-gray-200">Driver Name:</span>
+						<span>{invoiceData.driver?.fullName || "N/A"}</span>
 					</p>
-					<p className="flex items-center gap-2">
+					<p className="flex items-center gap-3">
 						<FaUser className="text-green-400" />
-						<strong>Driver Email:</strong> {invoiceData.driver?.email || "N/A"}
+						<span className="font-semibold text-gray-200">Driver Email:</span>
+						<span>{invoiceData.driver?.email || "N/A"}</span>
 					</p>
-					<p className="flex items-center gap-2">
+					<p className="flex items-center gap-3">
 						<FaMapMarkerAlt className="text-yellow-400" />
-						<strong>Pickup Location:</strong>{" "}
-						{invoiceData.pickupLocation || "N/A"}
+						<span className="font-semibold text-gray-200">
+							Pickup Location:
+						</span>
+						<span>{invoiceData.pickupLocation || "N/A"}</span>
 					</p>
-					<p className="flex items-center gap-2">
+					<p className="flex items-center gap-3">
 						<FaMapMarkerAlt className="text-yellow-400" />
-						<strong>Destination:</strong> {invoiceData.destination || "N/A"}
+						<span className="font-semibold text-gray-200">Destination:</span>
+						<span>{invoiceData.destination || "N/A"}</span>
 					</p>
-					<p className="flex items-center gap-2">
+					<p className="flex items-center gap-3">
 						<FaEthereum className="text-purple-400" />
-						<strong>Estimated Cost:</strong>{" "}
-						{invoiceData.estimatedCost || "N/A"} ETH
+						<span className="font-semibold text-gray-200">Estimated Cost:</span>
+						<span>{invoiceData.estimatedCost || "N/A"} ETH</span>
 					</p>
-					<p className="flex items-center gap-2">
+					<p className="flex items-center gap-3">
 						<FaCalendarAlt className="text-orange-400" />
-						<strong>Date:</strong>{" "}
-						{new Date(invoiceData.date).toLocaleDateString() || "N/A"}
+						<span className="font-semibold text-gray-200">Date:</span>
+						<span>
+							{new Date(invoiceData.date).toLocaleDateString() || "N/A"}
+						</span>
 					</p>
-					<p className="flex items-center gap-2">
+					<p className="flex items-center gap-3">
 						<FaClock className="text-blue-400" />
-						<strong>Average Time:</strong> {invoiceData.averageTime || "N/A"}{" "}
-						hours
+						<span className="font-semibold text-gray-200">Average Time:</span>
+						<span>{invoiceData.averageTime || "N/A"} hours</span>
 					</p>
-					<p className="flex items-center gap-2">
+					<p className="flex items-center gap-3">
 						<FaTruck className="text-green-400" />
-						<strong>Status:</strong> {invoiceData.status || "N/A"}
+						<span className="font-semibold text-gray-200">Status:</span>
+						<span>{invoiceData.status || "N/A"}</span>
 					</p>
-					<p className="flex items-center gap-2">
+					<p className="flex items-center gap-3">
 						<FaLink className="text-blue-400" />
-						<strong>Transaction Hash:</strong> {invoiceData.txHash || "N/A"}
+						<span className="font-semibold text-gray-200">
+							Transaction Hash:
+						</span>
+						<span>{invoiceData.txHash || "N/A"}</span>
 					</p>
-					<p className="flex items-center gap-2">
+					<p className="flex items-center gap-3">
 						<FaUserTie className="text-purple-400" />
-						<strong>Driver Address:</strong> {invoiceData.address || "N/A"}
+						<span className="font-semibold text-gray-200">Driver Address:</span>
+						<span>{invoiceData.address || "N/A"}</span>
 					</p>
 				</div>
 			</div>
-			<div className="flex-1">
+
+			{/* Checkout Component */}
+			<div className="lg:w-1/2 animate-slideIn">
 				<CheckoutComponent validRequest={invoiceData} />
 			</div>
 		</div>
