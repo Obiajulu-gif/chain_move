@@ -113,7 +113,7 @@ const BookTrip = () => {
 							className="rounded-lg"
 						/>
 					</div>
-					<h3 className="text-2xl font-semibold mb-4 text-green-400 tracking-wide">
+					<h3 className="text-2xl font-semibold mb-4 text-orange-400 tracking-wide">
 						Shared-Ride
 					</h3>
 					<p className="text-lg text-gray-400 text-center mb-6">

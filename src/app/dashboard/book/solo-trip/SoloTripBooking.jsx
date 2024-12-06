@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import React, { useState, useEffect, useCallback } from "react"; // Added useCallback here
+import React, { useState, useEffect, useCallback } from "react"; 
 import { parseUnits } from "viem";
 import { useWalletClient, useAccount } from "wagmi";
 import {
@@ -71,7 +71,7 @@ export default function CreateTransportInvoice() {
     const user = JSON.parse(localStorage.getItem("user"));
     const userEmail = user?.email || "N/A";
     const userFullName = user?.fullName || "N/A";
-    const logoUrl = "/images/blockridelogo.png"; // Path to your logo in the public folder
+    const logoUrl = "/images/blockridelogo.svg"; // Path to your logo in the public folder
 
     // Preload the image and generate the PDF
     const loadImage = (url) =>
