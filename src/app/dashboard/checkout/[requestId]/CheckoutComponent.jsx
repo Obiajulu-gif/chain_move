@@ -11,9 +11,6 @@ function PDFPreview({ pdfPreviewUrl }) {
   return (
     pdfPreviewUrl && (
       <div className="w-full">
-        <h3 className="text-xl text-center font-bold mb-4 text-white">
-          Invoice Preview
-        </h3>
         <iframe
           src={pdfPreviewUrl}
           title="PDF Preview"
@@ -31,6 +28,8 @@ function PDFPreview({ pdfPreviewUrl }) {
 const CheckoutComponent = ({ validRequest }) => {
   const { data: walletClient } = useWalletClient();
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
   useEffect(() => {
     if (validRequest) {
@@ -68,14 +67,14 @@ const CheckoutComponent = ({ validRequest }) => {
 
     // Client Info
     doc.setFontSize(18);
-    doc.text("Client Details", 10, 90); // Positioned below the Driver Details
+    doc.text("Client Details", 10, 90);
     doc.setFont("helvetica", "normal");
     doc.text(`Full Name: ${user?.fullName || "N/A"}`, 10, 100);
     doc.text(`Email: ${user?.email || "N/A"}`, 10, 110);
 
     // Ride Info
     doc.setFont("helvetica", "bold");
-    doc.text("Ride Details", 10, 130); // Positioned below Client Details
+    doc.text("Ride Details", 10, 130);
     doc.setFont("helvetica", "normal");
     doc.text(`Pickup Location: ${data.pickupLocation || "N/A"}`, 10, 140);
     doc.text(`Destination: ${data.destination || "N/A"}`, 10, 150);
@@ -98,18 +97,18 @@ const CheckoutComponent = ({ validRequest }) => {
     // Generate PDF Blob and set preview URL
     const blob = doc.output("blob");
     const blobUrl = URL.createObjectURL(blob);
-    setPdfPreviewUrl(blobUrl); // Use the function passed as a parameter
+    setPdfPreviewUrl(blobUrl);
   };
 
   const paymentRequest = async (requestId, estimatedCost) => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) {
-      alert("Sign up before creating requests");
+      setStatusMessage("Sign up before creating requests");
       return;
     }
 
     if (!walletClient) {
-      alert(" Ensure your wallet is connected.");
+      setStatusMessage("Ensure your wallet is connected.");
       return;
     }
 
@@ -117,7 +116,7 @@ const CheckoutComponent = ({ validRequest }) => {
     const signer = provider.getSigner();
 
     if (!signer) {
-      alert("Please connect your wallet");
+      setStatusMessage("Please connect your wallet");
       return;
     }
 
@@ -128,21 +127,21 @@ const CheckoutComponent = ({ validRequest }) => {
     });
 
     try {
-      console.log("Fetching request:", requestId);
+      setIsButtonDisabled(true); // Disable the button
+
+      setStatusMessage("Processing payment...");
       const request = await requestClient.fromRequestId(requestId);
       const requestData = request.getData();
 
-      console.log("Fetched Request Data:", requestData);
       if (!requestData.expectedAmount) {
         throw new Error("Invalid request data: Missing expected amount.");
       }
 
       const paymentTx = await payRequest(requestData, signer);
-      console.log(`Paying. ${paymentTx.hash}`);
+      setStatusMessage("Payment in progress...");
 
       await paymentTx.wait(2);
-      console.log(`Payment complete. ${paymentTx.hash}`);
-      alert(`Payment complete. ${paymentTx.hash}`);
+      setStatusMessage("Payment completed successfully.");
 
       // Update status to "completed" after successful payment
       const updateResponse = await fetch("/api/drivers/checkout", {
@@ -163,27 +162,37 @@ const CheckoutComponent = ({ validRequest }) => {
         );
       }
 
-      console.log("Status updated to 'completed'.");
-      alert("Ride status updated to completed.");
+      setStatusMessage("Payment confirmed. Enjoy your ride");
     } catch (error) {
       console.error("Error processing payment or updating status:", error);
-      alert(`Error: ${error.message}`);
+      setStatusMessage(`Error: User rejected the transaction `);
+    } finally {
+      setIsButtonDisabled(false); // Re-enable the button
     }
   };
 
   return (
     <div className="p-6 w-full bg-neutral-900 min-h-screen text-white">
       <div>
-        <h1 className="text-3xl font-bold mb-4">Checkout</h1>
-        <div className="mb-6">
-          <button
-            className="bg-green-500 rounded-lg mt-4 hover:bg-green-600 px-6 py-2.5"
-            onClick={() =>
-              paymentRequest(validRequest.requestId, validRequest.estimatedCost)
-            }>
-            Book Ride
-          </button>
-        </div>
+        <button
+          className={`rounded-lg mt-4 px-6 py-2.5 ${
+            isButtonDisabled
+              ? "bg-gray-500 cursor-not-allowed"
+              : "bg-green-500 hover:bg-green-600"
+          }`}
+          disabled={isButtonDisabled}
+          onClick={() =>
+            paymentRequest(validRequest.requestId, validRequest.estimatedCost)
+          }>
+          {isButtonDisabled
+            ? validRequest?.status === "completed"
+              ? "Paid"
+              : "Processing..."
+            : "Book Ride"}
+        </button>
+        {statusMessage && (
+          <p className="text-center text-lg mt-4">{statusMessage}</p>
+        )}
       </div>
       <PDFPreview pdfPreviewUrl={pdfPreviewUrl} />
     </div>
