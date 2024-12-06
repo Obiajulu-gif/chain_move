@@ -1,32 +1,44 @@
-import React, { useEffect } from "react";
+"use client";
+
+import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 const Map = () => {
-	useEffect(() => {
-		let map; // Declare the map variable here
+	const mapContainer = useRef(null); // Reference to the map container
+	const mapInstance = useRef(null); // Reference to store the Leaflet map instance
 
-		// Check if the map is already initialized
-		if (!map) {
-			map = L.map("map").setView([51.505, -0.09], 15);
+	useEffect(() => {
+		if (
+			typeof window !== "undefined" &&
+			mapContainer.current &&
+			!mapInstance.current
+		) {
+			// Initialize the map only if it hasn't been initialized
+			mapInstance.current = L.map(mapContainer.current).setView(
+				[51.505, -0.09],
+				15
+			);
 
 			// Add map tiles
 			L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 				maxZoom: 19,
 				attribution: "© OpenStreetMap contributors",
-			}).addTo(map);
+			}).addTo(mapInstance.current);
 		}
 
-		// Clean up the map instance when the component unmounts
+		// Cleanup function to destroy the map on unmount
 		return () => {
-			if (map) {
-				map.remove(); // Properly destroy the map instance
+			if (mapInstance.current) {
+				mapInstance.current.remove();
+				mapInstance.current = null; // Reset the map instance
 			}
 		};
-	}, []); // Empty dependency array to ensure the effect only runs once
+	}, []);
 
 	return (
 		<div
+			ref={mapContainer}
 			id="map"
 			style={{
 				width: "100%",
