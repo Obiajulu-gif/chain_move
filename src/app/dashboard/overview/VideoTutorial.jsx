@@ -3,7 +3,7 @@ import React from "react";
 
 const VideoTutorial = () => {
 	return (
-		<div className="bg-gray-800 p-12 rounded-lg flex flex-col items-center shadow-lg hover:shadow-xl transition-shadow duration-300">
+		<div className="bg-gray-800 p-6 rounded-lg flex flex-col items-center shadow-lg hover:shadow-xl transition-shadow duration-300">
 			<h3 className="text-white text-2xl font-semibold mb-6 tracking-wide text-center">
 				How to use our platform
 			</h3>
