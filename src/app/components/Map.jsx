@@ -9,12 +9,12 @@ const Map = () => {
 	const mapInstance = useRef(null); // Reference to store the Leaflet map instance
 
 	useEffect(() => {
+		// Check if running in the browser and the map container exists
 		if (
 			typeof window !== "undefined" &&
 			mapContainer.current &&
 			!mapInstance.current
 		) {
-			// Initialize the map only if it hasn't been initialized
 			mapInstance.current = L.map(mapContainer.current).setView(
 				[51.505, -0.09],
 				15
@@ -27,11 +27,11 @@ const Map = () => {
 			}).addTo(mapInstance.current);
 		}
 
-		// Cleanup function to destroy the map on unmount
 		return () => {
+			// Cleanup: destroy the map instance if it exists
 			if (mapInstance.current) {
 				mapInstance.current.remove();
-				mapInstance.current = null; // Reset the map instance
+				mapInstance.current = null;
 			}
 		};
 	}, []);

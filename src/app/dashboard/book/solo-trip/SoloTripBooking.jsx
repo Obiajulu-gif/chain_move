@@ -10,7 +10,9 @@ import {
 } from "@requestnetwork/request-client.js";
 import { Web3SignatureProvider } from "@requestnetwork/web3-signature";
 import { jsPDF } from "jspdf";
-import Map from "../../../components/Map";
+import dynamic from "next/dynamic";
+
+const Map = dynamic(() => import("../../../components/Map"), { ssr: false });
 
 function InputField({ label, type, value, onChange, placeholder }) {
 	return (
