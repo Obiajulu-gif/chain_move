@@ -26,15 +26,17 @@ const SidebarLink = ({ href, icon, label, badge, isSidebarOpen }) => (
 	>
 		<Link
 			href={href}
-			className="flex items-center justify-between p-2 rounded hover:bg-gray-800 transition-colors"
+			className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-800 transition-colors"
 		>
 			<div className="flex items-center space-x-4">
-				<span className="text-2xl">{icon}</span>
-				{isSidebarOpen && <span className="text-lg font-medium">{label}</span>}
+				<span className="text-2xl text-gray-300">{icon}</span>
+				{isSidebarOpen && (
+					<span className="text-base font-semibold text-gray-100">{label}</span>
+				)}
 			</div>
 			{isSidebarOpen && badge && (
 				<motion.span
-					className="bg-orange-500 text-xs text-white px-2 py-1 rounded-full"
+					className="bg-orange-500 text-xs text-white px-2 py-1 rounded-full font-semibold"
 					animate={{ y: [0, -2, 0] }}
 					transition={{ repeat: Infinity, duration: 1.5 }}
 				>
@@ -49,7 +51,7 @@ const SidebarSection = ({ title, links, isSidebarOpen }) => (
 	<div>
 		{isSidebarOpen && title && (
 			<motion.div
-				className="text-sm text-neutral-400 mt-6 pt-4 border-t border-gray-700"
+				className="text-sm text-gray-400 mt-6 pt-4 border-t border-gray-700 font-medium"
 				initial={{ opacity: 0 }}
 				animate={{ opacity: 1 }}
 				transition={{ delay: 0.4 }}
@@ -57,7 +59,7 @@ const SidebarSection = ({ title, links, isSidebarOpen }) => (
 				{title}
 			</motion.div>
 		)}
-		<nav className="mt-4 space-y-4">
+		<nav className="mt-4 space-y-3">
 			{links.map((link) => (
 				<SidebarLink key={link.href} {...link} isSidebarOpen={isSidebarOpen} />
 			))}
@@ -113,7 +115,7 @@ const Sidebar = () => {
 
 	return (
 		<motion.div
-			className="bg-gray-900 text-white max-h-screen p-4 flex flex-col justify-between fixed md:relative z-50 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-900 scrollbar-thumb-rounded"
+			className="bg-gray-900 text-white max-h-screen p-5 flex flex-col justify-between fixed md:relative z-50 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 scrollbar-thumb-rounded-lg"
 			style={{ height: "100vh" }}
 			animate={isSidebarOpen ? "open" : "closed"}
 			variants={sidebarVariants}
@@ -121,7 +123,7 @@ const Sidebar = () => {
 			{/* Sidebar Header */}
 			<div>
 				<Link href="/">
-					<h2 className="text-3xl font-bold text-orange-500">
+					<h2 className="text-3xl font-extrabold text-orange-500 tracking-wide">
 						{isSidebarOpen && "ChainMove"}
 					</h2>
 				</Link>
@@ -137,17 +139,19 @@ const Sidebar = () => {
 						>
 							<Link
 								href={href}
-								className="flex items-center justify-between p-2 rounded hover:bg-gray-800 transition-colors"
+								className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-800 transition-colors"
 							>
 								<div className="flex items-center space-x-4">
-									<span className="text-2xl">{icon}</span>
+									<span className="text-2xl text-gray-300">{icon}</span>
 									{isSidebarOpen && (
-										<span className="text-lg font-medium">{label}</span>
+										<span className="text-base font-semibold text-gray-100">
+											{label}
+										</span>
 									)}
 								</div>
 								{isSidebarOpen && badge && (
 									<motion.span
-										className="bg-orange-500 text-xs text-white px-2 py-1 rounded-full"
+										className="bg-orange-500 text-xs text-white px-2 py-1 rounded-full font-semibold"
 										animate={{ y: [0, -2, 0] }}
 										transition={{ repeat: Infinity, duration: 1.5 }}
 									>
@@ -161,11 +165,11 @@ const Sidebar = () => {
 
 				{/* Profile Section */}
 				{isSidebarOpen && (
-					<div className="text-sm text-neutral-400 mt-6">
+					<div className="text-sm text-gray-400 mt-6 font-medium">
 						Access Other Profiles
 					</div>
 				)}
-				<nav className="mt-4 space-y-4">
+				<nav className="mt-4 space-y-3">
 					{profileLinks.map(({ href, icon, label }) => (
 						<motion.div
 							key={href}
@@ -175,11 +179,13 @@ const Sidebar = () => {
 						>
 							<Link
 								href={href}
-								className="flex items-center space-x-4 p-2 rounded hover:bg-gray-800 transition-colors"
+								className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-800 transition-colors"
 							>
-								<span className="text-2xl">{icon}</span>
+								<span className="text-2xl text-gray-300">{icon}</span>
 								{isSidebarOpen && (
-									<span className="text-lg font-medium">{label}</span>
+									<span className="text-base font-semibold text-gray-100">
+										{label}
+									</span>
 								)}
 							</Link>
 						</motion.div>
@@ -198,11 +204,13 @@ const Sidebar = () => {
 					>
 						<Link
 							href={href}
-							className="flex items-center space-x-4 p-2 rounded hover:bg-gray-800 transition-colors"
+							className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-800 transition-colors"
 						>
-							<span className="text-2xl">{icon}</span>
+							<span className="text-2xl text-gray-300">{icon}</span>
 							{isSidebarOpen && (
-								<span className="text-lg font-medium">{label}</span>
+								<span className="text-base font-semibold text-gray-100">
+									{label}
+								</span>
 							)}
 						</Link>
 					</motion.div>
@@ -211,7 +219,7 @@ const Sidebar = () => {
 
 			{/* Toggle Button */}
 			<motion.button
-				className="absolute top-4 right-4 text-orange-500"
+				className="absolute top-4 right-4 text-orange-500 hover:text-orange-400"
 				onClick={() => setIsSidebarOpen(!isSidebarOpen)}
 				whileHover={{ scale: 1.2 }}
 				whileTap={{ scale: 0.9 }}

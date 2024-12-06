@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import BadgeAndTasks from "./BadgeAndTasks";
 import TripHistory from "./TripHistory";
-
+import VideoTutorial from "./VideoTutorial";
 const Overview = () => {
 	const [userName, setUserName] = useState(" Guest");
 
@@ -23,6 +23,7 @@ const Overview = () => {
 				{/* Left Section */}
 				<div className="md:w-1/3">
 					<BadgeAndTasks />
+					<VideoTutorial />
 				</div>
 				{/* Right Section */}
 				<div className="md:w-2/3 mt-6 md:mt-0">

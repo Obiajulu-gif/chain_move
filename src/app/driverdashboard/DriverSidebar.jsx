@@ -33,7 +33,7 @@ const DriverSidebar = () => {
 
 	return (
 		<motion.div
-			className="bg-gray-900 text-white max-h-screen p-4 flex flex-col justify-between fixed md:relative z-50 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 scrollbar-thumb-rounded"
+			className="bg-gray-900 text-white max-h-screen p-5 flex flex-col justify-between fixed md:relative z-50 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 scrollbar-thumb-rounded"
 			style={{ height: "100vh" }}
 			animate={isSidebarOpen ? "open" : "closed"}
 			variants={sidebarVariants}
@@ -41,7 +41,7 @@ const DriverSidebar = () => {
 			{/* Sidebar Header */}
 			<div>
 				<Link href="/">
-					<h2 className="text-3xl font-bold text-orange-500">
+					<h2 className="text-3xl font-extrabold text-orange-500 tracking-wide">
 						{isSidebarOpen && "ChainMove"}
 					</h2>
 				</Link>
@@ -80,17 +80,19 @@ const DriverSidebar = () => {
 						>
 							<Link
 								href={href}
-								className="flex items-center justify-between p-2 rounded hover:bg-gray-800 transition-colors"
+								className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-800 transition-colors"
 							>
 								<div className="flex items-center space-x-4">
-									<span className="text-2xl">{icon}</span>
+									<span className="text-2xl text-gray-300">{icon}</span>
 									{isSidebarOpen && (
-										<span className="text-lg font-medium">{label}</span>
+										<span className="text-base font-semibold text-gray-100">
+											{label}
+										</span>
 									)}
 								</div>
 								{isSidebarOpen && badge && (
 									<motion.span
-										className="bg-orange-500 text-xs text-white px-2 py-1 rounded-full"
+										className="bg-orange-500 text-xs text-white px-2 py-1 rounded-full font-semibold"
 										animate={{ y: [0, -2, 0] }}
 										transition={{ repeat: Infinity, duration: 1.5 }}
 									>
@@ -100,13 +102,15 @@ const DriverSidebar = () => {
 							</Link>
 						</motion.div>
 					))}
+				</nav>
 
-					{isSidebarOpen && (
-						<div className="text-sm text-gray-400 mt-6">
-							Access Other Profiles
-						</div>
-					)}
-
+				{/* Profile Section */}
+				{isSidebarOpen && (
+					<div className="text-sm text-gray-400 mt-6 font-medium">
+						Access Other Profiles
+					</div>
+				)}
+				<nav className="mt-4 space-y-3">
 					{[
 						{ href: "/dashboard", icon: <FaUser />, label: "User Profile" },
 						{
@@ -123,11 +127,13 @@ const DriverSidebar = () => {
 						>
 							<Link
 								href={href}
-								className="flex items-center space-x-4 p-2 rounded hover:bg-gray-800 transition-colors"
+								className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-800 transition-colors"
 							>
-								<span className="text-2xl">{icon}</span>
+								<span className="text-2xl text-gray-300">{icon}</span>
 								{isSidebarOpen && (
-									<span className="text-lg font-medium">{label}</span>
+									<span className="text-base font-semibold text-gray-100">
+										{label}
+									</span>
 								)}
 							</Link>
 						</motion.div>
@@ -158,11 +164,13 @@ const DriverSidebar = () => {
 					>
 						<Link
 							href={href}
-							className="flex items-center space-x-4 p-2 rounded hover:bg-gray-800 transition-colors"
+							className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-800 transition-colors"
 						>
-							<span className="text-2xl">{icon}</span>
+							<span className="text-2xl text-gray-300">{icon}</span>
 							{isSidebarOpen && (
-								<span className="text-lg font-medium">{label}</span>
+								<span className="text-base font-semibold text-gray-100">
+									{label}
+								</span>
 							)}
 						</Link>
 					</motion.div>
@@ -171,7 +179,7 @@ const DriverSidebar = () => {
 
 			{/* Toggle Button */}
 			<motion.button
-				className="absolute top-4 right-4 text-orange-500"
+				className="absolute top-4 right-4 text-orange-500 hover:text-orange-400"
 				onClick={() => setIsSidebarOpen(!isSidebarOpen)}
 				whileHover={{ scale: 1.2 }}
 				whileTap={{ scale: 0.9 }}
