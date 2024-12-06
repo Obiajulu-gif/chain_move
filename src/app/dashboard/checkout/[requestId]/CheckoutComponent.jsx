@@ -52,7 +52,7 @@ const CheckoutComponent = ({ validRequest }) => {
 		});
 
 		// Set background color
-		doc.setFillColor(30, 30, 30); // Dark gray background
+		doc.setFillColor(17, 24, 39); // Dark gray background
 		doc.rect(0, 0, 210, 297, "F");
 
 		// Set text color
