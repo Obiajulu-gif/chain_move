@@ -51,7 +51,7 @@ export async function PATCH(request) {
     await connectDb();
     console.log("Database connected.");
 
-    const { requestId, status, txHash } = await request.json();
+    const { requestId, status, txHash, chainName } = await request.json();
 
     // Validate required fields
     if (!requestId || !status || !txHash) {
@@ -76,7 +76,7 @@ export async function PATCH(request) {
     // Find the invoice and update the status and txHash
     const updatedInvoice = await Invoice.findOneAndUpdate(
       { requestId },
-      { status, txHash },
+      { status, txHash, chainName: chainName || " " },
       { new: true } // Return the updated document
     );
 

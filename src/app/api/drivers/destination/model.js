@@ -60,6 +60,9 @@ const invoiceSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    chainName: {
+      type: String,
+    },
     address: {
       type: String,
       required: [true, "Address is required"],

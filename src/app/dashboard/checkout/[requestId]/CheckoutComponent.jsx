@@ -52,7 +52,7 @@ const CheckoutComponent = ({ validRequest }) => {
 
     // Set background color
     doc.setFillColor(17, 24, 39); // Dark gray background
-    doc.rect(0, 0, 210, 297, "F");
+    doc.rect(0, 0, 210, 320, "F");
 
     // Set text color
     doc.setTextColor(255, 255, 255);
@@ -84,20 +84,22 @@ const CheckoutComponent = ({ validRequest }) => {
     doc.text(`Pickup Location: ${data.pickupLocation || "N/A"}`, 10, 140);
     doc.text(`Destination: ${data.destination || "N/A"}`, 10, 150);
     doc.text(`Estimated Cost: ${data.estimatedCost || "N/A"} ETH`, 10, 160);
+    doc.text(`Paid using: ${data.chainName || "Unknown "} chain`, 10, 170);
+    doc.text(`Transaction Hash: ${data.txHash || "Unpaid "}`, 10, 180);
     doc.text(
       `Date: ${new Date(data.date).toLocaleDateString() || "N/A"}`,
       10,
-      170
+      190
     );
-    doc.text(`Average Time: ${data.averageTime || "N/A"} minutes`, 10, 180);
+    doc.text(`Average Time: ${data.averageTime || "N/A"} minutes`, 10, 200);
 
     // Status
     doc.setFont("helvetica", "bold");
-    doc.text(`Status: ${data.status || "N/A"}`, 10, 200);
+    doc.text(`Status: ${data.status || "N/A"}`, 10, 220);
 
     // Footer
     doc.setFont("helvetica", "bold");
-    doc.text("Thank you for using ChainMove!", 105, 280, { align: "center" });
+    doc.text("Thank you for using ChainMove!", 105, 290, { align: "center" });
 
     // Generate PDF Blob and set preview URL
     const blob = doc.output("blob");
@@ -119,6 +121,8 @@ const CheckoutComponent = ({ validRequest }) => {
 
     const provider = new ethers.providers.Web3Provider(walletClient);
     const signer = provider.getSigner();
+    const network = await provider.getNetwork();
+    console.log("Chain Name:", network.name || "Unknown Network");
 
     if (!signer) {
       setStatusMessage("Please connect your wallet");
@@ -159,6 +163,7 @@ const CheckoutComponent = ({ validRequest }) => {
           requestId,
           status: "completed",
           txHash: paymentTx.hash,
+          chainName: network.name || "Unknown ",
         }),
       });
 
