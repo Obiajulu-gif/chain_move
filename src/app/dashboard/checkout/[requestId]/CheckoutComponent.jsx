@@ -143,7 +143,9 @@ const CheckoutComponent = ({ validRequest }) => {
       }
 
       const paymentTx = await payRequest(requestData, signer);
-      setStatusMessage("Payment in progress...", paymentTx);
+      setStatusMessage("Payment in progress...");
+      // Log the transaction hash
+      console.log("Transaction Hash:", paymentTx.hash);
 
       await paymentTx.wait(2);
       setStatusMessage("Payment completed successfully.");
@@ -156,6 +158,7 @@ const CheckoutComponent = ({ validRequest }) => {
         body: JSON.stringify({
           requestId,
           status: "completed",
+          txHash: paymentTx.hash,
         }),
       });
 

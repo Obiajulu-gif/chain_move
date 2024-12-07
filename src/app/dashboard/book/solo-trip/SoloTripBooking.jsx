@@ -278,6 +278,7 @@ export default function CreateTransportInvoice() {
           onChange={(e) => setDate(e.target.value)}
           placeholder="Select date"
         />
+        {status && <div className=" text-sm">{status}</div>}
         <button
           className={`w-full py-3 mt-4 rounded-lg text-lg font-semibold ${
             loading

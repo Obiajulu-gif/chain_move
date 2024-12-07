@@ -2,7 +2,6 @@ import connectDb from "../../../backend/connectDb";
 import Invoice from "../destination/model";
 import { NextResponse } from "next/server";
 
-
 // GET: Retrieve invoices with optional filtering
 export async function GET(request) {
   try {
@@ -52,12 +51,12 @@ export async function PATCH(request) {
     await connectDb();
     console.log("Database connected.");
 
-    const { requestId, status } = await request.json();
+    const { requestId, status, txHash } = await request.json();
 
     // Validate required fields
-    if (!requestId || !status) {
+    if (!requestId || !status || !txHash) {
       return NextResponse.json(
-        { error: "Both requestId and status are required" },
+        { error: "requestId, status, and txHash are required" },
         { status: 400 }
       );
     }
@@ -74,10 +73,10 @@ export async function PATCH(request) {
       );
     }
 
-    // Find the invoice and update the status
+    // Find the invoice and update the status and txHash
     const updatedInvoice = await Invoice.findOneAndUpdate(
       { requestId },
-      { status },
+      { status, txHash },
       { new: true } // Return the updated document
     );
 
@@ -88,11 +87,11 @@ export async function PATCH(request) {
       );
     }
 
-    console.log("Invoice status updated successfully.", updatedInvoice);
+    console.log("Invoice updated successfully with hash:", updatedInvoice);
 
     return NextResponse.json(
       {
-        message: "Invoice status updated successfully",
+        message: "Invoice status and txHash updated successfully",
         invoice: updatedInvoice,
       },
       { status: 200 }
