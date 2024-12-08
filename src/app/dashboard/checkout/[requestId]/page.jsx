@@ -64,7 +64,7 @@ const Page = () => {
   }
 
   return (
-    <div className="p-6 flex flex-col lg:flex-row gap-6 bg-gray-900 min-h-screen text-white">
+    <div className="p-1 flex flex-col lg:flex-row gap-2 bg-gray-900 min-h-screen text-white">
       {/* Invoice Details */}
       <div className="flex flex-col bg-gray-800 p-6 rounded-lg shadow-lg lg:w-1/2 animate-fadeIn overflow-x-auto">
         <h1 className="text-3xl font-bold mb-6 text-orange-500 flex items-center gap-2">

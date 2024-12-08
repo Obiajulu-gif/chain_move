@@ -189,7 +189,7 @@ const CheckoutComponent = ({ validRequest }) => {
   };
 
   return (
-    <div className="p-8 w-full bg-gray-900 min-h-screen text-white">
+    <div className="p-4 w-full bg-gray-900 min-h-screen text-white">
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
         <h1 className="text-3xl font-bold text-orange-500 mb-4">Checkout</h1>
         <button
