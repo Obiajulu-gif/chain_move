@@ -11,8 +11,8 @@ Welcome to **ChainMove**, the blockchain-powered Transportation platform transfo
 ChainMove simplifies ride management and payments using smart contracts on the **Request Network**. By securing transactions and ensuring transparency, we create a reliable platform for drivers and passengers. 
 
 ### Key Highlights:
-- **Upfront Security**: Drivers receive 10% of the fare immediately upon booking.
-- **Completion-Based Incentives**: The remaining 90% is released upon passenger confirmation of ride completion.
+
+- **Upfront Security**: Drivers receive full payment of the fare immediately upon booking.
 - **Secure Authentication**: Users are authenticated via blockchain for enhanced safety.
 
 ---
@@ -21,8 +21,7 @@ ChainMove simplifies ride management and payments using smart contracts on the *
 
 1. **Blockchain-Powered Ride Booking**: Passengers book rides with guaranteed payment security and driver incentives.
 2. **Driver Earnings Model**:
-   - **10% Upfront**: Drivers are paid a portion of the fare upon booking confirmation.
-   - **90% Completion Bonus**: Full payment is released only after ride completion.
+   - **Full Upfront**: Drivers are paid a full fare upon booking confirmation.
 3. **Interactive Ride Management**: Real-time updates for drivers and passengers through a dynamic UI.
 4. **Secure Payments**: Built on **Request Network**, ensuring tamper-proof transactions and transparent records.
 
@@ -48,8 +47,7 @@ The **ChainMove** architecture ensures scalability, security, and user convenien
 2. **Backend**: Smart contracts handle ride bookings, payments, and confirmations securely on the **Request Network**.
 3. **Authentication**: Decentralized login through blockchain-based methods ensures secure user identity verification.
 4. **Payment Workflow**:
-   - **10% Paid on Booking**: Initial payment to secure driver commitment.
-   - **90% Paid on Completion**: Remaining balance released upon ride confirmation.
+   - **100% Paid on Booking**: Initial payment to secure driver commitment.
 
 ---
 
