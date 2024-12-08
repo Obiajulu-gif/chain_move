@@ -1,4 +1,5 @@
 import DAOPage from "./DAOPage";
+
 export const metadata = {
   title: "DAO - ChainMove",
   description: "The decentralized transport system on  Blockchain",
