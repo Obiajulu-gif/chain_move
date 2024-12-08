@@ -116,7 +116,7 @@ export async function GET(request) {
     const requests = await requestClient.fromTopic(PLATFORM_TOPIC);
 
     console.log(`Number of transactions fetched: ${requests.length}`);
-
+a
     // Extract and filter necessary fields for frontend, including transaction status
     const requestDatas = requests.map((request) => {
       const data = request.getData();

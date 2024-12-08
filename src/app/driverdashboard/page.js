@@ -49,18 +49,21 @@ const Overview = () => {
 				body: JSON.stringify(driverData),
 			});
 
+			const data = await response.json(); // Parse the response
 			if (!response.ok) {
-				throw new Error("Failed to register driver");
+				throw new Error(data.message || "Failed to register driver");
 			}
 
+			// Success: Show modal
 			setShowSuccessModal(true);
 		} catch (error) {
 			console.error("Error during registration:", error);
-			alert("Registration failed. Please try again.");
+			alert(error.message || "Registration failed. Please try again.");
 		} finally {
 			setLoading(false);
 		}
 	};
+
 
 	return (
 		<div className="p-8 bg-gray-900 text-white min-h-screen">
