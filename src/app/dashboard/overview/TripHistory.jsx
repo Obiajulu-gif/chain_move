@@ -73,7 +73,7 @@ const TripHistory = () => {
 
   return (
     <div className="bg-gray-900 p-8 rounded-lg shadow-lg max-w-5xl mx-auto overflow-x-auto">
-      <h2 className="text-3xl font-bold text-white mb-6">Trip History</h2>
+      <h2 className="text-3xl font-bold text-white mb-6">Ride History</h2>
       {loading ? (
         <div className="flex flex-col items-center justify-center">
           <motion.div
@@ -86,7 +86,7 @@ const TripHistory = () => {
             }}>
             <FaSpinner className="w-16 h-16 text-orange-500 animate-spin" />
           </motion.div>
-          <p className="text-white text-lg mt-4">Loading trip history...</p>
+          <p className="text-white text-lg mt-4">Loading available rides...</p>
         </div>
       ) : trips.length > 0 ? (
         <>
@@ -199,7 +199,7 @@ const TripHistory = () => {
           </div>
         </>
       ) : (
-        <p className="text-white text-lg">No trip history available.</p>
+        <p className="text-white text-lg">No ride available available.</p>
       )}
     </div>
   );

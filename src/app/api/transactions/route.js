@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { RequestNetwork } from "@requestnetwork/request-client.js";
+import { RequestNetwork, Types } from "@requestnetwork/request-client.js";
 
 // Initialize Request Network client
 const requestClient = new RequestNetwork({
@@ -8,44 +8,54 @@ const requestClient = new RequestNetwork({
   },
 });
 
-// Unique topic for your platform (commented out for this implementation)
-// const PLATFORM_TOPIC = "chainmove-dapp-v1";
-
-export async function GET(request) {
+export async function POST(request) {
   console.log("Request received at /api/transactions");
 
   try {
-    // Fetch the specific transaction using its request ID
-    const requestId =
-      "01c350e3c7109924eeb0e87d40128fc00b2127979aaac7440ac302393e3ad75c70";
+    const body = await request.json();
+    const walletAddress = body.walletAddress;
 
-    console.log(`Fetching transaction with request ID: ${requestId}`);
+    if (!walletAddress) {
+      return NextResponse.json(
+        { error: "Wallet address is required" },
+        { status: 400 }
+      );
+    }
 
-    // Fetch the request data for the specified request ID
-    const request = await requestClient.fromRequestId(requestId);
+    console.log(`Fetching transactions for wallet address: ${walletAddress}`);
 
-    // Extract necessary fields for the response
-    const data = request.getData();
+    // Fetch all requests where the specified address is involved
+    const requests = await requestClient.fromIdentity({
+      type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+      value: walletAddress,
+    });
 
-    const requestData = {
-      requestId: data.requestId,
-      departure: data.contentData?.departure || "N/A",
-      destination: data.contentData?.destination || "N/A",
-      expectedAmount: parseFloat(data.expectedAmount) / 1e18, // Convert to ETH
-      currency: data.currency,
-      payee: data.payee?.value || "N/A",
-      timestamp: new Date(data.timestamp * 1000).toISOString(), // Convert to readable date
-      transactionStatus: data.state || "Unknown", // Add the transaction status
-      errorDetails: data.balance?.error?.message || "No error", // If any error, include it
-    };
+    console.log(`Total requests found: ${requests.length}`);
 
-    console.log("Returning specific transaction data", requestData);
-    return NextResponse.json(requestData, { status: 200 });
+    // Map and structure the response data
+    const requestsData = requests.map((request) => {
+      const data = request.getData();
+      return {
+        requestId: data.requestId,
+        Reason: data.contentData.reason || "Unspecified",
+        pickUp: data.contentData.pickup || "Unspecified",
+        destination: data.contentData.destination || "Unspecified",
+        expectedAmount: parseFloat(data.expectedAmount) / 1e18,
+        currency: data.currency || "ETH",
+        payee: data.payee?.value || "Unspecified",
+        payer: data.payer?.value || "Unspecified",
+        timestamp: new Date(data.timestamp * 1000).toISOString(),
+        transactionStatus: data.state || "Unspecified",
+      };
+    });
+
+    console.log("Returning all transactions data", requestsData);
+    return NextResponse.json({ requests: requestsData }, { status: 200 });
   } catch (error) {
-    console.error("Error fetching transaction:", error);
+    console.error("Error fetching transactions:", error);
     return NextResponse.json(
       {
-        error: "An error occurred while fetching the transaction",
+        error: "An error occurred while fetching the transactions",
         details: error.message,
       },
       { status: 500 }

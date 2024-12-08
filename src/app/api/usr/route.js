@@ -60,7 +60,7 @@ export async function POST(request) {
   }
 }
 
-// GET: Retrieve a specific user by email
+// GET: Retrieve all users or a specific user by email
 export async function GET(request) {
   try {
     console.log("Connecting to the database...");
@@ -70,38 +70,48 @@ export async function GET(request) {
     // Extract email from query params
     const url = new URL(request.url);
     const email = url.searchParams.get("email");
-    if (!email) {
-      console.log("No email provided in query parameters.");
+
+    if (email) {
+      console.log(`Retrieving user with email: ${email}...`);
+      const user = await User.findOne({ email });
+      if (!user) {
+        console.log("User not found.");
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      console.log("User retrieved successfully.");
       return NextResponse.json(
-        { error: "Email query parameter is required" },
-        { status: 400 }
+        {
+          user: {
+            id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            userType: user.userType,
+          },
+        },
+        { status: 200 }
+      );
+    } else {
+      console.log("No email provided. Retrieving all users...");
+      const users = await User.find();
+
+      console.log("Users retrieved successfully.");
+      return NextResponse.json(
+        {
+          users: users.map((user) => ({
+            id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            userType: user.userType,
+          })),
+        },
+        { status: 200 }
       );
     }
-
-    // Fetch user from database
-    console.log(`Retrieving user with email: ${email}...`);
-    const user = await User.findOne({ email });
-    if (!user) {
-      console.log("User not found.");
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    console.log("User retrieved successfully.");
-    return NextResponse.json(
-      {
-        user: {
-          id: user._id,
-          fullName: user.fullName,
-          email: user.email,
-          userType: user.userType,
-        },
-      },
-      { status: 200 }
-    );
   } catch (error) {
     console.error("Error during user retrieval:", error);
     return NextResponse.json(
-      { error: "Failed to retrieve user" },
+      { error: "Failed to retrieve user(s)" },
       { status: 500 }
     );
   }
