@@ -21,7 +21,8 @@ ChainMove simplifies ride management and payments using smart contracts on the *
 
 1. **Blockchain-Powered Ride Booking**: Passengers book rides with guaranteed payment security and driver incentives.
 2. **Driver Earnings Model**:
-   - **Full Upfront**: Drivers are paid a full fare upon booking confirmation.
+   - **10% Upfront**: Drivers are paid a portion of the fare upon booking confirmation.
+   - **90% Completion Bonus**: Full payment is released only after ride completion.
 3. **Interactive Ride Management**: Real-time updates for drivers and passengers through a dynamic UI.
 4. **Secure Payments**: Built on **Request Network**, ensuring tamper-proof transactions and transparent records.
 
@@ -47,7 +48,8 @@ The **ChainMove** architecture ensures scalability, security, and user convenien
 2. **Backend**: Smart contracts handle ride bookings, payments, and confirmations securely on the **Request Network**.
 3. **Authentication**: Decentralized login through blockchain-based methods ensures secure user identity verification.
 4. **Payment Workflow**:
-   - **100% Paid on Booking**: Initial payment to secure driver commitment.
+   - **10% Paid on Booking**: Initial payment to secure driver commitment.
+   - **90% Paid on Completion**: Remaining balance released upon ride confirmation.
 
 ---
 
@@ -91,9 +93,9 @@ Visit `http://localhost:3000` in your browser to access **ChainMove**.
 ChainMove integrates **Request Network** smart contracts to manage secure, transparent payments. 
 
 ### **Smart Contract Workflow**
-1. **Booking Confirmation**: Logs ride details, including fare, driver, and passenger. Releases 10% of the fare to the driver.
-2. **Ride Completion**: Releases the remaining 90% of the fare when the passenger confirms ride completion.
-3. **Earnings Management**: Drivers can withdraw their earnings anytime via their wallet.
+1. **Booking Confirmation**: Logs ride details, including fare, driver, and passenger.
+2. **Ride Completion**: Releases the fare when the passenger confirms ride completion.
+3. **Earnings Management**: Drivers earnings are sent directly to their wallet address via Request Network smart contracts.
 
 ### Code Snippet
 Here’s an example of a ride booking and payment contract:
