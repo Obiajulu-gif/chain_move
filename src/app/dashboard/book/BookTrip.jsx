@@ -28,7 +28,7 @@ const BookTrip = () => {
 	};
 
 	return (
-		<div className="p-4 bg-gray-900 min-h-screen text-white flex flex-col items-center">
+		<div className="p-1 bg-gray-900 min-h-screen text-white flex flex-col items-center">
 			<motion.h1
 				initial={{ opacity: 0, y: -20 }}
 				animate={{
@@ -36,7 +36,7 @@ const BookTrip = () => {
 					y: 0,
 					transition: { duration: 0.6, type: "spring" },
 				}}
-				className="text-4xl font-extrabold mb-8 text-center tracking-tight text-orange-500"
+				className="text-4xl font-extrabold mb-4 text-center tracking-tight text-orange-500"
 			>
 				Book A Trip
 			</motion.h1>
@@ -47,7 +47,7 @@ const BookTrip = () => {
 					y: 0,
 					transition: { duration: 0.6, delay: 0.2, type: "spring" },
 				}}
-				className="text-2xl font-medium text-center mb-12 tracking-wide text-gray-300"
+				className="text-2xl font-medium text-center mb-8 tracking-wide text-gray-300"
 			>
 				Choose Your Ride Option
 			</motion.h2>
