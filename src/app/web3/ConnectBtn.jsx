@@ -37,7 +37,10 @@ export const ConnectBtn = () => {
               }
               if (chain.unsupported) {
                 return (
-                  <button onClick={openChainModal} type="button">
+                  <button
+                    className="bg-gray-950 border border-gray-500 hover:bg-gray-800 whitespace-nowrap text-dark px-6 py-2.5 rounded-lg active:scale-95 font-bold"
+                    onClick={openChainModal}
+                    type="button">
                     Switch network
                   </button>
                 );

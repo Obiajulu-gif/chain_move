@@ -25,7 +25,7 @@ const Navbar = () => {
   return (
     <div className="bg-gray-900 px-6 py-4 flex justify-between items-center lg:pl-72">
       {/* Left Section - Search bar */}
-      <div className="flex items-center space-x-2 w-full lg:w-auto">
+      <div className="flex items-center border rounded-md border-gray-400 space-x-2 w-full lg:w-auto">
         {/* Search Bar */}
         <div className="flex items-center bg-gray-900 px-4 py-2 rounded-lg w-full lg:w-96">
           <FaSearch className="text-orange-500 mr-2" />
