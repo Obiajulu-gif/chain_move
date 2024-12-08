@@ -46,7 +46,7 @@ const invoiceSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ["available", "booked", "completed"],
+      enum: ["available", "cancelled", "completed"],
       default: "available",
     },
     requestId: {

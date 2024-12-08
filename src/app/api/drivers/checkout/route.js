@@ -62,12 +62,12 @@ export async function PATCH(request) {
     }
 
     // Validate status
-    const validStatuses = ["available", "booked", "completed"];
+    const validStatuses = ["available", "cancelled", "completed"];
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
         {
           error:
-            "Invalid status. Valid statuses are: available, booked, completed.",
+            "Invalid status. Valid statuses are: available, cancelled, completed.",
         },
         { status: 400 }
       );
