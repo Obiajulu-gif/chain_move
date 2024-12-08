@@ -93,7 +93,6 @@ const Sidebar = () => {
 			href: "/dashboard/dao",
 			icon: <FaUserTie />,
 			label: "ChainMove DAO",
-			badge: "Coming Soon",
 		},
 		{ href: "/dashboard/rewards", icon: <FaGift />, label: "Rewards" },
 	];
