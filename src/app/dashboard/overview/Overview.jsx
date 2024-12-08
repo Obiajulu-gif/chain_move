@@ -17,9 +17,9 @@ const Overview = () => {
 	return (
 		<div className="p-6 space-y-6 bg-gray-900 min-h-screen text-white">
 			<h1 className="text-2xl font-semibold mb-4 text-center md:text-left">
-				Welcome back, <span className="text-yellow-500"> {userName} </span>
+				Welcome back, <span className="text-orange-500"> {userName} </span>
 			</h1>
-			<div className="flex flex-col md:flex-row md:space-x-6">
+			<div className="flex flex-col md:flex-row md:space-x-4">
 				{/* Left Section */}
 				<div className="md:w-1/3">
 					<BadgeAndTasks />
