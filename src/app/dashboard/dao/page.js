@@ -1,261 +1,317 @@
 "use client";
+import { parseUnits } from "viem";
+import { payRequest } from "@requestnetwork/payment-processor";
 
+import { useState, useEffect } from "react";
+import { useWalletClient, useAccount } from "wagmi";
+import {
+  RequestNetwork,
+  Types,
+  Utils,
+} from "@requestnetwork/request-client.js";
+import { Web3SignatureProvider } from "@requestnetwork/web3-signature";
+import { FaPlusCircle, FaVoteYea } from "react-icons/fa";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { FaInfoCircle, FaPlusCircle, FaVoteYea } from "react-icons/fa";
+import { ethers } from "ethers";
 
-const DAOPage = () => {
-  const [proposals, setProposals] = useState([]);
-  const [showModal, setShowModal] = useState(false);
+const CreateProposalForm = ({ fetchProposals }) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     option1: "",
     option2: "",
-    duration: "",
   });
   const [statusMessage, setStatusMessage] = useState("");
-
-  // Fetch active proposals
-  useEffect(() => {
-    const fetchProposals = async () => {
-      try {
-        const response = await fetch("/api/dao");
-        if (!response.ok) {
-          throw new Error("Failed to fetch proposals");
-        }
-        const data = await response.json();
-        setProposals(data.proposals);
-      } catch (error) {
-        console.error("Error fetching proposals:", error);
-      }
-    };
-
-    fetchProposals();
-  }, []);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const { data: walletClient } = useWalletClient();
+  const { address } = useAccount();
 
   const createProposal = async () => {
     setStatusMessage("");
     try {
+      if (!walletClient || !address) {
+        throw new Error("Please connect your wallet.");
+      }
+
+      // Step 1: Create a Request
+      const signatureProvider = new Web3SignatureProvider(walletClient);
+      const requestClient = new RequestNetwork({
+        nodeConnectionConfig: {
+          baseURL: "https://sepolia.gateway.request.network/",
+        },
+        signatureProvider,
+      });
+
+      const requestCreateParameters = {
+        requestInfo: {
+          currency: {
+            type: Types.RequestLogic.CURRENCY.ETH,
+            network: "sepolia",
+          },
+          expectedAmount: parseUnits("0.001").toString(), // Fee for creating a proposal
+          payee: {
+            type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+            value: address,
+          },
+          timestamp: Utils.getCurrentTimestampInSecond(),
+        },
+        paymentNetwork: {
+          id: Types.Extension.PAYMENT_NETWORK_ID.ETH_INPUT_DATA,
+          parameters: {
+            paymentAddress: address,
+          },
+        },
+        contentData: {
+          title: formData.title,
+          description: formData.description,
+          options: [formData.option1, formData.option2],
+        },
+        signer: {
+          type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+          value: address,
+        },
+        topics: ["chainmove-dao-v1"],
+      };
+
+      const request = await requestClient.createRequest(
+        requestCreateParameters
+      );
+      const requestId = request.requestId;
+
+      setStatusMessage("Request created. Processing payment...");
+
+      // Step 2: Pay for the Request
+      const provider = new ethers.providers.Web3Provider(walletClient);
+      const signer = provider.getSigner();
+      const paymentTx = await payRequest(request.getData(), signer);
+      await paymentTx.wait(2);
+
+      setStatusMessage("Payment confirmed. Saving proposal...");
+
+      // Step 3: Save the Proposal to the Database
       const response = await fetch("/api/dao", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          option1: formData.option1,
+          option2: formData.option2,
+          duration: 60, // Default duration in minutes
+          requestId,
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create proposal");
+        throw new Error("Failed to save proposal to the database.");
       }
 
-      const newProposal = await response.json();
-      setProposals((prev) => [...prev, newProposal.proposal]);
-      setFormData({
-        title: "",
-        description: "",
-        option1: "",
-        option2: "",
-        duration: "",
-      });
-      setShowModal(false);
       setStatusMessage("Proposal created successfully!");
+      setFormData({ title: "", description: "", option1: "", option2: "" });
+      fetchProposals();
     } catch (error) {
       console.error("Error creating proposal:", error);
-      setStatusMessage("Error: Failed to create proposal.");
+      setStatusMessage(`Error: ${error.message}`);
     }
   };
 
-  const voteOnOption = async (proposalId, option) => {
+  return (
+    <motion.div
+      className="bg-gray-800 p-6 rounded-lg shadow-lg mb-8"
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.7 }}>
+      <h2 className="text-2xl font-semibold text-orange-500 mb-4 flex items-center">
+        <FaPlusCircle className="mr-2" /> Create a New Proposal
+      </h2>
+      <div className="space-y-4">
+        <input
+          type="text"
+          placeholder="Proposal Title"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          className="w-full p-3 bg-gray-900 text-white rounded-lg border border-gray-700"
+        />
+        <textarea
+          placeholder="Proposal Description"
+          value={formData.description}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
+          className="w-full p-3 bg-gray-900 text-white rounded-lg border border-gray-700"></textarea>
+        <input
+          type="text"
+          placeholder="Option 1"
+          value={formData.option1}
+          onChange={(e) =>
+            setFormData({ ...formData, option1: e.target.value })
+          }
+          className="w-full p-3 bg-gray-900 text-white rounded-lg border border-gray-700"
+        />
+        <input
+          type="text"
+          placeholder="Option 2"
+          value={formData.option2}
+          onChange={(e) =>
+            setFormData({ ...formData, option2: e.target.value })
+          }
+          className="w-full p-3 bg-gray-900 text-white rounded-lg border border-gray-700"
+        />
+        <button
+          onClick={createProposal}
+          className="w-full bg-orange-500 hover:bg-orange-600 p-3 rounded-lg font-semibold">
+          Submit Proposal
+        </button>
+      </div>
+      {statusMessage && <p className="text-orange-400 mt-4">{statusMessage}</p>}
+    </motion.div>
+  );
+};
+
+const VoteProposal = ({ proposal, fetchProposals }) => {
+  const { data: walletClient } = useWalletClient();
+  const { address } = useAccount();
+  const [statusMessage, setStatusMessage] = useState("");
+
+  const voteOnOption = async (option) => {
+    setStatusMessage("");
     try {
+      if (!walletClient || !address) {
+        throw new Error("Please connect your wallet.");
+      }
+
+      // Step 1: Create a new Request
+      const signatureProvider = new Web3SignatureProvider(walletClient);
+      const requestClient = new RequestNetwork({
+        nodeConnectionConfig: {
+          baseURL: "https://sepolia.gateway.request.network/",
+        },
+        signatureProvider,
+      });
+
+      const requestCreateParameters = {
+        requestInfo: {
+          currency: {
+            type: Types.RequestLogic.CURRENCY.ETH,
+            network: "sepolia",
+          },
+          expectedAmount: parseUnits("0.001").toString(), // Fee for voting in a particular proposal
+          payee: {
+            type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+            value: address,
+          },
+          timestamp: Utils.getCurrentTimestampInSecond(),
+        },
+        paymentNetwork: {
+          id: Types.Extension.PAYMENT_NETWORK_ID.ETH_INPUT_DATA,
+          parameters: {
+            paymentAddress: address,
+          },
+        },
+        contentData: {
+          title: proposal.title,
+          description: proposal.description,
+          option,
+        },
+        signer: {
+          type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+          value: address,
+        },
+        topics: ["chainmove-dao-v1-vote"],
+      };
+
+      const request = await requestClient.createRequest(
+        requestCreateParameters
+      );
+      const requestId = request.requestId;
+
+      setStatusMessage("Request created. Processing payment...");
+
+      // Step 2: Pay for the Request
+      const provider = new ethers.providers.Web3Provider(walletClient);
+      const signer = provider.getSigner();
+      const paymentTx = await payRequest(request.getData(), signer);
+      await paymentTx.wait(2);
+
+      setStatusMessage("Payment confirmed. Casting vote...");
+
+      // Step 3: Update the vote count in the backend
       const response = await fetch("/api/dao", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ proposalId, option }),
+        body: JSON.stringify({ proposalId: proposal._id, option }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to cast vote");
+        throw new Error("Failed to save vote.");
       }
 
-      const updatedProposal = await response.json();
-      setProposals((prev) =>
-        prev.map((proposal) =>
-          proposal._id === updatedProposal.proposal._id
-            ? updatedProposal.proposal
-            : proposal
-        )
-      );
       setStatusMessage("Vote cast successfully!");
+      fetchProposals();
     } catch (error) {
-      console.error("Error voting on option:", error);
-      setStatusMessage("Error: Failed to cast vote.");
+      console.error("Error casting vote:", error);
+      setStatusMessage(`Error: ${error.message}`);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <motion.div
-        className="text-center mb-10"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}>
-        <h1 className="text-4xl font-bold text-orange-500">ChainMove DAO</h1>
-        <p className="text-gray-300 mt-2">
-          Participate in community governance and shape the future of ChainMove.
-        </p>
-      </motion.div>
-
-      {/* Proposal Creation Section */}
-      <motion.div
-        className="bg-gray-800 p-6 rounded-lg shadow-lg flex items-center justify-between mb-8"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.7 }}>
-        <div className="flex items-center space-x-4">
-          <FaPlusCircle className="text-3xl text-orange-500" />
-          <h2 className="text-2xl font-semibold">Create a New Proposal</h2>
-        </div>
+    <div className="bg-gray-800 p-4 rounded-lg mb-4">
+      <h4 className="text-xl font-semibold text-orange-400">
+        {proposal.title}
+      </h4>
+      <p className="text-gray-400 mb-2">{proposal.description}</p>
+      <div className="flex space-x-4">
         <button
-          onClick={() => setShowModal(true)}
-          className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg text-white font-medium transition duration-300">
-          Create Proposal
+          onClick={() => voteOnOption("option1")}
+          className="flex-1 bg-blue-500 hover:bg-blue-600 p-3 rounded-lg font-semibold">
+          {proposal.option1.text} ({proposal.option1.voteCount})
         </button>
-      </motion.div>
+        <button
+          onClick={() => voteOnOption("option2")}
+          className="flex-1 bg-purple-500 hover:bg-purple-600 p-3 rounded-lg font-semibold">
+          {proposal.option2.text} ({proposal.option2.voteCount})
+        </button>
+      </div>
+      {statusMessage && <p className="text-green-400 mt-2">{statusMessage}</p>}
+    </div>
+  );
+};
 
-      {/* Proposal Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-1/2">
-            <h3 className="text-2xl font-bold mb-4 text-orange-500">
-              New Proposal
-            </h3>
-            <div className="space-y-4">
-              <input
-                type="text"
-                name="title"
-                placeholder="Proposal Title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className="w-full p-3 rounded-lg bg-gray-900 text-white border border-gray-700"
-              />
-              <textarea
-                name="description"
-                placeholder="Proposal Description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="w-full p-3 rounded-lg bg-gray-900 text-white border border-gray-700"
-              />
-              <input
-                type="text"
-                name="option1"
-                placeholder="Option 1"
-                value={formData.option1}
-                onChange={handleInputChange}
-                className="w-full p-3 rounded-lg bg-gray-900 text-white border border-gray-700"
-              />
-              <input
-                type="text"
-                name="option2"
-                placeholder="Option 2"
-                value={formData.option2}
-                onChange={handleInputChange}
-                className="w-full p-3 rounded-lg bg-gray-900 text-white border border-gray-700"
-              />
-              <input
-                type="number"
-                name="duration"
-                placeholder="Duration (in minutes)"
-                value={formData.duration}
-                onChange={handleInputChange}
-                className="w-full p-3 rounded-lg bg-gray-900 text-white border border-gray-700"
-              />
-            </div>
-            {statusMessage && (
-              <p className="text-center mt-4 text-orange-400">
-                {statusMessage}
-              </p>
-            )}
-            <div className="mt-6 flex justify-end space-x-4">
-              <button
-                onClick={() => setShowModal(false)}
-                className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-white">
-                Cancel
-              </button>
-              <button
-                onClick={createProposal}
-                className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg text-white">
-                Submit Proposal
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+const DAOPage = () => {
+  const [proposals, setProposals] = useState([]);
 
-      {/* Active Proposals Section */}
-      <div className="mb-8">
+  const fetchProposals = async () => {
+    try {
+      const response = await fetch("/api/dao");
+      if (!response.ok) {
+        throw new Error("Failed to fetch proposals.");
+      }
+      const data = await response.json();
+      setProposals(data.proposals);
+    } catch (error) {
+      console.error("Error fetching proposals:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProposals();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <CreateProposalForm fetchProposals={fetchProposals} />
+      <div>
         <h3 className="text-2xl font-semibold mb-4">Active Proposals</h3>
-        {proposals.map((proposal) => {
-          const now = new Date();
-          const createdAt = new Date(proposal.createdAt); // Assuming createdAt is stored in ISO format
-          const endTime = new Date(
-            createdAt.getTime() + proposal.duration * 60000
-          ); // Duration in minutes
-          const isExpired = now > endTime;
-
-          return (
-            <motion.div
-              key={proposal._id}
-              className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4 hover:shadow-xl transition-shadow duration-300"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}>
-              <div className="flex flex-col space-y-2">
-                <h4 className="text-xl font-semibold text-orange-400">
-                  {proposal.title}
-                </h4>
-                <p className="text-gray-400">{proposal.description}</p>
-                <p className="text-sm text-gray-500">
-                  Duration:{" "}
-                  {isExpired
-                    ? "Expired"
-                    : `Ends at ${endTime.toLocaleTimeString()}`}
-                </p>
-                <div className="flex space-x-4 mt-2">
-                  <button
-                    onClick={() => voteOnOption(proposal._id, "option1")}
-                    className={`flex-1 px-4 py-2 rounded-lg text-white font-medium transition duration-300 ${
-                      isExpired
-                        ? "bg-gray-600 cursor-not-allowed"
-                        : "bg-blue-500 hover:bg-blue-600"
-                    }`}
-                    disabled={isExpired}>
-                    {proposal.option1.text} ({proposal.option1.voteCount})
-                  </button>
-                  <button
-                    onClick={() => voteOnOption(proposal._id, "option2")}
-                    className={`flex-1 px-4 py-2 rounded-lg text-white font-medium transition duration-300 ${
-                      isExpired
-                        ? "bg-gray-600 cursor-not-allowed"
-                        : "bg-purple-500 hover:bg-purple-600"
-                    }`}
-                    disabled={isExpired}>
-                    {proposal.option2.text} ({proposal.option2.voteCount})
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
+        {proposals.map((proposal) => (
+          <VoteProposal
+            key={proposal._id}
+            proposal={proposal}
+            fetchProposals={fetchProposals}
+          />
+        ))}
       </div>
     </div>
   );
