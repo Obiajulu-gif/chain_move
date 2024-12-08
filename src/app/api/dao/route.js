@@ -111,8 +111,8 @@ export async function GET() {
     await connectDb();
     console.log("Database connected.");
 
-    console.log("Retrieving all proposals...");
-    const proposals = await Proposal.find();
+    console.log("Retrieving all proposals sorted by date (latest first)...");
+    const proposals = await Proposal.find().sort({ createdAt: -1 }); 
 
     if (!proposals.length) {
       return NextResponse.json(

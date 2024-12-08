@@ -1,7 +1,7 @@
-import DAOPage from "./DAOPage";
+import History from "./History";
 
 export const metadata = {
-  title: "DAO - ChainMove",
+  title: "My History - ChainMove",
   description: "The decentralized transport system on  Blockchain",
   icons: {
     icon: "/images/blockridelogo.svg",
@@ -10,7 +10,7 @@ export const metadata = {
 const page = () => {
   return (
     <div>
-      <DAOPage />
+      <History />
     </div>
   );
 };
