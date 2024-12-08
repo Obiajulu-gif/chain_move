@@ -6,11 +6,7 @@ import { useEffect, useState } from "react";
 import { FaBell, FaSearch, FaWallet } from "react-icons/fa";
 import { MdExpandMore } from "react-icons/md";
 
-// components/Navbar.js
 
-// components/Navbar.js
-
-// components/Navbar.js
 
 const DriverNavbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);

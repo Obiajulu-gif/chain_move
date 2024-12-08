@@ -1,192 +1,179 @@
-# 🚗 ChainMove – Decentralized Transportation on the EVM-compatible chains
+# 🚗 ChainMove – Decentralized Transportation on EVM-Compatible Chains
 
-Welcome to **ChainMove**, a decentralized, blockchain-powered transportation platform that brings transparency, efficiency, and security to mobility services. ChainMove leverages blockchain technology to create a seamless and trusted experience for drivers and passengers alike, ensuring secure payments, driver incentives, and ride transparency.
-
-
+Welcome to **ChainMove**, the blockchain-powered Transportation platform transforming mobility services. Leveraging blockchain technology, **ChainMove** ensures secure payments, driver incentives, and ride transparency for both passengers and drivers. Our mission is to empower users with a seamless, transparent, and trusted experience.
 
 ![Home Page](./public/images/landingpage.png)
 
-## 🌟 Overview
+---
 
-ChainMove provides a decentralized platform for booking and managing rides, securely handled through smart contracts on the Request Network. With transparent payments and blockchain-based confirmations, riders and drivers can rely on secure, immutable transaction records.
+## 🌟 **Overview**
 
-Our platform ensures:
-- **Initial payment security**: Drivers receive an upfront 10% payment upon booking.
-- **Completion incentives**: Remaining payment is sent upon ride confirmation by the passenger.
-- **User authentication**: All users are authenticated via **Request network** for enhanced security.
+ChainMove simplifies ride management and payments using smart contracts on the **Request Network**. By securing transactions and ensuring transparency, we create a reliable platform for drivers and passengers. 
 
-## 🎯 Key Features
+### Key Highlights:
+- **Upfront Security**: Drivers receive 10% of the fare immediately upon booking.
+- **Completion-Based Incentives**: The remaining 90% is released upon passenger confirmation of ride completion.
+- **Secure Authentication**: Users are authenticated via blockchain for enhanced safety.
 
-1. **Decentralized Ride Booking**: Passengers can book rides with secure, blockchain-based payment and confirmations.
-2. **Driver Incentive Structure**: Drivers receive 10% of the fare immediately upon booking, and the remaining 90% upon passenger confirmation.
-3. **Real-time Ride Updates**: Passengers and drivers can view ride status updates via the ChainMove interface.
-4. **Request Network Integration**: Users are securely authenticated using Internet Identity, ensuring a safe and seamless experience.
+---
 
-## 🛠️ Technologies Used
+## 🎯 **Key Features**
 
-ChainMove utilizes a modern technology stack to deliver a robust, decentralized platform on the Internet Computer.
+1. **Blockchain-Powered Ride Booking**: Passengers book rides with guaranteed payment security and driver incentives.
+2. **Driver Earnings Model**:
+   - **10% Upfront**: Drivers are paid a portion of the fare upon booking confirmation.
+   - **90% Completion Bonus**: Full payment is released only after ride completion.
+3. **Interactive Ride Management**: Real-time updates for drivers and passengers through a dynamic UI.
+4. **Secure Payments**: Built on **Request Network**, ensuring tamper-proof transactions and transparent records.
 
-- **Next.js** – Frontend framework for fast, responsive UI and seamless routing.
-- **Request Network** – Backend smart contract language for securely handling ride bookings and payments.
-- **Wagmi** – Decentralized authentication provided by the Internet Computer for secure user login and identity management.
-- **Tailwind CSS** – A utility-first CSS framework for rapid and flexible UI development.
+---
 
-## 📐 Project Architecture
+## 🛠️ **Technologies Used**
 
-ChainMove's architecture is composed of:
+ChainMove utilizes a modern tech stack to create a robust decentralized platform:
 
-1. **Frontend**: Built with **Next.js** for client-side routing and a responsive user experience.
-2. **Backend**: smart contracts manage ride bookings, payments, and confirmations on the blockchain.
-3. **Authentication**:  ensures a decentralized, secure login experience for drivers and passengers.
-4. **Payment Flow**: Funds are transferred based on contract logic—10% to the driver on booking, and 90% upon completion confirmation by the passenger.
+- **Next.js**: Provides a dynamic, responsive, and performant UI.
+- **Request Network**: Handles secure payment processing and transaction logging.
+- **Wagmi**: Ensures decentralized and secure user authentication.
+- **Tailwind CSS**: Enables fast, elegant, and responsive design.
+- **Leaflet.js**: Interactive maps for route visualization and navigation.
 
-## 🚀 Getting Started
+---
 
-To get ChainMove running on your local setup, follow these steps.
+## 📐 **Architecture**
 
-### Prerequisites
+The **ChainMove** architecture ensures scalability, security, and user convenience through its modular design:
 
-1. **Node.js** (v14+)
-2. **npm** 
+1. **Frontend**: Built with **Next.js**, offering a seamless user experience for ride booking, driver registration, and dashboard management.
+2. **Backend**: Smart contracts handle ride bookings, payments, and confirmations securely on the **Request Network**.
+3. **Authentication**: Decentralized login through blockchain-based methods ensures secure user identity verification.
+4. **Payment Workflow**:
+   - **10% Paid on Booking**: Initial payment to secure driver commitment.
+   - **90% Paid on Completion**: Remaining balance released upon ride confirmation.
 
-### Installation
+---
+
+## 🚀 **Getting Started**
+
+Follow these steps to set up and run **ChainMove** locally:
+
+### **Prerequisites**
+- **Node.js** (v14+)
+- **npm**
+
+### **Installation**
 
 1. **Clone the repository**:
-
    ```bash
    git clone https://github.com/obiajulu-gif/chainmove.git
    cd chainmove
    ```
 
 2. **Install dependencies**:
-
    ```bash
    npm install
    ```
 
-
-
-3. **Run the frontend**:
-
+3. **Start the development server**:
    ```bash
    npm run dev
    ```
-4. **To install any package in the package**:
 
-   if you are encountering installation issues you may want to try 
+4. **Install additional packages** (if necessary):
    ```bash
    npm install <package_name> --legacy-peer-deps
    ```
 
-Visit `http://localhost:3000` in your browser to access ChainMove.
+Visit `http://localhost:3000` in your browser to access **ChainMove**.
 
-## 💡 Smart Contract Overview
+---
 
-The ChainMove backend is implemented in **Request Network** and handles the following tasks:
+## 💡 **Payment Flow with Smart Contracts**
 
-1. **Ride Booking**: The contract logs ride details, including driver, passenger, and fare, and releases an initial payment (10%) to the driver upon booking.
-2. **Ride Completion**: When the passenger confirms the ride completion, the contract transfers the remaining 90% of the fare to the driver.
-3. **Driver Withdrawal**: Drivers can withdraw their accumulated earnings from completed rides.
+ChainMove integrates **Request Network** smart contracts to manage secure, transparent payments. 
 
-### Smart Contract Code Snippet
+### **Smart Contract Workflow**
+1. **Booking Confirmation**: Logs ride details, including fare, driver, and passenger. Releases 10% of the fare to the driver.
+2. **Ride Completion**: Releases the remaining 90% of the fare when the passenger confirms ride completion.
+3. **Earnings Management**: Drivers can withdraw their earnings anytime via their wallet.
 
-Here's a brief look at the core logic for ride booking and payments:
+### Code Snippet
+Here’s an example of a ride booking and payment contract:
 
-```
-import { NextResponse } from "next/server";
+```javascript
 import { RequestNetwork } from "@requestnetwork/request-client.js";
 
-// Initialize Request Network client
 const requestClient = new RequestNetwork({
   nodeConnectionConfig: {
     baseURL: "https://sepolia.gateway.request.network/",
   },
 });
 
-// Unique topic for your platform
-const PLATFORM_TOPIC = "chainmove-dapp";
+async function createRideTransaction(rideDetails) {
+  const request = await requestClient.createRequest({
+    requestInfo: {
+      currency: { type: "ETH", network: "sepolia" },
+      expectedAmount: rideDetails.amount,
+      payee: { type: "ETHEREUM_ADDRESS", value: rideDetails.driverAddress },
+    },
+    paymentNetwork: {
+      id: "ETH_INPUT_DATA",
+      parameters: { paymentAddress: rideDetails.driverAddress },
+    },
+    contentData: rideDetails.details,
+  });
 
-export async function GET(request) {
-  console.log("Request received at /api/transactions");
-
-  try {
-    console.log(`Fetching transactions for topic: ${PLATFORM_TOPIC}`);
-
-    // Fetch all requests associated with the platform topic
-    const requests = await requestClient.fromTopic(PLATFORM_TOPIC);
-
-    console.log(`Number of transactions fetched: ${requests.length}`);
-a
-    // Extract and filter necessary fields for frontend, including transaction status
-    const requestDatas = requests.map((request) => {
-      const data = request.getData();
-
-      return {
-        requestId: data.requestId,
-        departure: data.contentData?.departure || "N/A",
-        destination: data.contentData?.destination || "N/A",
-        expectedAmount: parseFloat(data.expectedAmount) / 1e18, // Convert to ETH
-        currency: data.currency,
-        payee: data.payee?.value || "N/A",
-        timestamp: new Date(data.timestamp * 1000).toISOString(), // Convert to readable date
-        transactionStatus: data.state || "Unknown", // Add the transaction status
-        errorDetails: data.balance?.error?.message || "No error", // If any error, include it
-      };
-    });
-
-    console.log("Returning filtered transactions with status");
-    return NextResponse.json(requestDatas, { status: 200 });
-  } catch (error) {
-    console.error("Error fetching transactions:", error);
-    return NextResponse.json(
-      {
-        error: "An error occurred while fetching transactions",
-        details: error.message,
-      },
-      { status: 500 }
-    );
-  }
+  console.log("Transaction created:", request.requestId);
+  return request;
 }
-
 ```
-
-> This contract enforces ChainMove’s unique 10/90 payment split to reward drivers upfront and protect passenger funds until the ride is completed.
-
-## 🔒 Authentication with Internet Identity
-
-Internet Identity is used to authenticate both drivers and passengers on ChainMove. This integration ensures that user sessions are secure, decentralized, and managed entirely on the Request Network blockchain.
-
-1. **Login**: Internet Identity prompts users to authenticate when they access the platform.
-2. **Session Management**: Once logged in, users can access their profiles, book rides, and manage their transactions.
-
-## 📱 Screenshots
-
-### Phone View Page
-![Ride Booking](./public/images/landingpagephone.png)
-
-### Register Page
-![Register page](./public/images/registerpage.png)
-
-
-## 🤝 Team Members
-
-Meet the talented team behind ChainMove:
-
-- **Emmanuel Okoye** – *Team lead and Full Stack Developer*: Developed the Next.js frontend and implemented responsive UI components.
-- **Damian Olebuezie** – *Lead Blockchain Developer*: Spearheaded the development of ChainMove's Motoko smart contracts, ensuring seamless and secure transaction flows.
-- **Victoria Nwogu** – *Product Manager and social media manager*: Managed project timelines and feature planning, ensuring ChainMove meets user needs effectively.
-- **David Emulo** – *UI/UX Designer*: Designed an intuitive user experience, from ride booking to payment confirmation, and crafted all visual assets.
-- **Engr. Mikailu Nadro**- *Technical Advisor*: Provided guidance on blockchain technology and smart contract development, ensuring ChainMove's security and scalability.
-- **Isreal Nwafor** – *Community Manager*: Managed the ChainMove community, fostering a supportive and engaged user base.
-
-## 🤝 Contributing
-
-We welcome contributions to make ChainMove even better! Please fork the repository and submit a pull request, or reach out if you have ideas to improve the project.
-
-## 📝 License
-
-This project is licensed under the MIT License.
 
 ---
 
-ChainMove is poised to transform the ride-sharing industry by putting control in the hands of the users. Join us in redefining decentralized transport on the Internet Computer!
+## 🔒 **Authentication**
+
+**ChainMove** ensures secure authentication for all users:
+- **Drivers and Passengers** log in securely using decentralized blockchain-based methods.
+- Eliminates reliance on centralized login systems, enhancing user data security.
+
+---
+
+## 📱 **Screenshots**
+
+### **Mobile View Page**
+![Landing Page](./public/images/landingpagephone.png)
+
+### **Driver Registration**
+![Driver Registration](./public/images/registerpage.png)
+
+---
+
+## 🤝 **Team Members**
+
+Meet the people building **ChainMove**:
+
+- **Emmanuel Okoye** – *Team Lead and Full Stack Developer*: Led the development of the Next.js frontend and blockchain integrations.
+- **Damian Olebuezie** – *Blockchain Developer*: Architected smart contracts and integrated **Request Network** for payments.
+- **Victoria Nwogu** – *Product Manager*: Planned features and managed project timelines.
+- **David Emulo** – *UI/UX Designer*: Designed user-friendly interfaces and visual elements.
+- **Engr. Mikailu Nadro** – *Technical Advisor*: Provided strategic blockchain and scaling guidance.
+- **Israel Nwafor** – *Community Manager*: Built and fostered an active user community.
+
+---
+
+## 🤝 **Contributing**
+
+We welcome contributions to improve **ChainMove**! 
+- Fork the repository.
+- Make your changes.
+- Submit a pull request.
+
+---
+
+## 📝 **License**
+
+This project is licensed under the **MIT License**.
+
+---
+
+### Join the ride-sharing revolution with **ChainMove**—secure, decentralized, and user-first transportation! 🚗
