@@ -14,7 +14,6 @@ import { FaPlusCircle, FaVoteYea } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { ethers } from "ethers";
 
-const DAO_ADDRESS = "0xC50D81262335E676092c66af342994EF4a0C329C";
 const CreateProposalForm = ({ fetchProposals }) => {
   const [formData, setFormData] = useState({
     title: "",
@@ -64,14 +63,14 @@ const CreateProposalForm = ({ fetchProposals }) => {
           expectedAmount: parseUnits("0.001").toString(), // Fee for creating a proposal
           payee: {
             type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-            value: DAO_ADDRESS,
+            value: address,
           },
           timestamp: Utils.getCurrentTimestampInSecond(),
         },
         paymentNetwork: {
           id: Types.Extension.PAYMENT_NETWORK_ID.ETH_INPUT_DATA,
           parameters: {
-            paymentAddress: DAO_ADDRESS,
+            paymentAddress: address,
           },
         },
         contentData: {
@@ -217,14 +216,14 @@ const VoteProposal = ({ proposal, fetchProposals }) => {
           expectedAmount: parseUnits("0.001").toString(), // Fee for voting in a particular proposal
           payee: {
             type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
-            value: DAO_ADDRESS,
+            value: address,
           },
           timestamp: Utils.getCurrentTimestampInSecond(),
         },
         paymentNetwork: {
           id: Types.Extension.PAYMENT_NETWORK_ID.ETH_INPUT_DATA,
           parameters: {
-            paymentAddress: DAO_ADDRESS,
+            paymentAddress: address,
           },
         },
         contentData: {
