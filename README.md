@@ -8,7 +8,7 @@ Welcome to **ChainMove**, the blockchain-powered Transportation platform transfo
 
 ## 🌟 **Overview**
 
-ChainMove simplifies ride management and payments using smart contracts on the **Request Network**. By securing transactions and ensuring transparency, we create a reliable platform for drivers and passengers. 
+ChainMove simplifies ride management and payments using smart contracts on the **Lisk Blockchain**. By securing transactions and ensuring transparency, we create a reliable platform for drivers and passengers. 
 
 ### Key Highlights:
 
@@ -24,7 +24,7 @@ ChainMove simplifies ride management and payments using smart contracts on the *
    - **10% Upfront**: Drivers are paid a portion of the fare upon booking confirmation.
    - **90% Completion Bonus**: Full payment is released only after ride completion.
 3. **Interactive Ride Management**: Real-time updates for drivers and passengers through a dynamic UI.
-4. **Secure Payments**: Built on **Request Network**, ensuring tamper-proof transactions and transparent records.
+4. **Secure Payments**: Built on **Lisk Blockchain**, ensuring tamper-proof transactions and transparent records.
 
 ---
 
@@ -33,7 +33,7 @@ ChainMove simplifies ride management and payments using smart contracts on the *
 ChainMove utilizes a modern tech stack to create a robust decentralized platform:
 
 - **Next.js**: Provides a dynamic, responsive, and performant UI.
-- **Request Network**: Handles secure payment processing and transaction logging.
+- **Lisk Blockchain**: Handles secure payment processing and transaction logging.
 - **Wagmi**: Ensures decentralized and secure user authentication.
 - **Tailwind CSS**: Enables fast, elegant, and responsive design.
 - **Leaflet.js**: Interactive maps for route visualization and navigation.
@@ -45,7 +45,7 @@ ChainMove utilizes a modern tech stack to create a robust decentralized platform
 The **ChainMove** architecture ensures scalability, security, and user convenience through its modular design:
 
 1. **Frontend**: Built with **Next.js**, offering a seamless user experience for ride booking, driver registration, and dashboard management.
-2. **Backend**: Smart contracts handle ride bookings, payments, and confirmations securely on the **Request Network**.
+2. **Backend**: Smart contracts handle ride bookings, payments, and confirmations securely on the **Lisk Blockchain**.
 3. **Authentication**: Decentralized login through blockchain-based methods ensures secure user identity verification.
 4. **Payment Workflow**:
    - **10% Paid on Booking**: Initial payment to secure driver commitment.
@@ -65,7 +65,7 @@ Follow these steps to set up and run **ChainMove** locally:
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/obiajulu-gif/chainmove.git
+   git clone https://github.com/obiajulu-gif/chain_move.git
    cd chainmove
    ```
 
@@ -90,42 +90,18 @@ Visit `http://localhost:3000` in your browser to access **ChainMove**.
 
 ## 💡 **Payment Flow with Smart Contracts**
 
-ChainMove integrates **Request Network** smart contracts to manage secure, transparent payments. 
+ChainMove integrates **Lisk Blockchain** smart contracts to manage secure, transparent payments. 
 
 ### **Smart Contract Workflow**
 1. **Booking Confirmation**: Logs ride details, including fare, driver, and passenger.
 2. **Ride Completion**: Releases the fare when the passenger confirms ride completion.
-3. **Earnings Management**: Drivers earnings are sent directly to their wallet address via Request Network smart contracts.
+3. **Earnings Management**: Drivers earnings are sent directly to their wallet address via  smart contracts.
 
 ### Code Snippet
 Here’s an example of a ride booking and payment contract:
 
 ```javascript
-import { RequestNetwork } from "@requestnetwork/request-client.js";
-
-const requestClient = new RequestNetwork({
-  nodeConnectionConfig: {
-    baseURL: "https://sepolia.gateway.request.network/",
-  },
-});
-
-async function createRideTransaction(rideDetails) {
-  const request = await requestClient.createRequest({
-    requestInfo: {
-      currency: { type: "ETH", network: "sepolia" },
-      expectedAmount: rideDetails.amount,
-      payee: { type: "ETHEREUM_ADDRESS", value: rideDetails.driverAddress },
-    },
-    paymentNetwork: {
-      id: "ETH_INPUT_DATA",
-      parameters: { paymentAddress: rideDetails.driverAddress },
-    },
-    contentData: rideDetails.details,
-  });
-
-  console.log("Transaction created:", request.requestId);
-  return request;
-}
+to be updated
 ```
 
 ---
@@ -153,7 +129,7 @@ async function createRideTransaction(rideDetails) {
 Meet the people building **ChainMove**:
 
 - **Emmanuel Okoye** – *Team Lead and Full Stack Developer*: Led the development of the Next.js frontend and blockchain integrations.
-- **Damian Olebuezie** – *Blockchain Developer*: Architected smart contracts and integrated **Request Network** for payments.
+- **Damian Olebuezie** – *Blockchain Developer*: Architected smart contracts and integrated **Lisk Blockchain** for payments.
 - **Victoria Nwogu** – *Product Manager*: Planned features and managed project timelines.
 - **David Emulo** – *UI/UX Designer*: Designed user-friendly interfaces and visual elements.
 - **Engr. Mikailu Nadro** – *Technical Advisor*: Provided strategic blockchain and scaling guidance.
