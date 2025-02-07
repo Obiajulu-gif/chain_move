@@ -6,21 +6,14 @@ import {
   darkTheme,
 } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import {
-  mainnet,
-  sepolia,
-  goerli,
-  polygon,
-  optimism,
-  arbitrum,
-  base,
-} from "wagmi/chains";
+import { liskSepolia, mainnet } from "wagmi/chains";
+
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 
 const config = getDefaultConfig({
   appName: "Chain Move",
   projectId: "24911ae43d4f2f85e9408da2d8c99868",
-  chains: [mainnet, sepolia, goerli, polygon, optimism, arbitrum, base],
+  chains: [liskSepolia, mainnet],
   ssr: true, // If your dApp uses server side rendering (SSR)
 });
 
