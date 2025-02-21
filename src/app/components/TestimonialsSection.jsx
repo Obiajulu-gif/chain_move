@@ -64,7 +64,7 @@ const TestimonialsSection = () => {
 							/>
 							<div className="text-left">
 								<p className="text-white font-semibold">Okoye Emmanuel</p>
-								<p className="text-gray-400 text-sm">Business Owner</p>
+								<p className="text-gray-400 text-sm">User</p>
 							</div>
 						</div>
 					</motion.div>
@@ -93,7 +93,7 @@ const TestimonialsSection = () => {
 							/>
 							<div className="text-left">
 								<p className="text-white font-semibold">David Emulo</p>
-								<p className="text-gray-400 text-sm">CEO, Swift</p>
+								<p className="text-gray-400 text-sm">User</p>
 							</div>
 						</div>
 					</motion.div>
@@ -122,7 +122,7 @@ const TestimonialsSection = () => {
 							/>
 							<div className="text-left">
 								<p className="text-white font-semibold">Victoria Nwogu</p>
-								<p className="text-gray-400 text-sm">Entrepreneur</p>
+								<p className="text-gray-400 text-sm">User </p>
 							</div>
 						</div>
 					</motion.div>
