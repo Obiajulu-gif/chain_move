@@ -72,7 +72,7 @@ const TripHistory = () => {
   const totalPages = Math.ceil(trips.length / ITEMS_PER_PAGE);
 
   return (
-    <div className="bg-gray-900 p-8 rounded-lg shadow-lg max-w-5xl mx-auto overflow-x-auto">
+    <div className="bg-gray-900 p-2 rounded-lg shadow-lg max-w-3xl mx-auto overflow-x-auto">
       <h2 className="text-3xl font-bold text-white mb-6">Ride History</h2>
       {loading ? (
         <div className="flex flex-col items-center justify-center">
@@ -91,7 +91,7 @@ const TripHistory = () => {
       ) : trips.length > 0 ? (
         <>
           <motion.table
-            className="w-full text-sm md:text-md bg-gray-800 rounded-lg overflow-hidden border border-gray-700"
+            className="w-7/12 text-sm md:text-md bg-gray-800 rounded-lg overflow-hidden border border-gray-700"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}>
