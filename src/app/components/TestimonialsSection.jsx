@@ -56,7 +56,7 @@ const TestimonialsSection = () => {
 						</p>
 						<div className="flex items-center space-x-4">
 							<Image
-								src="/images/av1.png"
+								src="/images/emmanuel.jpeg"
 								alt="User 1"
 								width={50}
 								height={50}
@@ -85,7 +85,7 @@ const TestimonialsSection = () => {
 						</p>
 						<div className="flex items-center space-x-4">
 							<Image
-								src="/images/av1.png"
+								src="/images/david.jpeg"
 								alt="User 2"
 								width={50}
 								height={50}
@@ -114,7 +114,7 @@ const TestimonialsSection = () => {
 						</p>
 						<div className="flex items-center space-x-4">
 							<Image
-								src="/images/av1.png"
+								src="/images/vee.jpeg"
 								alt="User 3"
 								width={50}
 								height={50}

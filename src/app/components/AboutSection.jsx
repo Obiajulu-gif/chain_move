@@ -79,7 +79,7 @@ const AboutSection = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.7, delay: 0.4 }}>
             ChainMove is a decentralized car rental and ride-sharing platform designed to bring trust,
-            transparency, and flexibility to how you move. Built on the Request Network blockchain,
+            transparency, and flexibility to how you move. Built on the Avalanche Network blockchain,
             ChainMove connects car owners with riders and renters through a secure, smart contract-based
             environment, eliminating intermediaries and cutting down on fees.
           </motion.p>

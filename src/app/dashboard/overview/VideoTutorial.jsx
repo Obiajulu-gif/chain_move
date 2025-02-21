@@ -8,7 +8,7 @@ const VideoTutorial = () => {
 				How to use our platform
 			</h3>
 			<a
-				href="https://www.youtube.com/watch?v=your_youtube_video_id" // Replace with your YouTube link
+				href="https://youtu.be/dpcGL7qOxVw?si=z2Z4Mqju4rQWwFYe" // Replace with your YouTube link
 				target="_blank" // Opens the link in a new tab
 				rel="noopener noreferrer" // Ensures security when opening an external link
 				className="bg-orange-500 text-white py-3 px-8 rounded-full font-semibold text-lg tracking-wide hover:bg-orange-600 focus:outline-none focus:ring-4 focus:ring-orange-300 transition duration-300 transform hover:scale-105 text-center"
