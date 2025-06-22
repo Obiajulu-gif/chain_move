@@ -14,8 +14,8 @@ This guide will help you set up your local development environment for the Chain
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/chain-move.git
-   cd chain-move
+   git clone https://github.com/Obaijulu-gif/chain_move.git
+   cd chain_move
    ```
 
 2. **Install dependencies**

@@ -12,7 +12,7 @@ ChainMove is a revolutionary blockchain-based platform that enables decentralize
 - **Smart Contract Automation** - Automated payments, revenue sharing, and compliance
 - **Decentralized Identity** - Secure KYC/AML verification
 - **Real-time Analytics** - Track vehicle performance and investment returns
-- **Multi-chain Support** - Built on Ethereum with Polygon L2 for low fees
+- **Multi-chain Support** - Built on Ethereum with Lisk L2 for low fees
 - **Mobile-First** - Responsive design for all devices
 
 ## 🏗️ Architecture
@@ -23,7 +23,7 @@ graph TD
     B --> C[Blockchain Network]
     B --> D[Database]
     C --> E[Smart Contracts]
-    D --> F[(PostgreSQL)]
+    D --> F[(MongoDB)]
     E --> G[IPFS Storage]
 ```
 
@@ -33,7 +33,7 @@ graph TD
 
 - Node.js 18+
 - npm 9+
-- PostgreSQL 14+
+- MongoDB 
 - Hardhat (for smart contract development)
 - MetaMask or Web3 wallet
 
@@ -41,7 +41,7 @@ graph TD
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-org/chain-move.git
+   git clone https://github.com/Obaijulu-gif/chain_move.git
    cd chain-move
    ```
 
@@ -65,21 +65,21 @@ graph TD
 
 ## 📚 Documentation
 
-- [Getting Started](docs/getting-started.md) - Quick start guide
+- [Getting Started](docs/user-guide/getting-started.md) - Quick start guide
 - [API Reference](docs/api/README.md) - Detailed API documentation
-- [Smart Contracts](docs/smart-contracts/README.md) - Contract architecture and usage
-- [Deployment Guide](docs/deployment.md) - Production deployment instructions
+- [Smart Contracts](docs/technical/developer-guide.md) - Contract architecture and usage
+- [Technical Documentation](docs/technical/setup.md) - Production deployment instructions
 - [Contributing](CONTRIBUTING.md) - How to contribute to the project
 
 ## 🔧 Tech Stack
 
-- **Frontend**: Next.js 13+, React 18+, TypeScript, Tailwind CSS
+- **Frontend**: Next.js 15+, React 18+, TypeScript, Tailwind CSS
 - **Backend**: Node.js, Next.js API Routes
 - **Blockchain**: Solidity, Hardhat, ethers.js
-- **Database**: PostgreSQL, Prisma ORM
-- **Storage**: IPFS, Filecoin
-- **Auth**: NextAuth.js, JWT
-- **Testing**: Jest, React Testing Library, Hardhat Tests
+- **Database**: MongoDb
+- **Storage**: IPFS
+- **Auth**: JWT
+
 
 ## 🤝 Contributing
 
@@ -104,9 +104,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📬 Contact
 
-- Email: contact@chainmove.io
-- Twitter: [@ChainMove](https://twitter.com/ChainMove)
-- Discord: [Join our community](https://discord.gg/your-invite)
+- Email: okoyeemmanuel998@gmail.com
+- Twitter: [@ChainMove1](https://twitter.com/ChainMove1)
+- Telegram: [Join our community](https://discord.gg/your-invite)
 
 ---
 
