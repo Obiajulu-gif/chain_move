@@ -6,7 +6,9 @@ Thank you for your interest in contributing to ChainMove! We welcome all contrib
 
 - [Code of Conduct](#code-of-conduct)
 - [How Can I Contribute?](#how-can-i-contribute)
+- [Documentation Guidelines](#documentation-guidelines)
 - [Development Workflow](#development-workflow)
+- [Documentation Workflow](#documentation-workflow)
 - [Pull Request Process](#pull-request-process)
 - [Coding Standards](#coding-standards)
 - [Commit Message Guidelines](#commit-message-guidelines)
@@ -23,6 +25,7 @@ This project and everyone participating in it is governed by our [Code of Conduc
 Before creating bug reports, please check if the issue has already been reported. If you find a closed issue that seems similar, open a new issue and link to the original one.
 
 When creating a bug report, please include:
+
 - A clear, descriptive title
 - Steps to reproduce the issue
 - Expected vs. actual behavior
@@ -30,17 +33,102 @@ When creating a bug report, please include:
 - Browser/OS version
 - Any relevant console errors
 
+
 ### Suggesting Enhancements
 
 We welcome suggestions for new features and improvements. When suggesting an enhancement:
+
 - Use a clear, descriptive title
 - Describe the current behavior and why it's not ideal
 - Explain the suggested change
 - Provide examples of the new behavior
 
-### Your First Code Contribution
 
-Looking for your first contribution? Look for issues labeled `good first issue` or `help wanted` in the issue tracker.
+### Your First Contribution
+
+Looking for your first contribution? Look for issues labeled `good first issue` or `help wanted` in the issue tracker. For documentation-specific contributions, look for the `documentation` label.
+
+## Documentation Guidelines
+
+### Documentation Structure
+
+Our documentation follows a specific structure:
+
+```text
+docs/
+├── api/                  # API reference documentation
+├── assets/               # Images and other static files
+├── getting-started/      # Getting started guides
+├── smart-contracts/      # Smart contract documentation
+├── styles/               # Custom CSS styles
+├── templates/            # Templates for exports
+├── user-guide/           # User-focused documentation
+├── technical/            # Technical deep-dives
+├── .gitbook.yaml         # GitBook configuration
+├── book.json             # GitBook plugins and settings
+├── README.md             # Main documentation landing page
+└── SUMMARY.md            # Documentation structure
+```
+
+
+### Writing Style
+
+- Use clear, concise language
+- Write in active voice
+- Use second person ("you") for user-focused content
+- Be consistent with terminology (check the [Glossary](./user-guide/glossary.md))
+- Use sentence case for headings
+- Keep paragraphs short (3-4 sentences max)
+- Use lists for sequential steps or multiple items
+
+
+### Markdown Formatting
+
+- Use ATX-style headers (##, ###, etc.)
+- Wrap lines at 100 characters
+- Use backticks for `code`, `variables`, and `commands`
+- Use fenced code blocks with language specification:
+
+  ```javascript
+  // Example code
+  function example() {
+    return "Hello, World!";
+  }
+  ```
+
+- Use relative links for internal documentation links
+- Add alt text for images
+
+
+### Building Documentation Locally
+
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Build the documentation:
+
+   ```bash
+   # Build all formats (HTML, PDF, Word, EPUB)
+   npm run build
+   
+   # Or build specific formats
+   npm run build:html  # HTML only
+   npm run build:pdf   # PDF only
+   npm run build:word  # Word only
+   npm run build:epub  # EPUB only
+   ```
+
+3. Preview locally:
+
+   ```bash
+   npm run serve
+   ```
+
+   Then open http://localhost:4000 in your browser.
+
 
 ## Development Workflow
 
