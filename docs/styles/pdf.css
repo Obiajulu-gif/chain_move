@@ -1,0 +1,418 @@
+/* 
+ * ChainMove PDF Export Styles
+ * Optimized for professional PDF output
+ */
+
+/* Base Styles */
+body {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  counter-reset: chapter;
+}
+
+/* Page Break Control */
+.page-break {
+  page-break-after: always;
+}
+
+.page-break-before {
+  page-break-before: always;
+}
+
+.no-break {
+  page-break-inside: avoid;
+}
+
+/* Cover Page */
+.cover-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  page-break-after: always;
+}
+
+.cover-page h1 {
+  font-size: 32pt;
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.cover-page .subtitle {
+  font-size: 18pt;
+  color: #7f8c8d;
+  margin-bottom: 40px;
+}
+
+.cover-page .version {
+  font-size: 12pt;
+  color: #95a5a6;
+  margin-top: 40px;
+}
+
+/* Headers */
+h1, h2, h3, h4, h5, h6 {
+  color: #2c3e50;
+  page-break-after: avoid;
+}
+
+h1 {
+  font-size: 24pt;
+  margin-top: 40px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 5px;
+  page-break-before: always;
+}
+
+h2 {
+  font-size: 18pt;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #ecf0f1;
+  padding-bottom: 3px;
+}
+
+h3 {
+  font-size: 16pt;
+  margin-top: 25px;
+  margin-bottom: 10px;
+}
+
+h4 {
+  font-size: 14pt;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+/* Paragraphs and Text */
+p {
+  margin: 0 0 12px 0;
+  text-align: justify;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+/* Links */
+a {
+  color: #3498db;
+  text-decoration: none;
+}
+
+a[href^='http']:after {
+  content: " (" attr(href) ")";
+  font-size: 80%;
+  color: #7f8c8d;
+  word-break: break-all;
+}
+
+/* Code Blocks */
+pre, code {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: #f8f9fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 3px;
+  font-size: 90%;
+}
+
+pre {
+  padding: 12px;
+  overflow: auto;
+  page-break-inside: avoid;
+  margin: 15px 0;
+}
+
+code {
+  padding: 2px 4px;
+}
+
+pre code {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  page-break-inside: auto;
+}
+
+table, th, td {
+  border: 1px solid #ddd;
+}
+
+th, td {
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Lists */
+ul, ol {
+  margin: 15px 0;
+  padding-left: 30px;
+}
+
+li {
+  margin-bottom: 5px;
+  page-break-inside: avoid;
+}
+
+/* Blockquotes */
+blockquote {
+  border-left: 4px solid #3498db;
+  margin: 20px 0;
+  padding: 10px 20px;
+  background-color: #f8f9fa;
+  color: #555;
+  font-style: italic;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 20px auto;
+  page-break-inside: avoid;
+}
+
+/* Page Numbers */
+@page {
+  @bottom-center {
+    content: counter(page);
+    font-size: 10pt;
+    color: #7f8c8d;
+  }
+}
+
+/* Table of Contents */
+.toc {
+  page-break-before: always;
+  margin-bottom: 30px;
+}
+
+.toc ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.toc li {
+  margin: 5px 0;
+}
+
+.toc a {
+  text-decoration: none;
+  color: #2c3e50;
+}
+
+.toc a:before {
+  content: target-counter(attr(href), page);
+  float: right;
+  font-weight: normal;
+}
+
+/* Code Highlighting */
+.hljs {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+/* Callouts */
+.note, .tip, .warning, .important {
+  padding: 15px;
+  margin: 20px 0;
+  border-left: 4px solid;
+  page-break-inside: avoid;
+}
+
+.note {
+  background-color: #e7f5ff;
+  border-color: #4dabf7;
+}
+
+.tip {
+  background-color: #ebfbee;
+  border-color: #40c057;
+}
+
+.warning {
+  background-color: #fff3bf;
+  border-color: #ffd43b;
+}
+
+.important {
+  background-color: #fff0f6;
+  border-color: #f06595;
+}
+
+/* Footer */
+.footer {
+  font-size: 9pt;
+  color: #7f8c8d;
+  text-align: center;
+  margin-top: 40px;
+  padding-top: 10px;
+  border-top: 1px solid #ecf0f1;
+}
+
+/* Page Margins */
+@page :first {
+  margin: 2.5cm 2cm 2cm 2cm;
+}
+
+@page {
+  margin: 2cm 2cm 2cm 2cm;
+  
+  @top-center {
+    content: "ChainMove Documentation";
+    font-size: 10pt;
+    color: #7f8c8d;
+    border-bottom: 1px solid #ecf0f1;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+  }
+  
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    font-size: 9pt;
+    color: #7f8c8d;
+  }
+}
+
+/* Cover Page Specific */
+@page :first {
+  @top-center {
+    content: none;
+  }
+  @bottom-right {
+    content: none;
+  }
+}
+
+/* Print Specific */
+@media print {
+  a {
+    text-decoration: none;
+    color: #2c3e50;
+  }
+  
+  a[href^='http']:after {
+    content: " (" attr(href) ")";
+    font-size: 80%;
+    color: #7f8c8d;
+  }
+  
+  pre, code, blockquote, table, img {
+    page-break-inside: avoid;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  
+  ul, ol, dl {
+    page-break-before: avoid;
+  }
+  
+  /* Ensure URLs are visible in print */
+  .print-urls a:after {
+    content: " (" attr(href) ")";
+    font-size: 80%;
+    color: #7f8c8d;
+  }
+}
+
+/* Special Elements */
+.admonition {
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid #eee;
+  border-left-width: 4px;
+  border-radius: 4px;
+  page-break-inside: avoid;
+}
+
+.admonition-title {
+  font-weight: bold;
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1.1em;
+}
+
+/* Definition Lists */
+dl {
+  margin: 15px 0;
+}
+
+dt {
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+dd {
+  margin: 5px 0 15px 20px;
+}
+
+/* Horizontal Rules */
+hr {
+  border: 0;
+  height: 1px;
+  background: #ecf0f1;
+  margin: 30px 0;
+}
+
+/* Keyboard Input */
+kbd {
+  background-color: #f7f7f7;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2), 0 0 0 2px #fff inset;
+  color: #333;
+  display: inline-block;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.85em;
+  line-height: 1.4;
+  margin: 0 0.1em;
+  padding: 0.1em 0.6em;
+  text-shadow: 0 1px 0 #fff;
+  white-space: nowrap;
+}
+
+/* Variables */
+:root {
+  --primary-color: #3498db;
+  --secondary-color: #2ecc71;
+  --accent-color: #e74c3c;
+  --text-color: #2c3e50;
+  --light-gray: #ecf0f1;
+  --medium-gray: #95a5a6;
+  --dark-gray: #7f8c8d;
+  --border-color: #ddd;
+  --code-bg: #f8f9fa;
+  --success-color: #27ae60;
+  --warning-color: #f39c12;
+  --danger-color: #e74c3c;
+  --info-color: #3498db;
+}
