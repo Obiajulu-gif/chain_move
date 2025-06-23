@@ -1,9 +1,12 @@
-import { CardContent } from "@/components/ui/card"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+"use client"
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Sidebar } from "@/components/dashboard/sidebar"
+import { Header } from "@/components/dashboard/header"
 import { Separator } from "@/components/ui/separator"
-import { CheckCircle, Calendar, FileText, AlertCircle } from "lucide-react"
+import { CheckCircle, Calendar, FileText, AlertCircle, DollarSign, Clock, AlertTriangle } from "lucide-react"
 
 export default function LoanTermsPage() {
   const loanTerms = {
@@ -26,17 +29,25 @@ export default function LoanTermsPage() {
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Loan Terms & Conditions</h1>
-          <p className="text-muted-foreground">Review your loan agreement details</p>
-        </div>
-        <Badge className="bg-green-600 text-white">
-          <CheckCircle className="h-4 w-4 mr-1" />
-          Approved
-        </Badge>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Sidebar role="driver" />
+
+      <div className="md:ml-64">
+        <Header userName="Driver" userStatus="Active" />
+
+        <div className="p-3 md:p-6 space-y-4 md:space-y-8 max-w-full overflow-x-hidden">
+          {/* Page Header */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Loan Terms & Conditions</h1>
+                <p className="text-muted-foreground">Review your loan agreement details</p>
+              </div>
+              <Badge className="bg-green-600 text-white">
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Approved
+              </Badge>
+            </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Loan Summary */}
@@ -128,6 +139,9 @@ export default function LoanTermsPage() {
           <Calendar className="h-4 w-4 mr-2" />
           Set Payment Reminders
         </Button>
+      </div>
+          </div>
+        </div>
       </div>
     </div>
   )
