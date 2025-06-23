@@ -7,17 +7,65 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Wallet, Mail, Car, TrendingUp, ArrowLeft, Shield, Zap } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Wallet, Mail, Car, TrendingUp, ArrowLeft, Shield, Zap, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 
 export default function AuthPage() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const roleParam = searchParams.get("role")
   const [selectedRole, setSelectedRole] = useState<"driver" | "investor" | null>(
     (roleParam as "driver" | "investor") || null,
   )
+
+  // State for the registration form
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.")
+      return
+    }
+
+    if (!selectedRole) {
+      setError("Please select a role first.")
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role: selectedRole })
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        // Redirect to signin page after successful registration
+        router.push('/signin?status=signup_success')
+      } else {
+        setError(data.message || 'An unexpected error occurred.')
+      }
+    } catch (err) {
+      setError("Failed to connect to the server. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   if (!selectedRole) {
     return (
@@ -123,7 +171,7 @@ export default function AuthPage() {
             </Card>
           </div>
 
-          <div className="text-center mt-16">
+           <div className="text-center mt-16">
             <p className="text-gray-200 text-lg mb-6">
               Powered by blockchain technology for maximum transparency and security
             </p>
@@ -147,32 +195,18 @@ export default function AuthPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#142841] via-[#1e3a5f] to-[#3A7CA5] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center text-white hover:text-[#E57700] mb-6 transition-colors">
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Back to Home
-          </Link>
           <div className="flex items-center justify-center mb-4">
             <Image src="/images/chainmovelogo.png" alt="ChainMove Logo" width={48} height={48} className="mr-3" />
             <h1 className="text-3xl font-bold text-white">ChainMove</h1>
           </div>
           <Badge className="bg-[#E57700] text-white mb-4 px-4 py-2 text-sm">
             {selectedRole === "driver" ? (
-              <>
-                <Car className="h-4 w-4 mr-2" />
-                Driver Registration
-              </>
+              <><Car className="h-4 w-4 mr-2" /> Driver Registration</>
             ) : (
-              <>
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Investor Registration
-              </>
+              <><TrendingUp className="h-4 w-4 mr-2" /> Investor Registration</>
             )}
           </Badge>
-          <Button
-            variant="ghost"
-            onClick={() => setSelectedRole(null)}
-            className="text-gray-300 hover:text-white text-sm"
-          >
+          <Button variant="ghost" onClick={() => setSelectedRole(null)} className="text-gray-300 hover:text-white text-sm">
             Change Role
           </Button>
         </div>
@@ -189,18 +223,15 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="wallet" className="w-full">
+            <Tabs defaultValue="email" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="wallet" className="flex items-center">
-                  <Wallet className="h-4 w-4 mr-2" />
-                  Wallet
+                  <Wallet className="h-4 w-4 mr-2" /> Wallet
                 </TabsTrigger>
                 <TabsTrigger value="email" className="flex items-center">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email
+                  <Mail className="h-4 w-4 mr-2" /> Email
                 </TabsTrigger>
               </TabsList>
-
               <TabsContent value="wallet" className="space-y-4">
                 <div className="space-y-4">
                   <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3 flex items-center justify-center">
@@ -228,15 +259,29 @@ export default function AuthPage() {
                   </p>
                 </div>
               </TabsContent>
-
-              <TabsContent value="email" className="space-y-4">
-                <div className="space-y-4">
+              <TabsContent value="email">
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
                     <Input
                       id="email"
                       type="email"
                       placeholder="Enter your email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
                       className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
                     />
                   </div>
@@ -246,6 +291,9 @@ export default function AuthPage() {
                       id="password"
                       type="password"
                       placeholder="Create a secure password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
                       className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
                     />
                   </div>
@@ -255,28 +303,32 @@ export default function AuthPage() {
                       id="confirmPassword"
                       type="password"
                       placeholder="Confirm your password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
                       className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
                     />
                   </div>
-                  <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3">Create Account</Button>
-                </div>
-                <div className="text-center">
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Button type="submit" className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3" disabled={isLoading}>
+                    {isLoading ? "Creating Account..." : "Create Account"}
+                  </Button>
+                </form>
+                <div className="text-center mt-4">
                   <p className="text-sm text-gray-500">
                     Already have an account?{" "}
-                    <Link href="#" className="text-[#E57700] hover:underline">
+                    <Link href="/signin" className="text-[#E57700] hover:underline">
                       Sign in
                     </Link>
                   </p>
                 </div>
               </TabsContent>
             </Tabs>
-
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center text-sm text-gray-600">
-                <Shield className="h-4 w-4 mr-2 text-[#E57700]" />
-                <span>Your data is secured with enterprise-grade encryption</span>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

@@ -13,6 +13,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 
+// You can keep this for quick testing in development
 const demoAccounts = [
   { email: "driver@chainmove.com", password: "password123", role: "driver", name: "Emmanuel" },
   { email: "investor@chainmove.com", password: "password123", role: "investor", name: "Marcus" },
@@ -34,19 +35,29 @@ export default function SignInPage() {
     setError("")
     setSuccess("")
 
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    // Check demo accounts
-    const account = demoAccounts.find((acc) => acc.email === email && acc.password === password)
+      const data = await res.json();
 
-    if (account) {
-      setSuccess(`Welcome back, ${account.name}! Redirecting to your dashboard...`)
-      setTimeout(() => {
-        router.push(`/dashboard/${account.role}`)
-      }, 1500)
-    } else {
-      setError("Invalid email or password. Please try again or use demo credentials.")
+      if (res.ok) {
+        setSuccess(`Welcome back, ${data.data.name}! Redirecting to your dashboard...`);
+        // In a real app, you would store the token and user data in a global context
+        // and handle authenticated routes.
+        setTimeout(() => {
+          router.push(`/dashboard/${data.data.role}`);
+        }, 1500);
+      } else {
+        setError(data.message || "An error occurred.");
+      }
+    } catch (err) {
+      setError("Failed to connect to the server. Please try again.");
     }
 
     setIsLoading(false)
@@ -128,16 +139,16 @@ export default function SignInPage() {
                 </div>
 
                 {error && (
-                  <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
-                    <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                    <AlertDescription className="text-red-800 dark:text-red-200">{error}</AlertDescription>
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
 
                 {success && (
-                  <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    <AlertDescription className="text-green-800 dark:text-green-200">{success}</AlertDescription>
+                  <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 text-green-800 dark:text-green-200">
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>{success}</AlertDescription>
                   </Alert>
                 )}
 
@@ -173,7 +184,7 @@ export default function SignInPage() {
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-foreground">Demo Accounts</CardTitle>
               <CardDescription className="text-muted-foreground">
-                Try ChainMove with these demo credentials
+                Click to use demo credentials
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
