@@ -12,7 +12,7 @@ contract ChainMove {
     enum LoanStatus {
         None,
         Pending,
-        Active,
+        Active, 
         Repaid,
         Defaulted
     }
