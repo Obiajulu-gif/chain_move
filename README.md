@@ -1,155 +1,115 @@
-# 🚗 ChainMove – Decentralized Transportation on EVM-Compatible Chains
+# 🚗 ChainMove - Decentralized Vehicle Financing Platform
 
-Welcome to **ChainMove**, the blockchain-powered Transportation platform transforming mobility services. Leveraging blockchain technology, **ChainMove** ensures secure payments, driver incentives, and ride transparency for both passengers and drivers. Our mission is to empower users with a seamless, transparent, and trusted experience.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/your-org/chain-move?style=social)](https://github.com/your-org/chain-move/stargazers)
+[![Discord](https://img.shields.io/discord/your-discord-invite?logo=discord)](https://discord.gg/your-invite)
 
-![Home Page](./public/images/landingpage.png)
+ChainMove is a revolutionary blockchain-based platform that enables decentralized vehicle financing, connecting investors with drivers in emerging markets. Our platform leverages smart contracts to create transparent, secure, and efficient vehicle financing solutions.
 
----
+## 🌟 Features
 
-## 🌟 **Overview**
+- **Tokenized Vehicle Ownership** - Fractional ownership of vehicles through blockchain tokens
+- **Smart Contract Automation** - Automated payments, revenue sharing, and compliance
+- **Decentralized Identity** - Secure KYC/AML verification
+- **Real-time Analytics** - Track vehicle performance and investment returns
+- **Multi-chain Support** - Built on Ethereum with Lisk L2 for low fees
+- **Mobile-First** - Responsive design for all devices
 
-ChainMove simplifies ride management and payments using smart contracts on the **Lisk Blockchain**. By securing transactions and ensuring transparency, we create a reliable platform for drivers and passengers. 
+## 🏗️ Architecture
 
-### Key Highlights:
+```mermaid
+graph TD
+    A[Frontend] -->|API Calls| B[Backend API]
+    B --> C[Blockchain Network]
+    B --> D[Database]
+    C --> E[Smart Contracts]
+    D --> F[(MongoDB)]
+    E --> G[IPFS Storage]
+```
 
-- **Upfront Security**: Drivers receive full payment of the fare immediately upon booking.
-- **Secure Authentication**: Users are authenticated via blockchain for enhanced safety.
+## 🚀 Quick Start
 
----
+### Prerequisites
 
-## 🎯 **Key Features**
+- Node.js 18+
+- npm 9+
+- MongoDB 
+- Hardhat (for smart contract development)
+- MetaMask or Web3 wallet
 
-1. **Blockchain-Powered Ride Booking**: Passengers book rides with guaranteed payment security and driver incentives.
-2. **Driver Earnings Model**:
-   - **10% Upfront**: Drivers are paid a portion of the fare upon booking confirmation.
-   - **90% Completion Bonus**: Full payment is released only after ride completion.
-3. **Interactive Ride Management**: Real-time updates for drivers and passengers through a dynamic UI.
-4. **Secure Payments**: Built on **Lisk Blockchain**, ensuring tamper-proof transactions and transparent records.
+### Installation
 
----
-
-## 🛠️ **Technologies Used**
-
-ChainMove utilizes a modern tech stack to create a robust decentralized platform:
-
-- **Next.js**: Provides a dynamic, responsive, and performant UI.
-- **Lisk Blockchain**: Handles secure payment processing and transaction logging.
-- **Wagmi**: Ensures decentralized and secure user authentication.
-- **Tailwind CSS**: Enables fast, elegant, and responsive design.
-- **Leaflet.js**: Interactive maps for route visualization and navigation.
-
----
-
-## 📐 **Architecture**
-
-The **ChainMove** architecture ensures scalability, security, and user convenience through its modular design:
-
-1. **Frontend**: Built with **Next.js**, offering a seamless user experience for ride booking, driver registration, and dashboard management.
-2. **Backend**: Smart contracts handle ride bookings, payments, and confirmations securely on the **Lisk Blockchain**.
-3. **Authentication**: Decentralized login through blockchain-based methods ensures secure user identity verification.
-4. **Payment Workflow**:
-   - **10% Paid on Booking**: Initial payment to secure driver commitment.
-   - **90% Paid on Completion**: Remaining balance released upon ride confirmation.
-
----
-
-## 🚀 **Getting Started**
-
-Follow these steps to set up and run **ChainMove** locally:
-
-### **Prerequisites**
-- **Node.js** (v14+)
-- **npm**
-
-### **Installation**
-
-1. **Clone the repository**:
+1. Clone the repository:
    ```bash
-   git clone https://github.com/obiajulu-gif/chain_move.git
-   cd chainmove
+   git clone https://github.com/Obaijulu-gif/chain_move.git
+   cd chain-move
    ```
 
-2. **Install dependencies**:
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-3. **Start the development server**:
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env.local
+   # Update the environment variables in .env.local
+   ```
+
+4. Run the development server:
    ```bash
    npm run dev
    ```
 
-4. **Install additional packages** (if necessary):
-   ```bash
-   npm install <package_name> --legacy-peer-deps
-   ```
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-Visit `http://localhost:3000` in your browser to access **ChainMove**.
+## 📚 Documentation
 
----
+- [Getting Started](docs/user-guide/getting-started.md) - Quick start guide
+- [API Reference](docs/api/README.md) - Detailed API documentation
+- [Smart Contracts](docs/technical/developer-guide.md) - Contract architecture and usage
+- [Technical Documentation](docs/technical/setup.md) - Production deployment instructions
+- [Contributing](CONTRIBUTING.md) - How to contribute to the project
 
-## 💡 **Payment Flow with Smart Contracts**
+## 🔧 Tech Stack
 
-ChainMove integrates **Lisk Blockchain** smart contracts to manage secure, transparent payments. 
+- **Frontend**: Next.js 15+, React 18+, TypeScript, Tailwind CSS
+- **Backend**: Node.js, Next.js API Routes
+- **Blockchain**: Solidity, Hardhat, ethers.js
+- **Database**: MongoDb
+- **Storage**: IPFS
+- **Auth**: JWT
 
-### **Smart Contract Workflow**
-1. **Booking Confirmation**: Logs ride details, including fare, driver, and passenger.
-2. **Ride Completion**: Releases the fare when the passenger confirms ride completion.
-3. **Earnings Management**: Drivers earnings are sent directly to their wallet address via  smart contracts.
 
-### Code Snippet
-Here’s an example of a ride booking and payment contract:
+## 🤝 Contributing
 
-```javascript
-to be updated
-```
+We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started.
 
----
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 🔒 **Authentication**
+## 📄 License
 
-**ChainMove** ensures secure authentication for all users:
-- **Drivers and Passengers** log in securely using decentralized blockchain-based methods.
-- Eliminates reliance on centralized login systems, enhancing user data security.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
----
+## 🙏 Acknowledgments
 
-## 📱 **Screenshots**
+- [OpenZeppelin](https://openzeppelin.com/) for battle-tested smart contracts
+- [Hardhat](https://hardhat.org/) for Ethereum development environment
+- [Next.js](https://nextjs.org/) for the React framework
+- [Tailwind CSS](https://tailwindcss.com/) for styling
 
-### **Mobile View Page**
-![Landing Page](./public/images/landingpagephone.png)
+## 📬 Contact
 
-### **Driver Registration**
-![Driver Registration](./public/images/registerpage.png)
-
----
-
-## 🤝 **Team Members**
-
-Meet the people building **ChainMove**:
-
-- **Emmanuel Okoye** – *Team Lead and Full Stack Developer*: Led the development of the Next.js frontend and blockchain integrations.
-- **Damian Olebuezie** – *Blockchain Developer*: Architected smart contracts and integrated **Lisk Blockchain** for payments.
-- **Victoria Nwogu** – *Product Manager*: Planned features and managed project timelines.
-- **David Emulo** – *UI/UX Designer*: Designed user-friendly interfaces and visual elements.
-- **Engr. Mikailu Nadro** – *Technical Advisor*: Provided strategic blockchain and scaling guidance.
-- **Israel Nwafor** – *Community Manager*: Built and fostered an active user community.
+- Email: okoyeemmanuel998@gmail.com
+- Twitter: [@ChainMove1](https://twitter.com/ChainMove1)
+- Telegram: [Join our community](https://discord.gg/your-invite)
 
 ---
 
-## 🤝 **Contributing**
-
-We welcome contributions to improve **ChainMove**! 
-- Fork the repository.
-- Make your changes.
-- Submit a pull request.
-
----
-
-## 📝 **License**
-
-This project is licensed under the **MIT License**.
-
----
-
-### Join the ride-sharing revolution with **ChainMove**—secure, decentralized, and user-first transportation! 🚗
+<p align="center">
+  Made with ❤️ by the ChainMove Team
+</p>
