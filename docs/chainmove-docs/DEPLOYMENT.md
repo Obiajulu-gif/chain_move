@@ -1,40 +1,127 @@
 # Deploying ChainMove Documentation to Vercel
 
-This guide explains how to deploy the ChainMove Docusaurus documentation site to Vercel.
+This guide explains how to deploy the ChainMove Docusaurus documentation site to Vercel as a separate deployment from the main website.
+
+## Project Architecture
+
+This setup assumes you have:
+- **Main Website**: Deployed from `main` branch to `chainmove.xyz`
+- **Documentation Site**: Deployed from `documentation` branch to `docs.chainmove.xyz`
 
 ## Prerequisites
 
 - A Vercel account (sign up at [vercel.com](https://vercel.com))
-- GitHub repository access
+- GitHub repository access with `documentation` branch
+- Custom domain `chainmove.xyz` purchased and configured
 - Node.js 18+ installed locally
 
-## Deployment Methods
+## Deployment Setup
 
-### Method 1: Deploy via Vercel Dashboard (Recommended)
+### Step 1: Create Separate Vercel Project for Documentation
 
-1. **Connect GitHub Repository**
-   - Go to [vercel.com/dashboard](https://vercel.com/dashboard)
-   - Click "New Project"
-   - Import your GitHub repository
-   - Select the repository containing your ChainMove project
+Since your main website is already deployed, you need to create a **new Vercel project** specifically for documentation:
 
-2. **Configure Project Settings**
+1. **Go to Vercel Dashboard**
+   - Visit [vercel.com/dashboard](https://vercel.com/dashboard)
+   - Click "Add New" → "Project"
+
+2. **Import Repository**
+   - Select your GitHub repository `chain_move`
+   - **Important**: You'll import the same repo but configure it differently
+
+3. **Configure Project Settings**
+   - **Project Name**: `chainmove-documentation` (or similar)
    - **Framework Preset**: Select "Other"
-   - **Root Directory**: Set to `docs/chainmove-docs`
+   - **Root Directory**: `docs/chainmove-docs` ⚠️ **Critical Setting**
    - **Build Command**: `npm run build`
    - **Output Directory**: `build`
    - **Install Command**: `npm install`
    - **Node.js Version**: 18.x
 
-3. **Environment Variables** (if needed)
-   - No special environment variables required for basic deployment
-   - For Algolia search (if configured): Add `ALGOLIA_API_KEY` and `ALGOLIA_APP_ID`
+### Step 2: Configure Branch Settings
 
-4. **Deploy**
-   - Click "Deploy"
-   - Vercel will automatically build and deploy your site
+1. **After project creation, go to Settings**
+2. **Navigate to Git section**
+3. **Change Production Branch**:
+   - Change from `main` to `documentation`
+   - This ensures the documentation project deploys from your documentation branch
 
-### Method 2: Deploy via Vercel CLI
+### Step 3: Custom Domain Configuration
+
+1. **Add Custom Domain**
+   - In project settings, go to "Domains"
+   - Add domain: `docs.chainmove.xyz`
+   - Vercel will provide DNS configuration
+
+2. **DNS Setup at Domain Registrar**
+   ```
+   Type: CNAME
+   Name: docs
+   Value: cname.vercel-dns.com (or value provided by Vercel)
+   TTL: 3600
+   ```
+
+## Vercel Configuration File
+
+The `vercel.json` in your documentation directory should look like this:
+
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm install",
+  "framework": null,
+  "redirects": [
+    {
+      "source": "/docs",
+      "destination": "/"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Note**: Do not include empty `"functions": {}` as this causes deployment errors.
+
+## Docusaurus Configuration
+
+Your `docusaurus.config.ts` should have:
+
+```typescript
+const config: Config = {
+  title: 'ChainMove Documentation',
+  tagline: 'Revolutionary blockchain platform enabling fractional vehicle ownership',
+  url: 'https://docs.chainmove.xyz',  // Your custom domain
+  baseUrl: '/',
+  // ... rest of config
+};
+```
+
+## Deployment Methods
+
+### Method 1: Automatic Deployment (Recommended)
+
+Once configured, Vercel will automatically deploy when you:
+- Push to the `documentation` branch
+- Create pull requests against `documentation` branch
+
+### Method 2: Manual Deployment via CLI
 
 1. **Install Vercel CLI**
    ```bash
@@ -46,139 +133,154 @@ This guide explains how to deploy the ChainMove Docusaurus documentation site to
    cd docs/chainmove-docs
    ```
 
-3. **Login to Vercel**
+3. **Login and Deploy**
    ```bash
    vercel login
+   vercel --prod
    ```
 
-4. **Deploy**
+## Branch Management
+
+### Development Workflow
+
+1. **Make changes on documentation branch**
+2. **Test locally**:
    ```bash
-   vercel
+   cd docs/chainmove-docs
+   npm start
    ```
+3. **Push to documentation branch**
+4. **Vercel automatically deploys to docs.chainmove.xyz**
 
-5. **Follow the prompts:**
-   - Set up and deploy: Yes
-   - Which scope: Your account/team
-   - Link to existing project: No (for first deployment)
-   - Project name: chainmove-docs (or your preferred name)
-   - Directory: ./
-   - Build Command: npm run build
-   - Output Directory: build
+### Environment Setup
 
-## Vercel Configuration File
+For local development:
+```bash
+# Clone and switch to documentation branch
+git clone https://github.com/obiajulu-gif/chain_move.git
+cd chain_move
+git checkout documentation
 
-Create a `vercel.json` file in the `docs/chainmove-docs` directory for more control:
-
-```json
-{
-  "buildCommand": "npm run build",
-  "outputDirectory": "build",
-  "installCommand": "npm install",
-  "framework": null,
-  "functions": {},
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
-}
+# Navigate to docs and install
+cd docs/chainmove-docs
+npm install
+npm start
 ```
 
-## Build Configuration
+## Domain Verification
 
-### Package.json Scripts
-Ensure your `package.json` includes these scripts:
+After DNS configuration, verify your setup:
 
+1. **Check DNS propagation**: Use tools like `dig docs.chainmove.xyz`
+2. **Verify SSL**: Vercel automatically provides SSL certificates
+3. **Test redirects**: Ensure proper routing from root domain if needed
+
+## Multi-Environment Setup
+
+Your complete setup should be:
+
+| Environment | Branch | Domain | Purpose |
+|-------------|--------|---------|---------|
+| Production (Main) | `main` | `chainmove.xyz` | Main website |
+| Production (Docs) | `documentation` | `docs.chainmove.xyz` | Documentation |
+| Preview | Any branch | `*.vercel.app` | Testing |
+
+## Build Optimization
+
+### Performance Settings
 ```json
 {
   "scripts": {
-    "docusaurus": "docusaurus",
-    "start": "docusaurus start",
     "build": "docusaurus build",
-    "swizzle": "docusaurus swizzle",
-    "deploy": "docusaurus deploy",
-    "clear": "docusaurus clear",
-    "serve": "docusaurus serve",
-    "write-translations": "docusaurus write-translations",
-    "write-heading-ids": "docusaurus write-heading-ids",
-    "typecheck": "tsc"
+    "build:analyze": "npm run build -- --bundle-analyzer"
   }
 }
 ```
 
-### Build Optimization
-
-For better performance, consider:
-
-1. **Enable compression** (automatically handled by Vercel)
-2. **Optimize images** - Use WebP format when possible
-3. **Bundle analyzer** - Use `npm run build -- --bundle-analyzer` to analyze bundle size
-
-## Custom Domain Setup
-
-1. **In Vercel Dashboard**
-   - Go to your project settings
-   - Navigate to "Domains"
-   - Add your custom domain (e.g., `docs.chainmove.com`)
-
-2. **DNS Configuration**
-   - Add a CNAME record pointing to `cname.vercel-dns.com`
-   - Or use Vercel nameservers for full DNS management
-
-## Environment Variables
-
-Set up environment variables in Vercel dashboard if needed:
-
-- `NODE_VERSION`: 18
-- `ALGOLIA_API_KEY`: (if using Algolia search)
-- `ALGOLIA_APP_ID`: (if using Algolia search)
-
-## Automatic Deployments
-
-Vercel automatically deploys when you:
-- Push to the main branch (production)
-- Create pull requests (preview deployments)
-- Push to other branches (preview deployments)
+### Static Asset Optimization
+- Use WebP images when possible
+- Compress images before adding to `static/img/`
+- Enable Vercel's automatic compression
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Build fails with "Module not found"**
-   - Ensure all dependencies are in `package.json`
-   - Check import paths are correct
+1. **Wrong Root Directory**
+   - Ensure root directory is set to `docs/chainmove-docs`
+   - This is the most common cause of build failures
 
-2. **Static files not loading**
-   - Verify `static` folder is in the correct location
-   - Check base URL configuration in `docusaurus.config.ts`
+2. **Branch Configuration**
+   - Verify production branch is set to `documentation`
+   - Check that you're pushing to the correct branch
 
-3. **Routing issues**
-   - Ensure `trailingSlash: false` in config for better Vercel compatibility
+3. **Domain Not Working**
+   - DNS changes can take up to 48 hours to propagate
+   - Verify CNAME record is correctly configured
+   - Check domain registrar's DNS management panel
 
-### Build Commands
+4. **Build Failures**
+   ```bash
+   # Clear cache and rebuild
+   npm run clear
+   npm run build
+   ```
 
-- **Development**: `npm start`
-- **Production build**: `npm run build`
-- **Serve built site**: `npm run serve`
-- **Clear cache**: `npm run clear`
+### Debug Commands
 
-## Performance Monitoring
+```bash
+# Check build locally
+npm run build
+npm run serve
 
-Monitor your deployment:
-- Use Vercel Analytics for traffic insights
-- Check Core Web Vitals in Vercel dashboard
-- Monitor build times and bundle sizes
+# Analyze bundle
+npm run build -- --bundle-analyzer
 
-## Maintenance
+# Check for broken links
+npm run build -- --no-minify
+```
 
-- Keep dependencies updated
+## Monitoring and Maintenance
+
+### Analytics
+- Enable Vercel Analytics in project settings
+- Monitor Core Web Vitals
+- Track deployment frequency and build times
+
+### Updates
+- Keep dependencies updated regularly
 - Monitor Vercel build logs for warnings
-- Regular content updates trigger automatic rebuilds
+- Test major updates in preview deployments first
 
-## Support
+## Security
 
-For deployment issues:
-- Check [Vercel Documentation](https://vercel.com/docs)
-- Review [Docusaurus Deployment Guide](https://docusaurus.io/docs/deployment)
-- Contact team via project channels 
+- Vercel automatically provides SSL certificates
+- Enable security headers in `vercel.json`
+- Consider adding CSP headers for additional security
+
+## Support Resources
+
+- [Vercel Documentation](https://vercel.com/docs)
+- [Docusaurus Deployment Guide](https://docusaurus.io/docs/deployment)
+- [Custom Domain Setup](https://vercel.com/docs/custom-domains)
+- Project repository: [github.com/obiajulu-gif/chain_move](https://github.com/obiajulu-gif/chain_move)
+
+## Quick Reference
+
+### Key URLs
+- **Main Site**: https://chainmove.xyz
+- **Documentation**: https://docs.chainmove.xyz
+- **GitHub**: https://github.com/obiajulu-gif/chain_move
+- **Vercel Dashboard**: https://vercel.com/dashboard
+
+### Essential Commands
+```bash
+# Local development
+cd docs/chainmove-docs && npm start
+
+# Build for production
+npm run build
+
+# Deploy via CLI
+vercel --prod
+``` 
