@@ -183,220 +183,21 @@ export default function InvestorDashboard() {
             </Card>
           </div>
 
-          {/* Real-time Notifications */}
-          {unreadNotifications > 0 && (
-            <Card className="bg-card/50 border-border/50 hover:bg-card/70 transition-all duration-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-foreground" />
-                  <span>New Opportunities ({unreadNotifications})</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="space-y-4">
-                  {investorData.notifications
-                    .filter((n) => !n.read)
-                    .slice(0, 3)
-                    .map((notification) => (
-                      <div 
-                        key={notification.id} 
-                        className="flex items-start gap-3 p-3 bg-card/20 rounded-lg hover:bg-card/30 transition-colors duration-200"
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">{notification.title}</p>
-                          <p className="text-sm text-muted-foreground">{notification.message}</p>
-                        </div>
-                          className="bg-green-600 hover:bg-green-700 text-white dark:bg-green-400 dark:hover:bg-green-500 dark:text-white"
-                        >
-                          Mark Read
-                        </Button>
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Enhanced Investment Management Tabs */}
-          <Tabs defaultValue="opportunities" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-muted">
-              <TabsTrigger
-                value="opportunities"
-                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white"
-              >
-                Opportunities
-              </TabsTrigger>
-              <TabsTrigger value="active" className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white">
-                Active
-              </TabsTrigger>
-              <TabsTrigger
-                value="approvals"
-                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white"
-              >
-                Approvals
-              </TabsTrigger>
-              <TabsTrigger
-                value="analytics"
-                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white"
-              >
-                <BarChart3 className="h-4 w-4 mr-1" />
-                Analytics
-              </TabsTrigger>
-              <TabsTrigger value="chat" className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white">
-                <MessageCircle className="h-4 w-4 mr-1" />
-                Chat
-              </TabsTrigger>
-              <TabsTrigger
-                value="notifications"
-                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white"
-              >
-                <Bell className="h-4 w-4 mr-1" />
-                Notifications
-              </TabsTrigger>
+          {/* Main Content Tabs */}
+          <Tabs defaultValue="investments" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-5">
+              <TabsTrigger value="investments">My Investments</TabsTrigger>
+              <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
+              <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="chat">Chat</TabsTrigger>
             </TabsList>
 
-            {/* Loan Opportunities Tab */}
-            <TabsContent value="opportunities" className="space-y-6">
+            {/* Investments Tab */}
+            <TabsContent value="investments" className="space-y-6">
               <Card className="bg-card border-border">
                 <CardHeader>
-                  <CardTitle className="text-foreground flex items-center">
-                    <Car className="h-5 w-5 mr-2" />
-                    Available Loan Applications ({investorData.availableLoans.length})
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground">
-                    Review and approve driver loan applications
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {investorData.availableLoans.length > 0 ? (
-                    <div className="space-y-6">
-                      {investorData.availableLoans.map((loan) => {
-                        const driver = state.drivers.find((d) => d.id === loan.driverId)
-                        const vehicle = state.vehicles.find((v) => v.id === loan.vehicleId)
-
-                        return (
-                          <Card key={loan.id} className="bg-muted border-border">
-                            <CardContent className="p-6">
-                              <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center space-x-4">
-                                  <Image
-                                    src={vehicle?.image || "/placeholder.svg"}
-                                    alt={vehicle?.name || "Vehicle"}
-                                    width={80}
-                                    height={60}
-                                    className="rounded-lg object-cover"
-                                  />
-                                  <div>
-                                    <h3 className="text-lg font-semibold text-foreground">{vehicle?.name}</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                      Driver: {driver?.name} • Rating: {driver?.rating}/5
-                                    </p>
-                                    <Badge className={getStatusColor(loan.status)}>{loan.status}</Badge>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-2xl font-bold text-foreground">
-                                    ${loan.requestedAmount.toLocaleString()}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">{loan.loanTerm} months</p>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Monthly Payment</p>
-                                  <p className="font-semibold text-foreground">${loan.monthlyPayment}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Interest Rate</p>
-                                  <p className="font-semibold text-foreground">{loan.interestRate}%</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Credit Score</p>
-                                  <p className="font-semibold text-foreground">{loan.creditScore}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Risk Level</p>
-                                  <Badge
-                                    className={`bg-${loan.riskAssessment === "Low" ? "green" : loan.riskAssessment === "Medium" ? "yellow" : "red"}-100 text-${loan.riskAssessment === "Low" ? "green" : loan.riskAssessment === "Medium" ? "yellow" : "red"}-800`}
-                                  >
-                                    {loan.riskAssessment}
-                                  </Badge>
-                                </div>
-                              </div>
-
-                              <div className="mb-4">
-                                <div className="flex justify-between items-center mb-2">
-                                  <span className="text-sm text-muted-foreground">Funding Progress</span>
-                                  <span className="text-sm text-foreground">{loan.fundingProgress.toFixed(1)}%</span>
-                                </div>
-                                <Progress 
-                                  value={loan.fundingProgress} 
-                                  className="h-2 dark:bg-muted/50"
-                                  indicatorClassName="bg-[#E57700] dark:bg-orange-400 transition-colors duration-200"
-                                />
-                                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                                  <span>${loan.totalFunded.toLocaleString()} funded</span>
-                                  <span>${loan.remainingAmount.toLocaleString()} remaining</span>
-                                </div>
-                              </div>
-
-                              <div className="space-y-4">
-                                <div className="relative w-full">
-                                  <Label htmlFor="investmentAmount" className="absolute left-3 top-2 text-xs text-muted-foreground">
-                                    Investment Amount
-                                  </Label>
-                                  <div className="relative w-full">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/60">$</span>
-                                    <Input
-                                      id="investmentAmount"
-                                      type="number"
-                                      value={investmentAmount}
-                                      onChange={(e) => setInvestmentAmount(e.target.value)}
-                                      className="pl-8 w-full h-10 text-lg"
-                                      placeholder="0.00"
-                                      min="0"
-                                      step="0.01"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex items-center space-x-4">
-                                  <Button
-                                    onClick={() => handleApproveLoan(loan.id, parseFloat(investmentAmount))}
-                                    className="w-full h-10 text-lg bg-[#E57700] hover:bg-[#E57700]/90 text-white dark:bg-orange-400 dark:hover:bg-orange-500 transition-all duration-200"
-                                  >
-                                    Approve Loan
-                                  </Button>
-                                  <Button variant="outline" className="border-border text-foreground hover:bg-muted">
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-foreground mb-2">No Loan Applications</h3>
-                      <p className="text-muted-foreground">
-                        There are currently no loan applications available for review
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Active Investments Tab */}
-            <TabsContent value="active" className="space-y-6">
-              <Card className="bg-card border-border">
-                <CardHeader>
-                  <CardTitle className="text-foreground flex items-center">
-                    <Activity className="h-5 w-5 mr-2" />
+                  <CardTitle className="text-foreground">
                     Active Investments ({investorData.investments.length})
                   </CardTitle>
                   <CardDescription className="text-muted-foreground">
@@ -474,7 +275,9 @@ export default function InvestorDashboard() {
                     <Clock className="h-5 w-5 mr-2" />
                     Pending Fund Releases
                   </CardTitle>
-                  <CardDescription className="text-muted-foreground">Release approved funds to drivers</CardDescription>
+                  <CardDescription className="text-muted-foreground">
+                    Release approved funds to drivers
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {investorData.pendingReleases.length > 0 ? (

@@ -48,67 +48,70 @@ export default function LoanTermsPage() {
                 Approved
               </Badge>
             </div>
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Loan Summary */}
-        <Card className="bg-card border-border">
-          <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Loan Summary</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Vehicle</span>
-                <span className="font-medium text-foreground">{loanTerms.vehicleName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Loan Amount</span>
-                <span className="font-medium text-foreground">${loanTerms.loanAmount.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Interest Rate</span>
-                <span className="font-medium text-foreground">{loanTerms.interestRate}% APR</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Loan Term</span>
-                <span className="font-medium text-foreground">{loanTerms.loanTerm} months</span>
-              </div>
-              <Separator />
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Monthly Payment</span>
-                <span className="text-xl font-bold text-foreground">${loanTerms.monthlyPayment}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Payment Schedule Preview */}
-        <Card className="bg-card border-border">
-          <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Payment Schedule (First 3 Months)</h3>
-            <div className="space-y-3">
-              {paymentSchedule.map((payment) => (
-                <div key={payment.month} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                  <div>
-                    <span className="font-medium text-foreground">Month {payment.month}</span>
-                    <div className="text-sm text-muted-foreground">
-                      Principal: ${payment.principal} | Interest: ${payment.interest}
-                    </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Loan Summary */}
+            <Card className="bg-card border-border">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Loan Summary</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Vehicle</span>
+                    <span className="font-medium text-foreground">{loanTerms.vehicleName}</span>
                   </div>
-                  <span className="font-medium text-foreground">${payment.payment}</span>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Loan Amount</span>
+                    <span className="font-medium text-foreground">${loanTerms.loanAmount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Interest Rate</span>
+                    <span className="font-medium text-foreground">{loanTerms.interestRate}% APR</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Loan Term</span>
+                    <span className="font-medium text-foreground">{loanTerms.loanTerm} months</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Monthly Payment</span>
+                    <span className="text-xl font-bold text-foreground">${loanTerms.monthlyPayment}</span>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </CardContent>
+            </Card>
 
-            {/* Action Buttons */}
-            <div className="flex space-x-4">
-              <Button className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
-                <FileText className="h-4 w-4 mr-2" />
-                Download Agreement
-              </Button>
-              <Button variant="outline">
-                <Calendar className="h-4 w-4 mr-2" />
-                Set Payment Reminders
-              </Button>
-            </div>
+            {/* Payment Schedule Preview */}
+            <Card className="bg-card border-border">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Payment Schedule (First 3 Months)</h3>
+                <div className="space-y-3">
+                  {paymentSchedule.map((payment) => (
+                    <div key={payment.month} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                      <div>
+                        <span className="font-medium text-foreground">Month {payment.month}</span>
+                        <div className="text-sm text-muted-foreground">
+                          Principal: ${payment.principal} | Interest: ${payment.interest}
+                        </div>
+                      </div>
+                      <span className="font-medium text-foreground">${payment.payment}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-4 mt-6">
+                  <Button className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Download Agreement
+                  </Button>
+                  <Button variant="outline">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Set Payment Reminders
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
