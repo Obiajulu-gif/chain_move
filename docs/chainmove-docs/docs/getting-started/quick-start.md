@@ -86,7 +86,7 @@ If you encounter any issues:
 ## Next Steps
 
 - [Learn about advanced features](../introduction/features.md)
-- [Explore the API documentation](../technical/api/README.md)
+- [Explore the API documentation](../api/README.md)
 - [Join our community](https://community.chainmove.io)
 
 ---

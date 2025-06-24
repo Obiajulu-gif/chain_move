@@ -16,7 +16,7 @@
     "build:all": "npm run build && npm run build:pdf && npm run build:epub && npm run build:mobi",
     "serve": "gitbook serve",
     "lint": "markdownlint '**/*.md' --ignore node_modules",
-    "format": "prettier --write '**/*.md'
+    "format": "prettier --write '**/*.md'"
   },
   "keywords": [
     "documentation",
