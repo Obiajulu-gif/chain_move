@@ -438,6 +438,10 @@ export default function TripsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

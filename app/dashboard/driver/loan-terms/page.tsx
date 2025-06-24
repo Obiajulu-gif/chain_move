@@ -97,49 +97,18 @@ export default function LoanTermsPage() {
                 </div>
               ))}
             </div>
-            <Button variant="outline" className="w-full mt-4">
-              View Full Schedule
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Terms and Conditions */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Terms & Conditions</h3>
-          <div className="space-y-4 text-sm text-muted-foreground">
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-              <p>Monthly payments are due on the 15th of each month</p>
+            {/* Action Buttons */}
+            <div className="flex space-x-4">
+              <Button className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                <FileText className="h-4 w-4 mr-2" />
+                Download Agreement
+              </Button>
+              <Button variant="outline">
+                <Calendar className="h-4 w-4 mr-2" />
+                Set Payment Reminders
+              </Button>
             </div>
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-              <p>Vehicle insurance is required throughout the loan term</p>
-            </div>
-            <div className="flex items-start space-x-3">
-              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-              <p>Early repayment is allowed without penalty after 6 months</p>
-            </div>
-            <div className="flex items-start space-x-3">
-              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <p>Late payment fee of $25 applies after 5 days grace period</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Action Buttons */}
-      <div className="flex space-x-4">
-        <Button className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
-          <FileText className="h-4 w-4 mr-2" />
-          Download Agreement
-        </Button>
-        <Button variant="outline">
-          <Calendar className="h-4 w-4 mr-2" />
-          Set Payment Reminders
-        </Button>
-      </div>
           </div>
         </div>
       </div>
