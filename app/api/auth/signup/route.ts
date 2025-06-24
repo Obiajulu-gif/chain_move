@@ -12,6 +12,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Please provide all required fields.' }, { status: 400 });
     }
 
+    const userCount = await User.countDocuments();
+    let finalRole = role;
+
+    // If this is the first user ever, make them an admin
+    if (userCount === 0) {
+      finalRole = 'admin';
+    }
+
     const userExists = await User.findOne({ email });
 
     if (userExists) {
@@ -22,7 +30,7 @@ export async function POST(request: Request) {
       email,
       password,
       name,
-      role,
+      role: finalRole, // Use the finalRole here
     });
 
     return NextResponse.json({ success: true, data: { userId: user._id, name: user.name, role: user.role } }, { status: 201 });

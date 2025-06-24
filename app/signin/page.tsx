@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,15 +11,10 @@ import { Eye, EyeOff, User, Lock, AlertCircle, CheckCircle, ArrowRight } from "l
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-
-// You can keep this for quick testing in development
-const demoAccounts = [
-  { email: "driver@chainmove.com", password: "password123", role: "driver", name: "Emmanuel" },
-  { email: "investor@chainmove.com", password: "password123", role: "investor", name: "Marcus" },
-  { email: "admin@chainmove.com", password: "password123", role: "admin", name: "Admin" },
-]
+import { usePlatform } from "@/contexts/platform-context";
 
 export default function SignInPage() {
+  const { dispatch } = usePlatform()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -47,12 +41,18 @@ export default function SignInPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setSuccess(`Welcome back, ${data.data.name}! Redirecting to your dashboard...`);
-        // In a real app, you would store the token and user data in a global context
-        // and handle authenticated routes.
-        setTimeout(() => {
-          router.push(`/dashboard/${data.data.role}`);
-        }, 1500);
+         dispatch({
+            type: 'SET_CURRENT_USER',
+            payload: {
+                id: data.data.userId,
+                name: data.data.name,
+                role: data.data.role
+            }
+        });
+        setSuccess(`Welcome back! Redirecting to your dashboard...`);
+        // Redirect to the appropriate dashboard based on role
+        router.push(`/dashboard/${data.data.role}`);
+        router.refresh(); // Refresh to apply middleware and get new user state
       } else {
         setError(data.message || "An error occurred.");
       }
@@ -61,13 +61,6 @@ export default function SignInPage() {
     }
 
     setIsLoading(false)
-  }
-
-  const handleDemoLogin = (account: (typeof demoAccounts)[0]) => {
-    setEmail(account.email)
-    setPassword(account.password)
-    setError("")
-    setSuccess("")
   }
 
   return (
@@ -149,6 +142,7 @@ export default function SignInPage() {
                   <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 text-green-800 dark:text-green-200">
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>{success}</AlertDescription>
+
                   </Alert>
                 )}
 
@@ -157,17 +151,7 @@ export default function SignInPage() {
                   className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white"
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Signing In...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <span>Sign In</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </div>
-                  )}
+                  {isLoading ? "Signing In..." : "Sign In"}
                 </Button>
               </form>
 
@@ -176,36 +160,6 @@ export default function SignInPage() {
                   Don't have an account? Get Started
                 </Link>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Demo Accounts */}
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-foreground">Demo Accounts</CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Click to use demo credentials
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {demoAccounts.map((account, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  className="w-full justify-start text-left h-auto p-3"
-                  onClick={() => handleDemoLogin(account)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-[#E57700] rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground capitalize">{account.role}</p>
-                      <p className="text-sm text-muted-foreground truncate">{account.email}</p>
-                    </div>
-                  </div>
-                </Button>
-              ))}
             </CardContent>
           </Card>
         </div>

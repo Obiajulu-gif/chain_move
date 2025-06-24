@@ -1,7 +1,9 @@
+// app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import jwt from 'jsonwebtoken';
+import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
   await dbConnect();
@@ -19,13 +21,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Invalid credentials.' }, { status: 401 });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET!, {
+    const token = jwt.sign({ id: user._id, role: user.role, name: user.name }, process.env.JWT_SECRET!, {
       expiresIn: '1d',
+    });
+
+    // Set the token in a secure, HttpOnly cookie
+    cookies().set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development',
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 24, // 1 day
+      path: '/',
     });
 
     return NextResponse.json({
       success: true,
-      token,
       data: {
         userId: user._id,
         name: user.name,
