@@ -98,85 +98,145 @@ export default function TripsPage() {
   const [activeTab, setActiveTab] = useState("overview")
 
   return (
-    <div className="min-h-screen bg-[#1a2332]">
-      <Sidebar role="driver" />
+    <div className="min-h-screen bg-background">
+      <Sidebar role="driver" className="md:w-64 lg:w-72" />
 
-      <div className="md:ml-64">
-        <Header userName="Emmanuel" userStatus="Not Registered" />
+      <div className="md:ml-64 lg:ml-72">
+        <Header 
+          userName="Emmanuel" 
+          userStatus="Not Registered"
+          className="md:pl-6 lg:pl-8"
+        />
 
-        <div className="p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white mb-2">Trip & Earnings Tracker</h1>
-            <p className="text-gray-400">Monitor your trips, earnings, and performance metrics</p>
+        <div className="p-3 md:p-6">
+          <div className="mb-4 md:mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                  Trip & Earnings Tracker
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Monitor your trips, earnings, and performance metrics
+                </p>
+              </div>
+              <Badge 
+                className="bg-[#E57700] text-white px-3 py-1 flex items-center gap-1"
+                variant="outline"
+              >
+                <TrendingUp className="h-4 w-4" />
+                +5.2% Growth
+              </Badge>
+            </div>
           </div>
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-[#2a3441] border-gray-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-300">Total Earnings</CardTitle>
-                <DollarSign className="h-4 w-4 text-[#E57700]" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Earnings
+                </CardTitle>
+                <div className="flex items-center gap-1">
+                  <DollarSign className="h-4 w-4 text-[#E57700]" />
+                  <Badge variant="outline" className="text-[#E57700]">
+                    +₦{tripStats.monthlyEarnings}
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">₦{tripStats.totalEarnings.toLocaleString()}</div>
-                <p className="text-xs text-green-400">+₦{tripStats.monthlyEarnings} this month</p>
+                <div className="text-2xl font-bold text-foreground">
+                  ₦{tripStats.totalEarnings.toLocaleString()}
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#2a3441] border-gray-700">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-300">Total Trips</CardTitle>
-                <Route className="h-4 w-4 text-[#E57700]" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Trips
+                </CardTitle>
+                <div className="flex items-center gap-1">
+                  <Route className="h-4 w-4 text-[#E57700]" />
+                  <Badge variant="outline" className="text-[#E57700]">
+                    +{tripStats.monthlyTrips}
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">{tripStats.totalTrips}</div>
-                <p className="text-xs text-green-400">+{tripStats.monthlyTrips} this month</p>
+                <div className="text-2xl font-bold text-foreground">
+                  {tripStats.totalTrips}
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#2a3441] border-gray-700">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-300">Average Rating</CardTitle>
-                <Star className="h-4 w-4 text-[#E57700]" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Average Rating
+                </CardTitle>
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 text-[#E57700]" />
+                  <Badge variant="outline" className="text-[#E57700]">
+                    4.8★
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">{tripStats.averageRating}★</div>
-                <p className="text-xs text-gray-400">Excellent performance</p>
+                <div className="text-2xl font-bold text-foreground">
+                  {tripStats.averageRating}★
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#2a3441] border-gray-700">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-300">Avg per Trip</CardTitle>
-                <TrendingUp className="h-4 w-4 text-[#E57700]" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Avg per Trip
+                </CardTitle>
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-4 w-4 text-[#E57700]" />
+                  <Badge variant="outline" className="text-[#E57700]">
+                    +5.2%
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">₦{tripStats.averageEarning}</div>
-                <p className="text-xs text-green-400">+5.2% from last month</p>
+                <div className="text-2xl font-bold text-foreground">
+                  ₦{tripStats.averageEarning}
+                </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Main Content Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 bg-[#2a3441] border-gray-700">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 bg-card border-border/50">
               <TabsTrigger
                 value="overview"
-                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white text-gray-300"
+                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white text-muted-foreground hover:text-foreground"
               >
-                Overview
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Overview
+                </div>
               </TabsTrigger>
               <TabsTrigger
                 value="trips"
-                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white text-gray-300"
+                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white text-muted-foreground hover:text-foreground"
               >
-                Trip History
+                <div className="flex items-center gap-2">
+                  <Route className="h-4 w-4" />
+                  Trip History
+                </div>
               </TabsTrigger>
               <TabsTrigger
                 value="analytics"
-                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white text-gray-300"
+                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white text-muted-foreground hover:text-foreground"
               >
-                Analytics
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  Analytics
+                </div>
               </TabsTrigger>
             </TabsList>
 

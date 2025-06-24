@@ -85,15 +85,24 @@ export function Sidebar({ role }: SidebarProps) {
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
 
-      {/* Overlay for mobile */}
-      {isOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsOpen(false)} />}
+      {/* Overlay for mobile with backdrop blur */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300" 
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
-      {/* Drawer */}
+      {/* Drawer with improved transitions and touch targets */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-full w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out md:translate-x-0",
+          "fixed left-0 top-0 z-50 h-full w-64 bg-card/95 backdrop-blur-sm border-r border-border/20",
+          "transform transition-all duration-300 ease-in-out md:translate-x-0",
+          "shadow-lg md:shadow-none",
           isOpen ? "translate-x-0" : "-translate-x-full",
         )}
+        aria-label="Sidebar navigation"
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -114,26 +123,41 @@ export function Sidebar({ role }: SidebarProps) {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            {items.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors relative",
-                    isActive ? "bg-[#E57700] text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="text-sm">{item.name}</span>
-                  {item.badge && (
-                    <Badge className="ml-auto bg-[#E57700] text-white text-xs px-2 py-1">{item.badge}</Badge>
-                  )}
-                </Link>
-              )
-            })}
+            <nav className="space-y-1 px-2 py-4">
+              {items.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200",
+                      "group relative overflow-hidden",
+                      isActive
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    )}
+                    onClick={() => setIsOpen(false)}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    <item.icon 
+                      className={cn(
+                        "mr-3 h-5 w-5 shrink-0 transition-transform duration-200",
+                        isActive ? "scale-110" : "group-hover:scale-110"
+                      )} 
+                      aria-hidden="true"
+                    />
+                    <span className="truncate">{item.name}</span>
+                    {isActive && (
+                      <span 
+                        className="absolute right-4 top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-primary"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </Link>
+                )
+              })}
+            </nav>
           </nav>
 
           {/* Footer actions */}

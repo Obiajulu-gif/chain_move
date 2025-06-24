@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Input, Label } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/dashboard/sidebar"
@@ -117,59 +117,60 @@ export default function InvestorDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar role="investor" />
+      <Sidebar role="investor" className="md:w-64 lg:w-72" />
 
-      <div className="md:ml-64">
+      <div className="md:ml-64 lg:ml-72">
         <Header
           userName={investorData.investor?.name || "Investor"}
           userStatus="Verified Investor"
           notificationCount={unreadNotifications}
+          className="md:pl-6 lg:pl-8"
         />
 
         <div className="p-3 md:p-6 space-y-4 md:space-y-8">
           {/* Real-time Portfolio Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-card border-border">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Available Balance</CardTitle>
-                <Wallet className="h-4 w-4 text-[#E57700]" />
+                <Wallet className="h-4 w-4 text-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">
                   ${investorData.investor?.availableBalance.toLocaleString() || "0"}
                 </div>
-                <p className="text-xs text-green-500">Ready to invest</p>
+                <p className="text-xs text-green-500 dark:text-green-400">Ready to invest</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Invested</CardTitle>
-                <TrendingUp className="h-4 w-4 text-[#E57700]" />
+                <TrendingUp className="h-4 w-4 text-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">${totalInvested.toLocaleString()}</div>
-                <p className="text-xs text-blue-500">Active investments</p>
+                <p className="text-xs text-blue-500 dark:text-blue-400">Active investments</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Returns</CardTitle>
-                <DollarSign className="h-4 w-4 text-[#E57700]" />
+                <DollarSign className="h-4 w-4 text-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">${totalReturns.toLocaleString()}</div>
-                <p className="text-xs text-green-500">
+                <p className="text-xs text-green-500 dark:text-green-400">
                   +{totalInvested > 0 ? ((totalReturns / totalInvested) * 100).toFixed(1) : 0}% ROI
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Income</CardTitle>
-                <BarChart3 className="h-4 w-4 text-[#E57700]" />
+                <BarChart3 className="h-4 w-4 text-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">${monthlyIncome.toFixed(0)}</div>
@@ -180,10 +181,10 @@ export default function InvestorDashboard() {
 
           {/* Real-time Notifications */}
           {unreadNotifications > 0 && (
-            <Card className="bg-green-50 border-green-200">
+            <Card className="bg-green-50 border-green-200 dark:bg-green-900/5 dark:border-green-800">
               <CardHeader>
-                <CardTitle className="text-green-900 flex items-center">
-                  <Bell className="h-5 w-5 mr-2" />
+                <CardTitle className="text-green-900 dark:text-green-400 flex items-center">
+                  <Bell className="h-5 w-5 mr-2 text-green-900 dark:text-green-400" />
                   New Opportunities ({unreadNotifications})
                 </CardTitle>
               </CardHeader>
@@ -193,16 +194,18 @@ export default function InvestorDashboard() {
                     .filter((n) => !n.read)
                     .slice(0, 3)
                     .map((notification) => (
-                      <div key={notification.id} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                      <div key={notification.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
                         <div>
-                          <p className="font-medium text-green-900">{notification.title}</p>
-                          <p className="text-sm text-green-700">{notification.message}</p>
-                          <p className="text-xs text-green-600">{new Date(notification.timestamp).toLocaleString()}</p>
+                          <p className="font-medium text-green-900 dark:text-green-400">{notification.title}</p>
+                          <p className="text-sm text-green-700 dark:text-green-400">{notification.message}</p>
+                          <p className="text-xs text-green-600 dark:text-green-400">
+                            {new Date(notification.timestamp).toLocaleString()}
+                          </p>
                         </div>
                         <Button
                           size="sm"
                           onClick={() => dispatch({ type: "MARK_NOTIFICATION_READ", payload: notification.id })}
-                          className="bg-green-600 hover:bg-green-700 text-white"
+                          className="bg-green-600 hover:bg-green-700 text-white dark:bg-green-400 dark:hover:bg-green-500 dark:text-white"
                         >
                           Mark Read
                         </Button>
@@ -326,34 +329,48 @@ export default function InvestorDashboard() {
                                   <span className="text-sm text-muted-foreground">Funding Progress</span>
                                   <span className="text-sm text-foreground">{loan.fundingProgress.toFixed(1)}%</span>
                                 </div>
-                                <Progress value={loan.fundingProgress} className="h-2" />
+                                <Progress 
+                                  value={loan.fundingProgress} 
+                                  className="h-2 dark:bg-muted/50"
+                                  indicatorClassName="bg-[#E57700] dark:bg-orange-400 transition-colors duration-200"
+                                />
                                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                                   <span>${loan.totalFunded.toLocaleString()} funded</span>
                                   <span>${loan.remainingAmount.toLocaleString()} remaining</span>
                                 </div>
                               </div>
 
-                              <div className="flex items-center space-x-4">
-                                <Input
-                                  type="number"
-                                  placeholder="Investment amount"
-                                  value={investmentAmount}
-                                  onChange={(e) => setInvestmentAmount(e.target.value)}
-                                  className="max-w-xs bg-background border-border"
-                                  max={Math.min(loan.remainingAmount, investorData.investor?.availableBalance || 0)}
-                                />
-                                <Button
-                                  onClick={() => handleApproveLoan(loan.id, Number.parseFloat(investmentAmount))}
-                                  disabled={!investmentAmount || Number.parseFloat(investmentAmount) <= 0}
-                                  className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
-                                >
-                                  <ThumbsUp className="h-4 w-4 mr-2" />
-                                  Approve & Invest
-                                </Button>
-                                <Button variant="outline" className="border-border text-foreground hover:bg-muted">
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </Button>
+                              <div className="space-y-4">
+                                <div className="relative w-full">
+                                  <Label htmlFor="investmentAmount" className="absolute left-3 top-2 text-xs text-muted-foreground">
+                                    Investment Amount
+                                  </Label>
+                                  <div className="relative w-full">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/60">$</span>
+                                    <Input
+                                      id="investmentAmount"
+                                      type="number"
+                                      value={investmentAmount}
+                                      onChange={(e) => setInvestmentAmount(e.target.value)}
+                                      className="pl-8 w-full h-10 text-lg"
+                                      placeholder="0.00"
+                                      min="0"
+                                      step="0.01"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                  <Button
+                                    onClick={() => handleApproveLoan(loan.id, parseFloat(investmentAmount))}
+                                    className="w-full h-10 text-lg bg-[#E57700] hover:bg-[#E57700]/90 text-white dark:bg-orange-400 dark:hover:bg-orange-500 transition-all duration-200"
+                                  >
+                                    Approve Loan
+                                  </Button>
+                                  <Button variant="outline" className="border-border text-foreground hover:bg-muted">
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </Button>
+                                </div>
                               </div>
                             </CardContent>
                           </Card>

@@ -76,78 +76,110 @@ export default function SupportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1a2332]">
-      <Sidebar role="driver" />
+    <div className="min-h-screen bg-background">
+      <Sidebar role="driver" className="md:w-64 lg:w-72" />
 
-      <div className="md:ml-64">
-        <Header userName="Emmanuel" userStatus="Not Registered" />
+      <div className="md:ml-64 lg:ml-72">
+        <Header 
+          userName="Emmanuel" 
+          userStatus="Not Registered"
+          className="md:pl-6 lg:pl-8"
+        />
 
-        <div className="p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white mb-2">Support Request</h1>
-            <p className="text-gray-400">Get help with maintenance, payments, or technical issues</p>
+        <div className="p-3 md:p-6">
+          <div className="mb-4 md:mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                  Support Request
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Get help with maintenance, payments, or technical issues
+                </p>
+              </div>
+              <Badge 
+                className="bg-blue-600 text-white px-3 py-1 flex items-center gap-1"
+                variant="outline"
+              >
+                <MessageSquare className="h-4 w-4" />
+                24/7 Support
+              </Badge>
+            </div>
           </div>
 
           {/* Quick Support Options */}
-          <div className="grid md:grid-cols-4 gap-4 mb-8">
-            <Card className="bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer">
-              <CardContent className="p-6 text-center">
-                <AlertTriangle className="h-8 w-8 text-white mx-auto mb-3" />
-                <h3 className="font-semibold text-white mb-2">Maintenance Issue</h3>
-                <p className="text-sm text-blue-100">Report vehicle problems</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            <Card className="bg-card/50 hover:bg-card/70 transition-colors duration-200 border-border/50">
+              <CardContent className="p-4 sm:p-6 text-center">
+                <div className="bg-blue-600/10 p-3 rounded-full mx-auto mb-3">
+                  <AlertTriangle className="h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">Maintenance Issue</h3>
+                <p className="text-sm text-muted-foreground">Report vehicle problems</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-yellow-600 hover:bg-yellow-700 transition-colors cursor-pointer">
-              <CardContent className="p-6 text-center">
-                <Clock className="h-8 w-8 text-white mx-auto mb-3" />
-                <h3 className="font-semibold text-white mb-2">Payment Delay</h3>
-                <p className="text-sm text-yellow-100">Request extension</p>
+            <Card className="bg-card/50 hover:bg-card/70 transition-colors duration-200 border-border/50">
+              <CardContent className="p-4 sm:p-6 text-center">
+                <div className="bg-yellow-600/10 p-3 rounded-full mx-auto mb-3">
+                  <Clock className="h-6 w-6 text-yellow-600" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">Payment Delay</h3>
+                <p className="text-sm text-muted-foreground">Request extension</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-green-600 hover:bg-green-700 transition-colors cursor-pointer">
-              <CardContent className="p-6 text-center">
-                <FileText className="h-8 w-8 text-white mx-auto mb-3" />
-                <h3 className="font-semibold text-white mb-2">Document Help</h3>
-                <p className="text-sm text-green-100">Upload assistance</p>
+            <Card className="bg-card/50 hover:bg-card/70 transition-colors duration-200 border-border/50">
+              <CardContent className="p-4 sm:p-6 text-center">
+                <div className="bg-green-600/10 p-3 rounded-full mx-auto mb-3">
+                  <FileText className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">Document Help</h3>
+                <p className="text-sm text-muted-foreground">Upload assistance</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-purple-600 hover:bg-purple-700 transition-colors cursor-pointer">
-              <CardContent className="p-6 text-center">
-                <MessageSquare className="h-8 w-8 text-white mx-auto mb-3" />
-                <h3 className="font-semibold text-white mb-2">General Support</h3>
-                <p className="text-sm text-purple-100">Other questions</p>
+            <Card className="bg-card/50 hover:bg-card/70 transition-colors duration-200 border-border/50">
+              <CardContent className="p-4 sm:p-6 text-center">
+                <div className="bg-purple-600/10 p-3 rounded-full mx-auto mb-3">
+                  <MessageSquare className="h-6 w-6 text-purple-600" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">General Support</h3>
+                <p className="text-sm text-muted-foreground">Other questions</p>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {/* Create New Ticket */}
-            <Card className="bg-[#2a3441] border-gray-700">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardHeader>
-                <CardTitle className="text-white">Create Support Ticket</CardTitle>
-                <CardDescription className="text-gray-400">Submit a new support request</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Support Ticket
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Submit a new support request
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <form className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="title" className="text-gray-300">
+                    <Label htmlFor="title">
                       Issue Title
                     </Label>
                     <Input
                       id="title"
                       placeholder="Brief description of your issue"
-                      className="bg-[#1a2332] border-gray-600 text-white"
+                      className="w-full"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-gray-300">Category</Label>
+                      <Label>Category</Label>
                       <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                        <SelectTrigger className="bg-[#1a2332] border-gray-600">
+                        <SelectTrigger>
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -161,9 +193,9 @@ export default function SupportPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-gray-300">Priority</Label>
+                      <Label>Priority</Label>
                       <Select value={selectedPriority} onValueChange={setSelectedPriority}>
-                        <SelectTrigger className="bg-[#1a2332] border-gray-600">
+                        <SelectTrigger>
                           <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                         <SelectContent>
@@ -177,18 +209,21 @@ export default function SupportPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="description" className="text-gray-300">
+                    <Label htmlFor="description">
                       Description
                     </Label>
                     <Textarea
                       id="description"
                       placeholder="Provide detailed information about your issue..."
                       rows={4}
-                      className="bg-[#1a2332] border-gray-600 text-white"
+                      className="w-full"
                     />
                   </div>
 
-                  <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                  <Button 
+                    className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+                    variant="default"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Submit Ticket
                   </Button>

@@ -160,83 +160,134 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1a2332]">
-      <Sidebar role="driver" />
+    <div className="min-h-screen bg-background">
+      <Sidebar role="driver" className="md:w-64 lg:w-72" />
 
-      <div className="md:ml-64">
-        <Header userName="Emmanuel" userStatus="Not Registered" />
+      <div className="md:ml-64 lg:ml-72">
+        <Header 
+          userName="Emmanuel" 
+          userStatus="Not Registered"
+          className="md:pl-6 lg:pl-8"
+        />
 
-        <div className="p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white mb-2">Notifications & Announcements</h1>
-            <p className="text-gray-400">Stay updated with important messages and platform announcements</p>
+        <div className="p-3 md:p-6">
+          <div className="mb-4 md:mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                  Notifications & Announcements
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Stay updated with important messages and platform announcements
+                </p>
+              </div>
+              <Badge 
+                className="bg-[#E57700] text-white px-3 py-1 flex items-center gap-1"
+                variant="outline"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadCount} Unread
+              </Badge>
+            </div>
           </div>
 
           {/* Quick Stats */}
-          <div className="grid md:grid-cols-4 gap-4 mb-8">
-            <Card className="bg-[#2a3441] border-gray-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardContent className="p-4 text-center">
-                <Bell className="h-6 w-6 text-[#E57700] mx-auto mb-2" />
-                <div className="text-xl font-bold text-white">{unreadCount}</div>
-                <p className="text-sm text-gray-400">Unread</p>
+                <div className="bg-[#E57700]/10 p-3 rounded-full mx-auto mb-2">
+                  <Bell className="h-6 w-6 text-[#E57700]" />
+                </div>
+                <div className="text-xl font-bold text-foreground">{unreadCount}</div>
+                <p className="text-sm text-muted-foreground">Unread</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#2a3441] border-gray-700">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardContent className="p-4 text-center">
-                <AlertTriangle className="h-6 w-6 text-red-400 mx-auto mb-2" />
-                <div className="text-xl font-bold text-white">2</div>
-                <p className="text-sm text-gray-400">High Priority</p>
+                <div className="bg-red-600/10 p-3 rounded-full mx-auto mb-2">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="text-xl font-bold text-foreground">2</div>
+                <p className="text-sm text-muted-foreground">High Priority</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#2a3441] border-gray-700">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardContent className="p-4 text-center">
-                <CheckCircle className="h-6 w-6 text-green-400 mx-auto mb-2" />
-                <div className="text-xl font-bold text-white">1</div>
-                <p className="text-sm text-gray-400">Achievements</p>
+                <div className="bg-green-600/10 p-3 rounded-full mx-auto mb-2">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="text-xl font-bold text-foreground">1</div>
+                <p className="text-sm text-muted-foreground">Achievements</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#2a3441] border-gray-700">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardContent className="p-4 text-center">
-                <Info className="h-6 w-6 text-blue-400 mx-auto mb-2" />
-                <div className="text-xl font-bold text-white">4</div>
-                <p className="text-sm text-gray-400">Announcements</p>
+                <div className="bg-blue-600/10 p-3 rounded-full mx-auto mb-2">
+                  <Settings className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="text-xl font-bold text-foreground">3</div>
+                <p className="text-sm text-muted-foreground">Settings</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
+              <CardContent className="p-4 text-center">
+                <div className="bg-blue-600/10 p-3 rounded-full mx-auto mb-2">
+                  <Info className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="text-xl font-bold text-foreground">4</div>
+                <p className="text-sm text-muted-foreground">Announcements</p>
               </CardContent>
             </Card>
           </div>
 
           {/* Main Content Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 bg-[#2a3441] border-gray-700">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 bg-card border-border/50">
               <TabsTrigger
                 value="notifications"
-                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white text-gray-300"
+                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white text-muted-foreground hover:text-foreground"
               >
-                Notifications ({unreadCount})
+                <div className="flex items-center gap-2">
+                  <Bell className="h-4 w-4" />
+                  Notifications ({unreadCount})
+                </div>
               </TabsTrigger>
               <TabsTrigger
                 value="announcements"
-                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white text-gray-300"
+                className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white text-muted-foreground hover:text-foreground"
               >
-                Announcements
+                <div className="flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Announcements
+                </div>
               </TabsTrigger>
             </TabsList>
 
             {/* Notifications Tab */}
             <TabsContent value="notifications" className="space-y-6">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <h2 className="text-xl font-semibold text-white">Your Notifications</h2>
-                  <p className="text-gray-400">Important updates and reminders</p>
+                  <h2 className="text-xl font-semibold text-foreground">Your Notifications</h2>
+                  <p className="text-muted-foreground">Important updates and reminders</p>
                 </div>
-                <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" className="border-gray-600 text-gray-300 hover:bg-gray-700">
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
                     <MarkAsRead className="h-4 w-4 mr-2" />
                     Mark All Read
                   </Button>
-                  <Button variant="outline" size="sm" className="border-gray-600 text-gray-300 hover:bg-gray-700">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
                     <Settings className="h-4 w-4 mr-2" />
                     Settings
                   </Button>
@@ -247,33 +298,44 @@ export default function NotificationsPage() {
                 {notifications.map((notification) => (
                   <Card
                     key={notification.id}
-                    className={`bg-[#2a3441] border-gray-700 ${!notification.read ? "border-l-4 border-l-[#E57700]" : ""}`}
+                    className={`bg-card border-border/50 hover:bg-card/70 transition-colors duration-200 ${!notification.read ? "border-l-4 border-l-[#E57700]" : ""}`}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                         <div className="flex items-start space-x-4 flex-1">
                           <div className="mt-1">{getNotificationIcon(notification.type)}</div>
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
-                              <h3 className={`font-semibold ${!notification.read ? "text-white" : "text-gray-300"}`}>
+                              <h3 className={`font-semibold ${!notification.read ? "text-foreground" : "text-muted-foreground"}`}>
                                 {notification.title}
                               </h3>
                               {!notification.read && <div className="w-2 h-2 bg-[#E57700] rounded-full" />}
-                              <Badge className={`${getPriorityColor(notification.priority)} text-white text-xs`}>
+                              <Badge 
+                                className={`${getPriorityColor(notification.priority)} text-white text-xs`}
+                                variant="outline"
+                              >
                                 {notification.priority}
                               </Badge>
                             </div>
-                            <p className="text-gray-400 mb-3">{notification.message}</p>
-                            <p className="text-xs text-gray-500">{notification.timestamp}</p>
+                            <p className="text-muted-foreground mb-3">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground">{notification.timestamp}</p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-col sm:flex-row items-center gap-2">
                           {notification.action && (
-                            <Button size="sm" className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                            <Button 
+                              size="sm" 
+                              className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+                              variant="default"
+                            >
                               {notification.action}
                             </Button>
                           )}
-                          <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-muted-foreground hover:text-foreground"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -297,24 +359,33 @@ export default function NotificationsPage() {
                 {announcements.map((announcement) => (
                   <Card
                     key={announcement.id}
-                    className={`bg-[#2a3441] border-gray-700 ${announcement.important ? "border-l-4 border-l-yellow-500" : ""}`}
+                    className={`bg-card border-border/50 hover:bg-card/70 transition-colors duration-200 ${announcement.important ? "border-l-4 border-l-yellow-500" : ""}`}
                   >
                     <CardHeader>
-                      <div className="flex items-start justify-between">
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                         <div className="flex items-center space-x-3">
                           <span className="text-2xl">{getAnnouncementIcon(announcement.type)}</span>
                           <div>
-                            <CardTitle className="text-white flex items-center space-x-2">
-                              <span>{announcement.title}</span>
-                              {announcement.important && <Badge className="bg-yellow-600 text-white">Important</Badge>}
+                            <CardTitle className="flex items-center space-x-2">
+                              <span className="text-foreground">{announcement.title}</span>
+                              {announcement.important && (
+                                <Badge 
+                                  className="bg-yellow-600 text-white"
+                                  variant="outline"
+                                >
+                                  Important
+                                </Badge>
+                              )}
                             </CardTitle>
-                            <CardDescription className="text-gray-400">{announcement.date}</CardDescription>
+                            <CardDescription className="text-muted-foreground">
+                              {announcement.date}
+                            </CardDescription>
                           </div>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-300 leading-relaxed">{announcement.content}</p>
+                      <p className="text-muted-foreground leading-relaxed">{announcement.content}</p>
                     </CardContent>
                   </Card>
                 ))}

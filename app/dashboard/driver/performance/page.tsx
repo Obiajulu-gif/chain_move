@@ -133,70 +133,115 @@ const creditBuilderTips = [
 
 export default function PerformancePage() {
   return (
-    <div className="min-h-screen bg-[#1a2332]">
-      <Sidebar role="driver" />
+    <div className="min-h-screen bg-background">
+      <Sidebar role="driver" className="md:w-64 lg:w-72" />
 
-      <div className="md:ml-64">
-        <Header userName="Emmanuel" userStatus="Not Registered" />
+      <div className="md:ml-64 lg:ml-72">
+        <Header 
+          userName="Emmanuel" 
+          userStatus="Not Registered"
+          className="md:pl-6 lg:pl-8"
+        />
 
-        <div className="p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white mb-2">Performance Score & Credit Builder</h1>
-            <p className="text-gray-400">Track your performance metrics and build your credit profile</p>
+        <div className="p-3 md:p-6">
+          <div className="mb-4 md:mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                  Performance Score & Credit Builder
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Track your performance metrics and build your credit profile
+                </p>
+              </div>
+              <Badge 
+                className="bg-[#E57700] text-white px-3 py-1 flex items-center gap-1"
+                variant="outline"
+              >
+                <TrendingUp className="h-4 w-4" />
+                {performanceData.level}
+              </Badge>
+            </div>
           </div>
 
           {/* Performance Overview */}
-          <div className="grid lg:grid-cols-3 gap-6 mb-8">
-            <Card className="bg-[#2a3441] border-gray-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <Award className="h-5 w-5 mr-2" />
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-[#E57700]" />
                   Overall Performance
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-[#E57700] mb-2">{performanceData.overallScore}</div>
-                  <p className="text-sm text-gray-400 mb-4">Performance Score</p>
-                  <Badge className="bg-yellow-600 text-white mb-4">{performanceData.level}</Badge>
+                  <div className="text-4xl font-bold text-[#E57700] mb-2">
+                    {performanceData.overallScore}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Performance Score
+                  </p>
+                  <Badge 
+                    className="bg-yellow-600 text-white mb-4"
+                    variant="outline"
+                  >
+                    {performanceData.level}
+                  </Badge>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Progress to {performanceData.nextLevel}</span>
-                      <span className="text-white">{performanceData.pointsToNext} points needed</span>
+                      <span className="text-muted-foreground">
+                        Progress to {performanceData.nextLevel}
+                      </span>
+                      <span className="text-foreground">
+                        {performanceData.pointsToNext} points needed
+                      </span>
                     </div>
-                    <Progress value={75} className="h-2 bg-gray-600" />
+                    <Progress value={75} className="h-2 bg-gray-200 dark:bg-gray-800" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#2a3441] border-gray-700">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <TrendingUp className="h-5 w-5 mr-2" />
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-green-400" />
                   Credit Score
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-green-400 mb-2">{performanceData.creditScore}</div>
-                  <p className="text-sm text-gray-400 mb-4">Credit Score</p>
-                  <Badge className="bg-green-600 text-white mb-4">Good Credit</Badge>
+                  <div className="text-4xl font-bold text-green-400 mb-2">
+                    {performanceData.creditScore}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Credit Score
+                  </p>
+                  <Badge 
+                    className="bg-green-600 text-white mb-4"
+                    variant="outline"
+                  >
+                    Good Credit
+                  </Badge>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Credit Range</span>
-                      <span className="text-white">300 - 850</span>
+                      <span className="text-muted-foreground">
+                        Credit Range
+                      </span>
+                      <span className="text-foreground">
+                        300 - 850
+                      </span>
                     </div>
-                    <Progress value={70} className="h-2 bg-gray-600" />
+                    <Progress value={70} className="h-2 bg-gray-200 dark:bg-gray-800" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#2a3441] border-gray-700">
+            <Card className="bg-card border-border/50 hover:bg-card/70 transition-colors duration-200">
               <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <Target className="h-5 w-5 mr-2" />
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-blue-400" />
                   Quick Stats
                 </CardTitle>
               </CardHeader>
