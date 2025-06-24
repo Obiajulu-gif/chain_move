@@ -557,10 +557,4 @@ export default function DriverDashboard() {
     </div>
   )
 }
-          </Tabs>
-        </div>
-      </main>
-    </div>
-  </div>
-)
-{{ ... }}
+

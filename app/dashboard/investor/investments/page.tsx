@@ -300,61 +300,69 @@ export default function MyInvestmentsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar role="investor" />
+      <Sidebar 
+        role="investor" 
+        className="md:w-64 lg:w-72"
+        mobileWidth="w-64"
+      />
 
-      <div className="md:ml-64">
-        <Header userName="Marcus" userStatus="Verified Investor" />
+      <div className="md:ml-64 lg:ml-72">
+        <Header 
+          userName="Marcus" 
+          userStatus="Verified Investor"
+          className="md:pl-6 lg:pl-8"
+        />
 
-        <div className="p-6">
+        <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
           {/* Hero Section */}
-          <div className="mb-8">
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
+          <div className="mb-6 sm:mb-8">
+            <div className="grid sm:grid-cols-2 gap-4 sm:gap-8 items-center">
               <div className="relative">
                 <Image
                   src="/images/dashboard-hero.png"
                   alt="My investments hero"
                   width={600}
                   height={400}
-                  className="rounded-2xl object-cover w-full h-[300px]"
+                  className="rounded-lg sm:rounded-2xl object-cover w-full h-[200px] sm:h-[300px]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent rounded-2xl" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent rounded-lg sm:rounded-2xl" />
               </div>
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <div>
-                  <h1 className="text-3xl font-bold text-foreground mb-4">My Investment Portfolio</h1>
-                  <p className="text-muted-foreground text-lg leading-relaxed">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 sm:mb-4">My Investment Portfolio</h1>
+                  <p className="text-sm sm:text-lg text-muted-foreground leading-relaxed">
                     Track your active and completed investments. Monitor repayment status and manage your portfolio
                     performance with advanced analytics and reporting tools.
                   </p>
                 </div>
-                <div className="flex space-x-3">
-                  <div className="w-3 h-3 bg-[#E57700] rounded-full"></div>
-                  <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                <div className="flex flex-wrap justify-start gap-2 sm:gap-3">
+                  <div className="w-2 h-2 bg-[#E57700] rounded-full"></div>
+                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Portfolio Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-card border-border">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Invested</CardTitle>
-                <DollarSign className="h-4 w-4 text-[#E57700]" />
+                <DollarSign className="h-4 w-4 text-foreground" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <div className="text-2xl font-bold text-foreground">${totalInvested.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground">Across {investments.length} investments</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Current Value</CardTitle>
-                <TrendingUp className="h-4 w-4 text-[#E57700]" />
+                <TrendingUp className="h-4 w-4 text-foreground" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <div className="text-2xl font-bold text-foreground">${totalCurrentValue.toLocaleString()}</div>
                 <p className="text-xs text-green-400">
                   +${totalReturns.toLocaleString()} ({((totalReturns / totalInvested) * 100).toFixed(1)}%)
@@ -362,23 +370,23 @@ export default function MyInvestmentsPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Income</CardTitle>
-                <Calendar className="h-4 w-4 text-[#E57700]" />
+                <Calendar className="h-4 w-4 text-foreground" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <div className="text-2xl font-bold text-foreground">${monthlyIncome}</div>
                 <p className="text-xs text-muted-foreground">From active investments</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Average ROI</CardTitle>
-                <TrendingUp className="h-4 w-4 text-[#E57700]" />
+                <TrendingUp className="h-4 w-4 text-foreground" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <div className="text-2xl font-bold text-foreground">{averageROI.toFixed(1)}%</div>
                 <p className="text-xs text-muted-foreground">Portfolio average</p>
               </CardContent>

@@ -94,37 +94,45 @@ export default function InvestCTAPage() {
 
   return (
     <div className="min-h-screen bg-[#1a2332]">
-      <Sidebar role="investor" />
+      <Sidebar 
+        role="investor" 
+        className="md:w-64 lg:w-72"
+        mobileWidth="w-64"
+      />
 
-      <div className="md:ml-64">
-        <Header userName="Marcus" userStatus="Verified Investor" />
+      <div className="md:ml-64 lg:ml-72">
+        <Header 
+          userName="Marcus" 
+          userStatus="Verified Investor"
+          className="md:pl-6 lg:pl-8"
+        />
 
-        <div className="p-6">
+        <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
           {/* Hero Section */}
-          <div className="mb-8">
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
+          <div className="mb-6 sm:mb-8">
+            <div className="grid sm:grid-cols-2 gap-4 sm:gap-8 items-center">
               <div className="relative">
                 <Image
                   src="/images/dashboard-hero.png"
                   alt="Invest CTA hero"
                   width={600}
                   height={400}
-                  className="rounded-2xl object-cover w-full h-[300px]"
+                  className="rounded-lg sm:rounded-2xl object-cover w-full h-[200px] sm:h-[300px]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent rounded-2xl" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent rounded-lg sm:rounded-2xl" />
               </div>
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <div>
-                  <h1 className="text-3xl font-bold text-white mb-4">Start Investing Today</h1>
-                  <p className="text-gray-300 text-lg leading-relaxed">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 sm:mb-4">Start Investing Today</h1>
+                  <p className="text-sm sm:text-lg text-muted-foreground leading-relaxed">
                     Connect your wallet and sign smart contracts to begin investing in mobility assets. Secure,
                     transparent, and decentralized.
                   </p>
                 </div>
-                <div className="flex space-x-3">
-                  <div className="w-3 h-3 bg-[#E57700] rounded-full"></div>
-                  <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                <div className="flex flex-wrap justify-start gap-2 sm:gap-3">
+                  <div className="w-2 h-2 bg-[#E57700] rounded-full"></div>
+                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
                 </div>
               </div>
             </div>

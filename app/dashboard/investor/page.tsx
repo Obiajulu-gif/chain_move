@@ -117,7 +117,11 @@ export default function InvestorDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar role="investor" className="md:w-64 lg:w-72" />
+      <Sidebar 
+        role="investor" 
+        className="md:w-64 lg:w-72"
+        mobileWidth="w-64"
+      />
 
       <div className="md:ml-64 lg:ml-72">
         <Header
@@ -127,15 +131,15 @@ export default function InvestorDashboard() {
           className="md:pl-6 lg:pl-8"
         />
 
-        <div className="p-3 md:p-6 space-y-4 md:space-y-8">
+        <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
           {/* Real-time Portfolio Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+            <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Available Balance</CardTitle>
                 <Wallet className="h-4 w-4 text-foreground" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <div className="text-2xl font-bold text-foreground">
                   ${investorData.investor?.availableBalance.toLocaleString() || "0"}
                 </div>
@@ -143,23 +147,23 @@ export default function InvestorDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+            <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Invested</CardTitle>
                 <TrendingUp className="h-4 w-4 text-foreground" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <div className="text-2xl font-bold text-foreground">${totalInvested.toLocaleString()}</div>
                 <p className="text-xs text-blue-500 dark:text-blue-400">Active investments</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+            <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Returns</CardTitle>
                 <DollarSign className="h-4 w-4 text-foreground" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <div className="text-2xl font-bold text-foreground">${totalReturns.toLocaleString()}</div>
                 <p className="text-xs text-green-500 dark:text-green-400">
                   +{totalInvested > 0 ? ((totalReturns / totalInvested) * 100).toFixed(1) : 0}% ROI
@@ -167,12 +171,12 @@ export default function InvestorDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+            <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Income</CardTitle>
                 <BarChart3 className="h-4 w-4 text-foreground" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <div className="text-2xl font-bold text-foreground">${monthlyIncome.toFixed(0)}</div>
                 <p className="text-xs text-muted-foreground">Expected monthly</p>
               </CardContent>
@@ -181,30 +185,27 @@ export default function InvestorDashboard() {
 
           {/* Real-time Notifications */}
           {unreadNotifications > 0 && (
-            <Card className="bg-green-50 border-green-200 dark:bg-green-900/5 dark:border-green-800">
+            <Card className="bg-card/50 border-border/50 hover:bg-card/70 transition-all duration-200">
               <CardHeader>
-                <CardTitle className="text-green-900 dark:text-green-400 flex items-center">
-                  <Bell className="h-5 w-5 mr-2 text-green-900 dark:text-green-400" />
-                  New Opportunities ({unreadNotifications})
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-foreground" />
+                  <span>New Opportunities ({unreadNotifications})</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
+              <CardContent className="p-4">
+                <div className="space-y-4">
                   {investorData.notifications
                     .filter((n) => !n.read)
                     .slice(0, 3)
                     .map((notification) => (
-                      <div key={notification.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
-                        <div>
-                          <p className="font-medium text-green-900 dark:text-green-400">{notification.title}</p>
-                          <p className="text-sm text-green-700 dark:text-green-400">{notification.message}</p>
-                          <p className="text-xs text-green-600 dark:text-green-400">
-                            {new Date(notification.timestamp).toLocaleString()}
-                          </p>
+                      <div 
+                        key={notification.id} 
+                        className="flex items-start gap-3 p-3 bg-card/20 rounded-lg hover:bg-card/30 transition-colors duration-200"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground">{notification.title}</p>
+                          <p className="text-sm text-muted-foreground">{notification.message}</p>
                         </div>
-                        <Button
-                          size="sm"
-                          onClick={() => dispatch({ type: "MARK_NOTIFICATION_READ", payload: notification.id })}
                           className="bg-green-600 hover:bg-green-700 text-white dark:bg-green-400 dark:hover:bg-green-500 dark:text-white"
                         >
                           Mark Read

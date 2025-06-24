@@ -438,46 +438,6 @@ export default function TripsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-400">Acceptance Rate</span>
-                          <span className="text-white">95%</span>
-                        </div>
-                        <div className="w-full bg-gray-600 rounded-full h-2">
-                          <div className="bg-green-500 h-2 rounded-full" style={{ width: "95%" }}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-400">Completion Rate</span>
-                          <span className="text-white">98.5%</span>
-                        </div>
-                        <div className="w-full bg-gray-600 rounded-full h-2">
-                          <div className="bg-green-500 h-2 rounded-full" style={{ width: "98.5%" }}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-400">Customer Rating</span>
-                          <span className="text-white">4.8/5</span>
-                        </div>
-                        <div className="w-full bg-gray-600 rounded-full h-2">
-                          <div className="bg-yellow-500 h-2 rounded-full" style={{ width: "96%" }}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-400">Response Time</span>
-                          <span className="text-white">2.3 min</span>
-                        </div>
-                        <div className="w-full bg-gray-600 rounded-full h-2">
-                          <div className="bg-blue-500 h-2 rounded-full" style={{ width: "85%" }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
             </TabsContent>
           </Tabs>
         </div>
