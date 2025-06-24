@@ -61,6 +61,71 @@ Since your main website is already deployed, you need to create a **new Vercel p
    TTL: 3600
    ```
 
+### Step 4: Namecheap DNS Configuration
+
+Since you purchased your domain on Namecheap, follow these specific steps:
+
+1. **Login to Namecheap**
+   - Go to [namecheap.com](https://namecheap.com)
+   - Login to your account
+   - Go to "Domain List" in your dashboard
+
+2. **Access DNS Management**
+   - Find your domain `chainmove.xyz`
+   - Click "Manage" next to your domain
+   - Go to the "Advanced DNS" tab
+
+3. **Configure DNS Records for Documentation**
+   
+   **Add CNAME Record for docs subdomain:**
+   ```
+   Type: CNAME Record
+   Host: docs
+   Value: cname.vercel-dns.com
+   TTL: Automatic (or 300)
+   ```
+
+   **Your DNS records should look like this:**
+   | Type | Host | Value | TTL |
+   |------|------|-------|-----|
+   | CNAME | docs | cname.vercel-dns.com | Automatic |
+   | A Record | @ | [Your main site IP] | Automatic |
+   | CNAME | www | chainmove.xyz | Automatic |
+
+4. **Important Namecheap Settings**
+   - **Nameservers**: Should be set to "Namecheap BasicDNS" (default)
+   - **DNSSEC**: Can be enabled for additional security (optional)
+   - **Email Forwarding**: Configure if needed (separate from website)
+
+5. **Verify Configuration**
+   - After adding the CNAME record, it may take 5-30 minutes to propagate
+   - You can check propagation at [whatsmydns.net](https://www.whatsmydns.net)
+   - Search for `docs.chainmove.xyz` to verify the CNAME is working
+
+### Additional Namecheap Considerations
+
+**If your main website (`chainmove.xyz`) isn't set up yet:**
+1. **Add A Record for main domain:**
+   ```
+   Type: A Record
+   Host: @
+   Value: [Your main site server IP or Vercel IP]
+   TTL: Automatic
+   ```
+
+2. **Add CNAME for www subdomain:**
+   ```
+   Type: CNAME Record
+   Host: www
+   Value: chainmove.xyz
+   TTL: Automatic
+   ```
+
+**Security Features in Namecheap:**
+- Enable **Domain Lock** to prevent unauthorized transfers
+- Consider **WhoisGuard** for privacy protection
+- Enable **Two-Factor Authentication** on your Namecheap account
+
 ## Vercel Configuration File
 
 The `vercel.json` in your documentation directory should look like this:
@@ -220,67 +285,4 @@ Your complete setup should be:
    - Check domain registrar's DNS management panel
 
 4. **Build Failures**
-   ```bash
-   # Clear cache and rebuild
-   npm run clear
-   npm run build
    ```
-
-### Debug Commands
-
-```bash
-# Check build locally
-npm run build
-npm run serve
-
-# Analyze bundle
-npm run build -- --bundle-analyzer
-
-# Check for broken links
-npm run build -- --no-minify
-```
-
-## Monitoring and Maintenance
-
-### Analytics
-- Enable Vercel Analytics in project settings
-- Monitor Core Web Vitals
-- Track deployment frequency and build times
-
-### Updates
-- Keep dependencies updated regularly
-- Monitor Vercel build logs for warnings
-- Test major updates in preview deployments first
-
-## Security
-
-- Vercel automatically provides SSL certificates
-- Enable security headers in `vercel.json`
-- Consider adding CSP headers for additional security
-
-## Support Resources
-
-- [Vercel Documentation](https://vercel.com/docs)
-- [Docusaurus Deployment Guide](https://docusaurus.io/docs/deployment)
-- [Custom Domain Setup](https://vercel.com/docs/custom-domains)
-- Project repository: [github.com/obiajulu-gif/chain_move](https://github.com/obiajulu-gif/chain_move)
-
-## Quick Reference
-
-### Key URLs
-- **Main Site**: https://chainmove.xyz
-- **Documentation**: https://docs.chainmove.xyz
-- **GitHub**: https://github.com/obiajulu-gif/chain_move
-- **Vercel Dashboard**: https://vercel.com/dashboard
-
-### Essential Commands
-```bash
-# Local development
-cd docs/chainmove-docs && npm start
-
-# Build for production
-npm run build
-
-# Deploy via CLI
-vercel --prod
-``` 
