@@ -12,10 +12,10 @@ Welcome to the official documentation for ChainMove, the revolutionary blockchai
 [![GitHub Stars](https://img.shields.io/github/stars/obiajulu-gif/chain_move?style=for-the-badge&logo=github&color=yellow)](https://github.com/obiajulu-gif/chain_move/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/obiajulu-gif/chain_move?style=for-the-badge&logo=github&color=blue)](https://github.com/obiajulu-gif/chain_move/network/members)
 [![GitHub Issues](https://img.shields.io/github/issues/obiajulu-gif/chain_move?style=for-the-badge&logo=github&color=red)](https://github.com/obiajulu-gif/chain_move/issues)
-[![License](https://img.shields.io/github/license/obiajulu-gif/chain_move?style=for-the-badge&color=green)](https://github.com/obiajulu-gif/chain_move/blob/documentation/LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-green?style=for-the-badge&logo=apache&logoColor=white)](https://github.com/obiajulu-gif/chain_move/blob/documentation/LICENSE)
 
 [![Telegram](https://img.shields.io/badge/Telegram-Join%20Community-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/Chainmoveinnovations)
-[![Twitter Follow](https://img.shields.io/twitter/follow/ChainMove1?style=for-the-badge&logo=twitter&color=1DA1F2)](https://twitter.com/ChainMove1)
+[![Twitter](https://img.shields.io/badge/Twitter-Follow%20%40ChainMove1-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/ChainMove1)
 [![Website](https://img.shields.io/badge/Website-chainmove.xyz-000000?style=for-the-badge&logo=world&logoColor=white)](https://www.chainmove.xyz)
 [![Docs](https://img.shields.io/badge/Docs-Latest-brightgreen?style=for-the-badge&logo=gitbook&logoColor=white)](/)
 
@@ -89,7 +89,7 @@ Here are some of the most accessed sections of our documentation:
 
 Join our vibrant community:
 
-- **Telegram**: [Join our channel](https://t.me/chainmove) for real-time discussions
+- **Telegram**: [Join our channel](https://t.me/Chainmoveinnovations) for real-time discussions
 - **GitHub**: [Contribute to the project](https://github.com/obiajulu-gif/chain_move)
 - **Support**: [Get help](mailto:support@chainmove.xyz) from our team
 
