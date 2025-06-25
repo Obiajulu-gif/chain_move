@@ -36,7 +36,7 @@ The main documentation site is built with **Docusaurus** and is located in:
 ### For New Users
 - [Creating an Account](https://docs.chainmove.xyz/user-guide/drivers/creating-account)
 - [Making Your First Investment](https://docs.chainmove.xyz/user-guide/investors/)
-- [Understanding the Platform](hhttps://docs.chainmove.xyz/introduction/features)
+- [Understanding the Platform](https://docs.chainmove.xyz/introduction/features)
 
 ## 👥 User Guides
 
@@ -57,12 +57,12 @@ The main documentation site is built with **Docusaurus** and is located in:
 - [REST API](https://docs.chainmove.xyz/api/) - Complete API documentation
 
 ### Smart Contracts
-- [Overview](https://docs.chainmove.xyz/docs/smart-contracts/) - Smart contract architecture
+- [Overview](https://docs.chainmove.xyz/smart-contracts/) - Smart contract architecture
 - [Deployment Guide](https://docs.chainmove.xyz/technical/developer-guide)
 
 
 ### Architecture
-- [System Overview](https://docs.chainmove.xyz/docs/technical/architecture) - High-level architecture
+- [System Overview](https://docs.chainmove.xyz/technical/architecture) - High-level architecture
 - [Data Flow](https://docs.chainmove.xyz/technical/developer-guide#developer-workflow) - How data moves through the system
 - [Security Model](https://docs.chainmove.xyz/technical/architecture#-security-architecture) - Security principles and practices
 - [Scaling](https://docs.chainmove.xyz/technical/architecture#-scalability-considerations) - Performance and scaling considerations
@@ -140,19 +140,19 @@ We welcome contributions to improve the documentation! Please see our [Contribut
 When making changes to the ChainMove platform, update the corresponding documentation:
 
 ### Frontend Changes
-- **Component Updates**: Update [UI Components](https://docs.chainmove.xyz/docs/technical/frontend/components)
-- **New Features**: Add to [User Guide](https://docs.chainmove.xyz/docs/user-guide/)
-- **API Integration**: Update [API Usage Examples](https://docs.chainmove.xyz/docs/api/examples)
+- **Component Updates**: Update [UI Components](https://docs.chainmove.xyz/technical/frontend/components)
+- **New Features**: Add to [User Guide](https://docs.chainmove.xyz/user-guide/)
+- **API Integration**: Update [API Usage Examples](https://docs.chainmove.xyz/api/examples)
 
 ### Backend Changes
-- **API Endpoints**: Update [API Reference](https://docs.chainmove.xyz/docs/api/)
-- **Database Schema**: Update [Database Documentation](https://docs.chainmove.xyz/docs/technical/database)
-- **Authentication**: Update [Auth Guide](https://docs.chainmove.xyz/docs/api/authentication)
+- **API Endpoints**: Update [API Reference](https://docs.chainmove.xyz/api/)
+- **Database Schema**: Update [Database Documentation](https://docs.chainmove.xyz/technical/database)
+- **Authentication**: Update [Auth Guide](https://docs.chainmove.xyz/api/authentication)
 
 ### Smart Contract Changes
-- **Contract Updates**: Update [Smart Contracts](https://docs.chainmove.xyz/docs/smart-contracts/)
-- **ABI Changes**: Update [Integration Guide](https://docs.chainmove.xyz/docs/smart-contracts/integration)
-- **Deployment**: Update [Deployment Guide](https://docs.chainmove.xyz/docs/smart-contracts/deployment)
+- **Contract Updates**: Update [Smart Contracts](https://docs.chainmove.xyz/smart-contracts/)
+- **ABI Changes**: Update [Integration Guide](https://docs.chainmove.xyz/smart-contracts/integration)
+- **Deployment**: Update [Deployment Guide](https://docs.chainmove.xyz/smart-contracts/deployment)
 
 ### Configuration Changes
 - **Environment Variables**: Update [Configuration Guide](https://docs.chainmove.xyz/getting-started/configuration)
@@ -193,9 +193,9 @@ The documentation is primarily available as a web application, with additional f
 We welcome contributions from the community! Here's how you can help:
 
 - [How to Contribute](./CONTRIBUTING.md) - Complete contribution guide
-- [Code of Conduct](./CODE_OF_CONDUCT.md) - Community guidelines
-- [Issue Templates](./.github/ISSUE_TEMPLATE/) - Report bugs or request features
-- [Pull Request Template](./.github/PULL_REQUEST_TEMPLATE.md) - Submit changes
+- [Code of Conduct](https://docs.chainmove.xyz/resources/code-of-conduct) - Community guidelines
+- [Issue Templates](https://github.com/obiajulu-gif/chain_move/issues/new) - Report bugs or request features
+- [Pull Requests](https://github.com/obiajulu-gif/chain_move/pulls) - Submit changes
 
 ### Types of Contributions Needed
 
@@ -208,8 +208,8 @@ We welcome contributions from the community! Here's how you can help:
 
 - [FAQ](https://docs.chainmove.xyz/resources/faq) - Frequently asked questions
 - [Troubleshooting](https://docs.chainmove.xyz/resources/troubleshooting) - Common issues and solutions
-- [Changelog](./CHANGELOG.md) - Release history and version information
-- [Glossary](https://docs.chainmove.xyz/docs/resources/glossary) - Key terms and definitions
+- [Changelog](https://docs.chainmove.xyz/resources/changelog) - Release history and version information
+- [Glossary](https://docs.chainmove.xyz/resources/glossary) - Key terms and definitions
 - [Contributing](https://docs.chainmove.xyz/resources/contributing) - Contributing to the project
 
 ## 🔧 Technical Documentation
@@ -251,7 +251,7 @@ This documentation is licensed under the [MIT License](LICENSE).
 ---
 
 <p align="center">
-  📄 <a href="./CHANGELOG.md">View Changelog</a> • 
+  📄 <a href="https://docs.chainmove.xyz/resources/changelog">View Changelog</a> • 
   📝 <a href="./LICENSE">License</a> • 
   🌐 <a href="https://chainmove.xyz">Website</a> •
   📖 <a href="https://docs.chainmove.xyz">Documentation</a>

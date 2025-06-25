@@ -218,7 +218,7 @@ Edit `sidebars.ts` for:
 - Use clear, concise language
 - Write in active voice
 - Use second person ("you") for user-focused content
-- Be consistent with terminology (check the [Glossary](https://docs.chainmove.xyz/docs/resources/glossary))
+- Be consistent with terminology (check the [Glossary](https://docs.chainmove.xyz/resources/glossary))
 - Use sentence case for headings
 - Keep paragraphs short (3-4 sentences max)
 

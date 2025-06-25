@@ -17,7 +17,7 @@ Thank you for your interest in contributing to ChainMove! We welcome all contrib
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+This project and everyone participating in it is governed by our [Code of Conduct](https://docs.chainmove.xyz/resources/code-of-conduct). By participating, you are expected to uphold this code.
 
 ## How Can I Contribute?
 
@@ -87,7 +87,7 @@ docs/chainmove-docs/
 - Use clear, concise language
 - Write in active voice
 - Use second person ("you") for user-focused content
-- Be consistent with terminology (check the [Glossary](https://docs.chainmove.xyz/docs/resources/glossary))
+- Be consistent with terminology (check the [Glossary](https://docs.chainmove.xyz/resources/glossary))
 - Use sentence case for headings
 - Keep paragraphs short (3-4 sentences max)
 - Use lists for sequential steps or multiple items
@@ -317,63 +317,63 @@ Closes #456
 
 #### Component Updates
 - **When**: Modifying existing UI components or adding new ones
-- **Update**: [UI Components Guide](https://docs.chainmove.xyz/docs/technical/frontend/components)
+- **Update**: [UI Components Guide](https://docs.chainmove.xyz/technical/frontend/components)
 - **Include**: Component API, props, usage examples, screenshots
 
 #### New Features
 - **When**: Adding new user-facing features
-- **Update**: Appropriate section in [User Guide](https://docs.chainmove.xyz/docs/user-guide/)
+- **Update**: Appropriate section in [User Guide](https://docs.chainmove.xyz/user-guide/)
 - **Include**: Step-by-step instructions, screenshots, common use cases
 
 #### API Integration Changes
 - **When**: Changing how frontend consumes APIs
-- **Update**: [API Usage Examples](https://docs.chainmove.xyz/docs/api/examples)
+- **Update**: [API Usage Examples](https://docs.chainmove.xyz/api/examples)
 - **Include**: Updated code examples, error handling
 
 ### Backend Changes
 
 #### API Endpoints
 - **When**: Adding, modifying, or removing API endpoints
-- **Update**: [API Reference](https://docs.chainmove.xyz/docs/api/)
+- **Update**: [API Reference](https://docs.chainmove.xyz/api/)
 - **Include**: Request/response schemas, authentication requirements, examples
 
 #### Database Schema Changes
 - **When**: Modifying database structure
-- **Update**: [Database Documentation](https://docs.chainmove.xyz/docs/technical/database)
+- **Update**: [Database Documentation](https://docs.chainmove.xyz/technical/database)
 - **Include**: ERD diagrams, migration notes, data relationships
 
 #### Authentication Changes
 - **When**: Modifying auth flows or requirements
-- **Update**: [Authentication Guide](https://docs.chainmove.xyz/docs/api/authentication)
+- **Update**: [Authentication Guide](https://docs.chainmove.xyz/api/authentication)
 - **Include**: Updated flow diagrams, code examples, security considerations
 
 ### Smart Contract Changes
 
 #### Contract Updates
 - **When**: Deploying new contracts or updating existing ones
-- **Update**: [Smart Contracts Documentation](https://docs.chainmove.xyz/docs/smart-contracts/)
+- **Update**: [Smart Contracts Documentation](https://docs.chainmove.xyz/smart-contracts/)
 - **Include**: Contract addresses, ABI changes, function documentation
 
 #### ABI Changes
 - **When**: Contract interface changes
-- **Update**: [Integration Guide](https://docs.chainmove.xyz/docs/smart-contracts/integration)
+- **Update**: [Integration Guide](https://docs.chainmove.xyz/smart-contracts/integration)
 - **Include**: Updated integration examples, migration guide
 
 #### Deployment Changes
 - **When**: Changing deployment process or requirements
-- **Update**: [Deployment Guide](https://docs.chainmove.xyz/docs/smart-contracts/deployment)
+- **Update**: [Deployment Guide](https://docs.chainmove.xyz/smart-contracts/deployment)
 - **Include**: Updated deployment scripts, network configurations
 
 ### Configuration Changes
 
 #### Environment Variables
 - **When**: Adding or modifying environment variables
-- **Update**: [Configuration Guide](https://docs.chainmove.xyz/docs/getting-started/configuration)
+- **Update**: [Configuration Guide](https://docs.chainmove.xyz/getting-started/configuration)
 - **Include**: Variable descriptions, example values, security notes
 
 #### Deployment Configuration
 - **When**: Changing deployment processes or infrastructure
-- **Update**: [Deployment Guide](https://docs.chainmove.xyz/docs/technical/deployment)
+- **Update**: [Deployment Guide](https://docs.chainmove.xyz/technical/deployment)
 - **Include**: Updated deployment scripts, environment setup
 
 ### Documentation Update Process

@@ -10,62 +10,62 @@
 The ChainMove documentation is built with Docusaurus and organized as follows:
 
 ### 🌟 Introduction
-- [Welcome & Overview](https://docs.chainmove.xyz/docs/intro) - Introduction to ChainMove
-- [Features](https://docs.chainmove.xyz/docs/introduction/features) - Platform capabilities
-- [Architecture](https://docs.chainmove.xyz/docs/introduction/architecture) - High-level system design
+- [Welcome & Overview](https://docs.chainmove.xyz/) - Introduction to ChainMove
+- [Features](https://docs.chainmove.xyz/introduction/features) - Platform capabilities
+- [Architecture](https://docs.chainmove.xyz/introduction/architecture) - High-level system design
 
 ### 🚀 Getting Started
-- [Quick Start](https://docs.chainmove.xyz/docs/getting-started/quick-start) - Get up and running quickly
-- [Installation](https://docs.chainmove.xyz/docs/getting-started/installation) - Setup instructions
-- [Configuration](https://docs.chainmove.xyz/docs/getting-started/configuration) - Configuration guide
+- [Quick Start](https://docs.chainmove.xyz/getting-started/quick-start) - Get up and running quickly
+- [Installation](https://docs.chainmove.xyz/getting-started/installation) - Setup instructions
+- [Configuration](https://docs.chainmove.xyz/getting-started/configuration) - Configuration guide
 
 ### 👥 User Guides
 
 #### For Drivers
-- [Driver Overview](https://docs.chainmove.xyz/docs/user-guide/drivers/) - Getting started as a driver
-- [Creating an Account](https://docs.chainmove.xyz/docs/user-guide/drivers/creating-account) - Account setup process
-- [Listing a Vehicle](https://docs.chainmove.xyz/docs/user-guide/drivers/listing-vehicle) - How to list your vehicle
-- [Managing Payments](https://docs.chainmove.xyz/docs/user-guide/drivers/managing-payments) - Payment management
+- [Driver Overview](https://docs.chainmove.xyz/user-guide/drivers/) - Getting started as a driver
+- [Creating an Account](https://docs.chainmove.xyz/user-guide/drivers/creating-account) - Account setup process
+- [Listing a Vehicle](https://docs.chainmove.xyz/user-guide/drivers/listing-vehicle) - How to list your vehicle
+- [Managing Payments](https://docs.chainmove.xyz/user-guide/drivers/managing-payments) - Payment management
 
 #### For Investors
-- [Investor Overview](https://docs.chainmove.xyz/docs/user-guide/investors/) - Getting started as an investor
-- [Browsing Investments](https://docs.chainmove.xyz/docs/user-guide/investors/browsing) - Finding investment opportunities
-- [Making an Investment](https://docs.chainmove.xyz/docs/user-guide/investors/making-investment) - Investment process
-- [Tracking Returns](https://docs.chainmove.xyz/docs/user-guide/investors/tracking-returns) - Monitoring your investments
+- [Investor Overview](https://docs.chainmove.xyz/user-guide/investors/) - Getting started as an investor
+- [Browsing Investments](https://docs.chainmove.xyz/user-guide/investors/browsing) - Finding investment opportunities
+- [Making an Investment](https://docs.chainmove.xyz/user-guide/investors/making-investment) - Investment process
+- [Tracking Returns](https://docs.chainmove.xyz/user-guide/investors/tracking-returns) - Monitoring your investments
 
 ### 💻 Developer Documentation
 
 #### Smart Contracts
-- [Smart Contract Overview](https://docs.chainmove.xyz/docs/smart-contracts/) - Blockchain architecture
-- [Contract Architecture](https://docs.chainmove.xyz/docs/smart-contracts/architecture) - Technical design
-- [Deployment Guide](https://docs.chainmove.xyz/docs/smart-contracts/deployment) - How to deploy contracts
-- [Integration Guide](https://docs.chainmove.xyz/docs/smart-contracts/interaction) - How to interact with contracts
+- [Smart Contract Overview](https://docs.chainmove.xyz/smart-contracts/) - Blockchain architecture
+- [Contract Architecture](https://docs.chainmove.xyz/smart-contracts/architecture) - Technical design
+- [Deployment Guide](https://docs.chainmove.xyz/smart-contracts/deployment) - How to deploy contracts
+- [Integration Guide](https://docs.chainmove.xyz/smart-contracts/interaction) - How to interact with contracts
 
 #### API Reference
-- [API Overview](https://docs.chainmove.xyz/docs/api/) - REST API documentation
-- [Authentication](https://docs.chainmove.xyz/docs/api/authentication) - API authentication methods
-- [Endpoints](https://docs.chainmove.xyz/docs/api/endpoints) - Complete endpoint reference
-- [WebSockets](https://docs.chainmove.xyz/docs/api/websockets) - Real-time updates
+- [API Overview](https://docs.chainmove.xyz/api/) - REST API documentation
+- [Authentication](https://docs.chainmove.xyz/api/authentication) - API authentication methods
+- [Endpoints](https://docs.chainmove.xyz/api/endpoints) - Complete endpoint reference
+- [WebSockets](https://docs.chainmove.xyz/api/websockets) - Real-time updates
 
 #### Backend Development
-- [Backend Overview](https://docs.chainmove.xyz/docs/technical/backend/) - Backend architecture
-- [Setup Guide](https://docs.chainmove.xyz/docs/technical/backend/setup) - Development environment setup
-- [Database](https://docs.chainmove.xyz/docs/technical/backend/database) - Database design and management
-- [API Development](https://docs.chainmove.xyz/docs/technical/backend/api-development) - Building APIs
+- [Backend Overview](https://docs.chainmove.xyz/technical/backend/) - Backend architecture
+- [Setup Guide](https://docs.chainmove.xyz/technical/backend/setup) - Development environment setup
+- [Database](https://docs.chainmove.xyz/technical/backend/database) - Database design and management
+- [API Development](https://docs.chainmove.xyz/technical/backend/api-development) - Building APIs
 
 ### 🔧 Technical Reference
-- [System Architecture](https://docs.chainmove.xyz/docs/technical/architecture) - Overall system design
-- [Developer Guide](https://docs.chainmove.xyz/docs/technical/developer-guide) - Development best practices
-- [Testing](https://docs.chainmove.xyz/docs/technical/testing) - Testing strategies and tools
-- [Deployment](https://docs.chainmove.xyz/docs/technical/deployment) - Production deployment guide
+- [System Architecture](https://docs.chainmove.xyz/technical/architecture) - Overall system design
+- [Developer Guide](https://docs.chainmove.xyz/technical/developer-guide) - Development best practices
+- [Testing](https://docs.chainmove.xyz/technical/testing) - Testing strategies and tools
+- [Deployment](https://docs.chainmove.xyz/technical/deployment) - Production deployment guide
 
 ### 📝 Additional Resources
-- [FAQ](https://docs.chainmove.xyz/docs/resources/faq) - Frequently asked questions
-- [Troubleshooting](https://docs.chainmove.xyz/docs/resources/troubleshooting) - Common issues and solutions
-- [Changelog](https://docs.chainmove.xyz/docs/resources/changelog) - Version history and updates
-- [Glossary](https://docs.chainmove.xyz/docs/resources/glossary) - Key terms and definitions
-- [Contributing](https://docs.chainmove.xyz/docs/resources/contributing) - How to contribute
-- [Code of Conduct](https://docs.chainmove.xyz/docs/resources/code-of-conduct) - Community guidelines
+- [FAQ](https://docs.chainmove.xyz/resources/faq) - Frequently asked questions
+- [Troubleshooting](https://docs.chainmove.xyz/resources/troubleshooting) - Common issues and solutions
+- [Changelog](https://docs.chainmove.xyz/resources/changelog) - Version history and updates
+- [Glossary](https://docs.chainmove.xyz/resources/glossary) - Key terms and definitions
+- [Contributing](https://docs.chainmove.xyz/resources/contributing) - How to contribute
+- [Code of Conduct](https://docs.chainmove.xyz/resources/code-of-conduct) - Community guidelines
 
 ## 🛠️ Documentation Development
 
