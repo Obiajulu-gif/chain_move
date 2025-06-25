@@ -3,7 +3,7 @@
 Welcome to the official documentation for ChainMove, the decentralized vehicle financing platform. This documentation is designed to help you understand, use, and contribute to the ChainMove ecosystem.
 
 [![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://docs.chainmove.xyz)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 ## 🌟 Features
@@ -235,7 +235,7 @@ We welcome contributions from the community! Here's how you can help:
 
 ## 📄 License
 
-This documentation is licensed under the [MIT License](LICENSE).
+This documentation is licensed under the [Apache License 2.0](LICENSE).
 
 ---
 
