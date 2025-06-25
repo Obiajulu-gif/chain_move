@@ -1,38 +1,59 @@
 # ChainMove Documentation Deployment Guide
 
-This guide provides instructions for deploying the ChainMove documentation to various platforms, including web hosting, GitHub Pages, and documentation hosting services.
+This guide provides instructions for deploying the ChainMove Docusaurus documentation to various platforms, including Vercel, Netlify, GitHub Pages, and other hosting services.
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
+- [Documentation Architecture](#documentation-architecture)
 - [Building Documentation](#building-documentation)
 - [Deployment Options](#deployment-options)
-  - [GitHub Pages](#github-pages)
+  - [Vercel (Recommended)](#vercel-recommended)
   - [Netlify](#netlify)
-  - [Vercel](#vercel)
+  - [GitHub Pages](#github-pages)
   - [AWS S3](#aws-s3)
   - [Custom Web Server](#custom-web-server)
-- [Versioning and Releases](#versioning-and-releases)
-- [Custom Domains](#custom-domains)
+- [Domain Configuration](#domain-configuration)
 - [Environment Variables](#environment-variables)
+- [CI/CD Setup](#cicd-setup)
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
 
 ## Prerequisites
 
-Before deploying the documentation, ensure you have the following installed:
+Before deploying the documentation, ensure you have the following:
 
-- Node.js 14.x or later
-- npm 6.x or later
+- Node.js 18.x or later
+- npm 8.x or later
 - Git
-- [GitBook CLI](https://github.com/GitbookIO/gitbook-cli) (for building)
-- [Calibre](https://calibre-ebook.com/download) (for PDF/EPUB export)
+- Access to the repository with the `documentation` branch
+
+## Documentation Architecture
+
+The ChainMove documentation is built with **Docusaurus** and follows this structure:
+
+```
+/docs/chainmove-docs/          # Documentation root
+├── docs/                      # Main documentation content
+├── blog/                      # Blog posts (optional)
+├── src/                       # Custom React components
+├── static/                    # Static assets
+├── docusaurus.config.ts       # Main configuration
+├── sidebars.ts               # Navigation configuration
+├── package.json              # Dependencies and scripts
+└── build/                    # Built files (after npm run build)
+```
+
+**Current Setup**:
+- **Main Website**: `chainmove.xyz` (from `main` branch)
+- **Documentation**: `docs.chainmove.xyz` (from `documentation` branch)
 
 ## Building Documentation
 
-1. **Clone the repository** (if not already cloned):
+### Local Development
+
+1. **Navigate to the documentation directory**:
    ```bash
-   git clone https://github.com/obiajulu-gif/chain_move.git
-   cd chain_move/docs
+   cd docs/chainmove-docs
    ```
 
 2. **Install dependencies**:
@@ -40,302 +61,513 @@ Before deploying the documentation, ensure you have the following installed:
    npm install
    ```
 
-3. **Build the documentation**:
+3. **Start development server**:
    ```bash
-   # Build all formats (HTML, PDF, Word, EPUB)
+   npm start
+   ```
+   Opens at `http://localhost:3000` with hot reload
+
+4. **Build for production**:
+   ```bash
    npm run build
-   
-   # Or build specific formats
-   npm run build:html  # HTML only
-   npm run build:pdf   # PDF only
-   npm run build:word  # Word only
-   npm run build:epub  # EPUB only
+   ```
+   Generates static files in the `build/` directory
+
+5. **Test the production build**:
+   ```bash
+   npm run serve
    ```
 
-The built files will be available in the `_book` directory by default.
+### Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm start` | Development server with hot reload |
+| `npm run build` | Production build |
+| `npm run serve` | Serve built files locally |
+| `npm run clear` | Clear Docusaurus cache |
+| `npm run typecheck` | TypeScript type checking |
+| `npm run deploy` | Deploy to GitHub Pages |
 
 ## Deployment Options
 
-### GitHub Pages
+### Vercel (Recommended)
 
-1. **Set up GitHub Pages**:
-   - Go to your repository settings on GitHub
-   - Navigate to "Pages" in the left sidebar
-   - Under "Source", select the `gh-pages` branch and `/ (root)` folder
-   - Click "Save"
+Vercel provides excellent support for Docusaurus with automatic deployments.
 
-2. **Deploy to GitHub Pages**:
-   ```bash
-   # Install gh-pages package if not already installed
-   npm install --save-dev gh-pages
-   
-   # Add deploy script to package.json
-   # "scripts": {
-   #   "deploy": "gh-pages -d _book"
-   # }
-   
-   # Deploy to GitHub Pages
-   npm run deploy
+#### Setup
+
+1. **Create Vercel Project**:
+   - Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+   - Click "Add New" → "Project"
+   - Import your GitHub repository
+
+2. **Configure Project Settings**:
+   ```
+   Framework Preset: Other
+   Root Directory: docs/chainmove-docs
+   Build Command: npm run build
+   Output Directory: build
+   Install Command: npm install
+   Node.js Version: 18.x
    ```
 
-3. **Access your documentation**:
-   - Visit `https://<username>.github.io/chain_move`
-   - Or your custom domain if configured
+3. **Set Production Branch**:
+   - Go to Project Settings → Git
+   - Change production branch to `documentation`
+
+4. **Environment Variables** (if needed):
+   ```
+   NODE_ENV=production
+   ```
+
+#### Custom Domain Setup
+
+1. **Add Domain in Vercel**:
+   - Go to Project Settings → Domains
+   - Add `docs.chainmove.xyz`
+
+2. **DNS Configuration**:
+   ```
+   Type: CNAME
+   Name: docs
+   Value: cname.vercel-dns.com
+   TTL: 3600
+   ```
+
+#### Vercel Configuration
+
+Create `vercel.json` in `/docs/chainmove-docs/`:
+
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm install",
+  "framework": null,
+  "redirects": [
+    {
+      "source": "/docs",
+      "destination": "/"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
+```
 
 ### Netlify
 
-1. **Sign up for Netlify** if you haven't already
+1. **Connect Repository**:
+   - Log into Netlify
+   - Click "New site from Git"
+   - Select your repository
 
-2. **Connect your repository**:
-   - Click "New site from Git" in Netlify dashboard
-   - Select your Git provider and repository
-   - Configure build settings:
-     - Build command: `cd docs && npm install && npm run build`
-     - Publish directory: `docs/_book`
-   - Click "Deploy site"
+2. **Build Settings**:
+   ```
+   Base directory: docs/chainmove-docs
+   Build command: npm run build
+   Publish directory: docs/chainmove-docs/build
+   ```
 
-3. **Configure custom domain** (optional):
-   - Go to "Domain settings"
-   - Click "Add custom domain"
-   - Follow the instructions to verify ownership
+3. **Branch Configuration**:
+   - Set production branch to `documentation`
 
-### Vercel
+4. **Custom Domain**:
+   - Go to Domain Management
+   - Add `docs.chainmove.xyz`
 
-1. **Sign up for Vercel** if you haven't already
+### GitHub Pages
 
-2. **Import your repository**:
-   - Click "Import Project"
-   - Select your Git provider and repository
-   - Configure project settings:
-     - Framework: Static Site
-     - Build Command: `cd docs && npm install && npm run build`
-     - Output Directory: `docs/_book`
-   - Click "Deploy"
+1. **Enable GitHub Pages**:
+   - Go to repository Settings → Pages
+   - Select `gh-pages` branch as source
 
-3. **Set up custom domain** (optional):
-   - Go to "Settings" > "Domains"
-   - Add your custom domain
-   - Follow the verification steps
+2. **Deploy Script**:
+   ```bash
+   cd docs/chainmove-docs
+   npm install
+   npm run build
+   
+   # Deploy using Docusaurus deploy command
+   GIT_USER=<Your GitHub username> npm run deploy
+   ```
+
+3. **Automated Deployment**:
+   Create `.github/workflows/deploy-docs.yml`:
+
+   ```yaml
+   name: Deploy Documentation
+
+   on:
+     push:
+       branches: [ documentation ]
+     
+   jobs:
+     deploy:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v3
+         
+         - name: Setup Node.js
+           uses: actions/setup-node@v3
+           with:
+             node-version: '18'
+             cache: 'npm'
+             cache-dependency-path: docs/chainmove-docs/package-lock.json
+             
+         - name: Install dependencies
+           run: |
+             cd docs/chainmove-docs
+             npm ci
+             
+         - name: Build documentation
+           run: |
+             cd docs/chainmove-docs
+             npm run build
+             
+         - name: Deploy to GitHub Pages
+           uses: peaceiris/actions-gh-pages@v3
+           with:
+             github_token: ${{ secrets.GITHUB_TOKEN }}
+             publish_dir: docs/chainmove-docs/build
+   ```
 
 ### AWS S3
 
-1. **Install AWS CLI** if not already installed:
-   ```bash
-   # On macOS
-   brew install awscli
-   
-   # On Linux
-   sudo apt-get install awscli
-   
-   # On Windows
-   # Download from https://aws.amazon.com/cli/
-   ```
+1. **Install AWS CLI and configure credentials**
 
-2. **Configure AWS credentials**:
-   ```bash
-   aws configure
-   ```
-   Enter your AWS Access Key ID, Secret Access Key, default region, and output format.
-
-3. **Create an S3 bucket**:
+2. **Create S3 bucket**:
    ```bash
    aws s3 mb s3://chainmove-docs --region us-east-1
    ```
 
-4. **Enable static website hosting**:
+3. **Enable static website hosting**:
    ```bash
-   aws s3 website s3://chainmove-docs --index-document index.html --error-document 404.html
+   aws s3 website s3://chainmove-docs \
+     --index-document index.html \
+     --error-document 404.html
    ```
 
-5. **Update bucket policy** to allow public access:
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Sid": "PublicReadGetObject",
-         "Effect": "Allow",
-         "Principal": "*",
-         "Action": "s3:GetObject",
-         "Resource": "arn:aws:s3:::chainmove-docs/*"
-       }
-     ]
-   }
-   ```
-   Save as `policy.json` and apply:
+4. **Deploy**:
    ```bash
-   aws s3api put-bucket-policy --bucket chainmove-docs --policy file://policy.json
-   ```
-
-6. **Deploy the documentation**:
-   ```bash
-   # Build the documentation
+   cd docs/chainmove-docs
    npm run build
-   
-   # Sync to S3
-   aws s3 sync _book/ s3://chainmove-docs --delete
+   aws s3 sync build/ s3://chainmove-docs --delete
    ```
 
-7. **Access your documentation**:
-   - Visit the S3 website endpoint (e.g., `http://chainmove-docs.s3-website-us-east-1.amazonaws.com`)
-   - Or configure a CloudFront distribution and custom domain
+5. **Set up CloudFront** for custom domain and HTTPS
 
 ### Custom Web Server
 
 1. **Build the documentation**:
    ```bash
+   cd docs/chainmove-docs
    npm run build
    ```
 
-2. **Copy the built files** to your web server:
+2. **Upload to server**:
    ```bash
-   # Using SCP
-   scp -r _book/* user@yourserver:/var/www/chainmove-docs/
-   
-   # Or using rsync
-   rsync -avz _book/ user@yourserver:/var/www/chainmove-docs/
+   rsync -avz build/ user@yourserver:/var/www/docs.chainmove.xyz/
    ```
 
-3. **Configure your web server** to serve the static files:
-
-   **Nginx configuration** (`/etc/nginx/sites-available/chainmove-docs`):
+3. **Nginx configuration**:
    ```nginx
    server {
        listen 80;
-       server_name docs.chainmove.io;
-       root /var/www/chainmove-docs;
+       server_name docs.chainmove.xyz;
+       root /var/www/docs.chainmove.xyz;
        index index.html;
-
-       location / {
-           try_files $uri $uri/ =404;
-       }
 
        # Enable gzip compression
        gzip on;
        gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+       location / {
+           try_files $uri $uri/ @rewrites;
+       }
+
+       location @rewrites {
+           rewrite ^(.+)$ /index.html last;
+       }
+
+       # Cache static assets
+       location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+           expires 1y;
+           add_header Cache-Control "public, immutable";
+       }
    }
    ```
 
-   **Apache configuration** (`.htaccess` in the root directory):
-   ```apache
-   <IfModule mod_rewrite.c>
-     RewriteEngine On
-     RewriteBase /
-     RewriteRule ^index\.html$ - [L]
-     RewriteCond %{REQUEST_FILENAME} !-f
-     RewriteCond %{REQUEST_FILENAME} !-d
-     RewriteRule . /index.html [L]
-   </IfModule>
+## Domain Configuration
+
+### DNS Setup for docs.chainmove.xyz
+
+1. **For Vercel/Netlify**:
+   ```
+   Type: CNAME
+   Name: docs
+   Value: cname.vercel-dns.com (or Netlify equivalent)
+   TTL: 3600
    ```
 
-## Versioning and Releases
-
-1. **Versioning**:
-   - Follow [Semantic Versioning](https://semver.org/)
-   - Update the version in `package.json` and `book.json`
-
-2. **Creating a release**:
-   ```bash
-   # Update version
-   npm version patch  # or minor, major
-   
-   # Build the documentation
-   npm run build
-   
-   # Commit and tag the release
-   git add .
-   git commit -m "docs: release v$(node -p "require('./package.json').version)"
-   git tag -a v$(node -p "require('./package.json').version)" -m "Version $(node -p "require('./package.json').version)"
-   
-   # Push to remote
-   git push origin main --tags
+2. **For CloudFront**:
+   ```
+   Type: CNAME
+   Name: docs
+   Value: your-cloudfront-distribution.cloudfront.net
+   TTL: 3600
    ```
 
-3. **GitHub Releases**:
-   - Go to "Releases" in your GitHub repository
-   - Click "Draft a new release"
-   - Select the tag you just created
-   - Add release notes
-   - Attach the built files from `_book` directory
-   - Publish the release
-
-## Custom Domains
-
-1. **Purchase a domain** from a registrar like GoDaddy, Namecheap, or Google Domains
-
-2. **Configure DNS**:
-   - For GitHub Pages: Add A records pointing to GitHub's IPs
-   - For Netlify/Vercel: Add CNAME record as instructed in their dashboard
-   - For AWS: Set up a CloudFront distribution and Route 53
-
-3. **Enable HTTPS**:
-   - Most platforms (GitHub Pages, Netlify, Vercel) provide automatic HTTPS
-   - For custom servers, use Let's Encrypt with Certbot
+3. **For Custom Server**:
+   ```
+   Type: A
+   Name: docs
+   Value: Your server IP
+   TTL: 3600
+   ```
 
 ## Environment Variables
 
-If your documentation requires environment variables (e.g., for API endpoints), set them in your deployment platform:
+### Common Environment Variables
 
-- **Netlify**: Settings > Build & Deploy > Environment
-- **Vercel**: Project Settings > Environment Variables
-- **GitHub Actions**: Add to workflow file
-- **Custom Server**: Set in your server configuration
+```bash
+# Build environment
+NODE_ENV=production
 
-Example for Netlify:
+# Analytics (if using)
+GOOGLE_ANALYTICS_ID=UA-XXXXXXXX-X
+
+# Search (if using Algolia)
+ALGOLIA_APP_ID=your_app_id
+ALGOLIA_API_KEY=your_api_key
+ALGOLIA_INDEX_NAME=chainmove_docs
+
+# Custom domain
+DOCUSAURUS_URL=https://docs.chainmove.xyz
 ```
-API_URL=https://api.chainmove.io
-ENV=production
+
+### Setting Environment Variables
+
+#### Vercel
+```bash
+vercel env add NODE_ENV production
+vercel env add DOCUSAURUS_URL https://docs.chainmove.xyz
+```
+
+#### Netlify
+Add in Netlify dashboard: Site Settings → Environment variables
+
+#### GitHub Actions
+Add in repository Settings → Secrets and variables → Actions
+
+## CI/CD Setup
+
+### GitHub Actions Workflow
+
+Create `.github/workflows/docs-deploy.yml`:
+
+```yaml
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [ documentation ]
+    paths: [ 'docs/chainmove-docs/**' ]
+  pull_request:
+    branches: [ documentation ]
+    paths: [ 'docs/chainmove-docs/**' ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: docs/chainmove-docs/package-lock.json
+          
+      - name: Install dependencies
+        run: |
+          cd docs/chainmove-docs
+          npm ci
+          
+      - name: Build documentation
+        run: |
+          cd docs/chainmove-docs
+          npm run build
+          
+      - name: Test links
+        run: |
+          cd docs/chainmove-docs
+          npm run build
+          # Add link checker if available
+          
+  deploy:
+    if: github.ref == 'refs/heads/documentation'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: docs/chainmove-docs/package-lock.json
+          
+      - name: Install and build
+        run: |
+          cd docs/chainmove-docs
+          npm ci
+          npm run build
+          
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: docs/chainmove-docs
 ```
 
 ## Troubleshooting
 
-### Build Failures
-- **Error: GitBook not found**: Run `npm install -g gitbook-cli`
-- **Missing dependencies**: Run `npm install` in the docs directory
-- **Permission denied**: Use `sudo` or fix file permissions
+### Common Issues
 
-### Deployment Issues
-- **404 errors**: Ensure the base path is correctly configured
-- **Broken links**: Run the build with `--debug` flag to identify issues
-- **CORS issues**: Configure CORS headers in your server configuration
+1. **Build Fails**:
+   ```bash
+   # Clear cache and rebuild
+   cd docs/chainmove-docs
+   npm run clear
+   npm run build
+   ```
 
-### PDF/EPUB Export
-- **Missing Calibre**: Install Calibre from https://calibre-ebook.com/download
-- **Font issues**: Ensure required fonts are installed on the build server
+2. **Missing Dependencies**:
+   ```bash
+   # Clean install
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+3. **Root Directory Not Found**:
+   - Ensure deployment platform is set to `docs/chainmove-docs`
+   - Check that the path exists in your repository
+
+4. **404 Errors After Deployment**:
+   - Verify the base URL in `docusaurus.config.ts`
+   - Check server routing configuration
+
+5. **Slow Build Times**:
+   ```bash
+   # Use npm ci for faster installs
+   npm ci
+   
+   # Enable build cache
+   npm run build -- --cache
+   ```
+
+### Debugging
+
+1. **Enable debug mode**:
+   ```bash
+   DEBUG=1 npm run build
+   ```
+
+2. **Check bundle analyzer**:
+   ```bash
+   npm run build -- --bundle-analyzer
+   ```
+
+3. **Validate configuration**:
+   ```bash
+   npm run docusaurus -- --version
+   npm run typecheck
+   ```
 
 ## Best Practices
 
-1. **Automate Deployments**:
-   - Set up CI/CD pipelines (GitHub Actions, GitLab CI, etc.)
-   - Automate testing before deployment
+### Performance
 
-2. **Performance Optimization**:
-   - Enable gzip/Brotli compression
-   - Optimize images
-   - Enable caching headers
+1. **Optimize images**:
+   - Use WebP format when possible
+   - Compress images before adding to `static/img/`
+   - Use appropriate sizes for different devices
 
-3. **Security**:
-   - Use HTTPS
-   - Set security headers (CSP, HSTS, etc.)
-   - Keep dependencies updated
+2. **Enable compression**:
+   - Gzip/Brotli on server level
+   - Set appropriate cache headers
 
-4. **Monitoring**:
-   - Set up error tracking (Sentry, LogRocket)
-   - Monitor uptime (UptimeRobot, Pingdom)
-   - Track usage with analytics
+3. **Bundle optimization**:
+   - Tree shake unused dependencies
+   - Use dynamic imports for large components
 
-5. **Backup**:
-   - Regularly back up your documentation
-   - Store backups in a separate location
+### Security
+
+1. **HTTPS everywhere**:
+   - Use HTTPS for custom domains
+   - Update all links to use HTTPS
+
+2. **Security headers**:
+   ```nginx
+   add_header X-Frame-Options "SAMEORIGIN" always;
+   add_header X-Content-Type-Options "nosniff" always;
+   add_header Referrer-Policy "no-referrer-when-downgrade" always;
+   ```
+
+### Monitoring
+
+1. **Analytics**:
+   - Set up Google Analytics
+   - Monitor page views and user behavior
+
+2. **Error tracking**:
+   - Use Sentry for error monitoring
+   - Set up uptime monitoring
+
+3. **Performance monitoring**:
+   - Use Lighthouse CI
+   - Monitor Core Web Vitals
+
+### Backup and Recovery
+
+1. **Regular backups**:
+   - Backup the entire repository
+   - Export documentation to PDF regularly
+
+2. **Disaster recovery**:
+   - Document deployment process
+   - Keep deployment scripts version controlled
 
 ## Support
 
-For issues with deployment, please:
-1. Check the troubleshooting section
-2. Search the [GitHub issues](https://github.com/obiajulu-gif/chain_move/issues)
-3. Open a new issue if your problem isn't already reported
+For deployment issues:
+
+1. **Check the build logs** in your deployment platform
+2. **Verify all prerequisites** are met
+3. **Test the build locally** before deploying
+4. **Check our troubleshooting guide** above
+5. **Open an issue** in the repository if problems persist
 
 ---
 
-*Last Updated: June 2025*
-*Version: 1.0.0*
+**Documentation Website**: [docs.chainmove.xyz](https://docs.chainmove.xyz)  
+**Repository**: [github.com/obiajulu-gif/chain_move](https://github.com/obiajulu-gif/chain_move)  
+**Documentation Directory**: `/docs/chainmove-docs/`
+
+*Last Updated: December 2024*  
+*Version: 2.0.0*

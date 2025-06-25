@@ -2,7 +2,7 @@
 
 Welcome to the official documentation for ChainMove, the decentralized vehicle financing platform. This documentation is designed to help you understand, use, and contribute to the ChainMove ecosystem.
 
-[![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://chainmove.io/docs)
+[![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://docs.chainmove.xyz)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -11,193 +11,254 @@ Welcome to the official documentation for ChainMove, the decentralized vehicle f
 - **Comprehensive Guides**: Step-by-step instructions for all user roles
 - **API Documentation**: Complete REST and WebSocket API references
 - **Smart Contract Docs**: Detailed technical documentation for developers
-- **Multiple Formats**: Available in HTML, PDF, and Word formats
-- **Searchable**: Full-text search across all documentation
+- **Interactive Examples**: Live code examples and tutorials
+- **Searchable**: Full-text search across all documentation powered by Algolia
 - **Versioned**: Documentation for all released versions
 - **Responsive**: Works on desktop and mobile devices
+- **Dark Mode**: Support for both light and dark themes
 
+## 📍 Documentation Location
+
+The main documentation site is built with **Docusaurus** and is located in:
+```
+/docs/chainmove-docs/
+```
+
+**Live Documentation**: [https://docs.chainmove.xyz](https://docs.chainmove.xyz)
 
 ## 🚀 Getting Started
 
-- [Introduction](./user-guide/getting-started.md) - Overview of ChainMove and its benefits
-- [Quick Start Guide](./user-guide/quick-start.md) - Get up and running in minutes
-- [Glossary](./user-guide/glossary.md) - Key terms and concepts
+### Quick Links
+- [📖 Introduction](https://docs.chainmove.xyz/) - Overview of ChainMove and its benefits
+- [⚡ Quick Start Guide](https://docs.chainmove.xyz/getting-started/quick-start) - Get up and running in minutes
+- [📚 System Architecture](https://docs.chainmove.xyz/technical/architecture) - Key terms and concepts
 
+### For New Users
+- [Creating an Account](https://docs.chainmove.xyz/user-guide/drivers/creating-account)
+- [Making Your First Investment](https://docs.chainmove.xyz/user-guide/investors/)
+- [Understanding the Platform](hhttps://docs.chainmove.xyz/introduction/features)
 
 ## 👥 User Guides
 
 ### For Drivers
-
-- [Creating an Account](./user-guide/drivers/account-setup.md)
-- [Finding Vehicles](./user-guide/drivers/finding-vehicles.md)
-- [Making Payments](./user-guide/drivers/making-payments.md)
-- [Vehicle Maintenance](./user-guide/drivers/vehicle-maintenance.md)
-
+- [Account Setup](https://docs.chainmove.xyz/user-guide/drivers/creating-account)
+- [Vehicles Listing](https://docs.chainmove.xyz/user-guide/drivers/listing-vehicle)
+- [Making Payments](https://docs.chainmove.xyz/user-guide/drivers/managing-payments)
+- [Vehicle Maintenance](https://docs.chainmove.xyz/user-guide/drivers/vehicle-maintenance)
 
 ### For Investors
-
-- [Investment Guide](./user-guide/investors/investment-guide.md)
-- [Portfolio Management](./user-guide/investors/portfolio-management.md)
-- [Earnings & Payouts](./user-guide/investors/earnings.md)
-- [Risk Management](./user-guide/investors/risk-management.md)
-
+- [Investment Guide](https://docs.chainmove.xyz/user-guide/investors/)
+- [Portfolio Management](https://docs.chainmove.xyz/user-guide/investors/portfolio-management)
+- [Earnings & Payouts](https://docs.chainmove.xyz/user-guide/investors/opportunities)
 
 ## 🛠️ Developer Documentation
 
 ### API Reference
-
-- [REST API](./api/README.md) - Complete API documentation
-- [WebSocket API](./api/websockets.md) - Real-time updates
-- [Authentication](./api/authentication.md) - API authentication methods
-- [SDKs & Libraries](./api/sdks.md) - Client libraries and tools
-
+- [REST API](https://docs.chainmove.xyz/api/) - Complete API documentation
 
 ### Smart Contracts
-- [Overview](./smart-contracts/README.md) - Smart contract architecture
-- [Deployment Guide](./smart-contracts/deployment.md)
-- [Integration Guide](./smart-contracts/integration.md)
-- [Audit Reports](./smart-contracts/audits.md)
+- [Overview](https://docs.chainmove.xyz/docs/smart-contracts/) - Smart contract architecture
+- [Deployment Guide](https://docs.chainmove.xyz/technical/developer-guide)
+
 
 ### Architecture
-- [System Overview](./technical/architecture.md) - High-level architecture
-- [Data Flow](./technical/data-flow.md) - How data moves through the system
-- [Security Model](./technical/security.md) - Security principles and practices
-- [Scaling](./technical/scaling.md) - Performance and scaling considerations
+- [System Overview](https://docs.chainmove.xyz/docs/technical/architecture) - High-level architecture
+- [Data Flow](https://docs.chainmove.xyz/technical/developer-guide#developer-workflow) - How data moves through the system
+- [Security Model](https://docs.chainmove.xyz/technical/architecture#-security-architecture) - Security principles and practices
+- [Scaling](https://docs.chainmove.xyz/technical/architecture#-scalability-considerations) - Performance and scaling considerations
 
-## 🏗️ Development
+## 🏗️ Local Development
 
-### Building the Documentation
+### Prerequisites
+- Node.js 18.x or later
+- npm 8.x or later
+- Git
 
-1. **Prerequisites**:
-   - Node.js 14.x or later
-   - npm 6.x or later
-   - Git
-   - [Calibre](https://calibre-ebook.com/download) (for PDF/EPUB export)
+### Setting Up the Documentation
+
+1. **Navigate to the documentation directory**:
+   ```bash
+   cd docs/chainmove-docs
+   ```
 
 2. **Install dependencies**:
    ```bash
    npm install
    ```
 
-3. **Build the documentation**:
+3. **Start the development server**:
    ```bash
-   # Build all formats (HTML, PDF, Word, EPUB)
-   npm run build
-   
-   # Or build specific formats
-   npm run build:html  # HTML only
-   npm run build:pdf   # PDF only
-   npm run build:word  # Word only
-   npm run build:epub  # EPUB only
+   npm start
    ```
+   The documentation will be available at `http://localhost:3000`
 
-4. **Preview locally**:
+4. **Build for production**:
+   ```bash
+   npm run build
+   ```
+   Built files will be in the `build/` directory
+
+5. **Serve the built site locally**:
    ```bash
    npm run serve
    ```
-   Then open http://localhost:4000 in your browser.
 
-### Contributing
+### Development Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm start` | Start development server with hot reload |
+| `npm run build` | Build static site for production |
+| `npm run serve` | Serve built site locally |
+| `npm run clear` | Clear Docusaurus cache |
+| `npm run deploy` | Deploy to GitHub Pages (if configured) |
+| `npm run typecheck` | Run TypeScript type checking |
+
+## 📝 Contributing to Documentation
 
 We welcome contributions to improve the documentation! Please see our [Contribution Guidelines](CONTRIBUTING.md) for details.
 
-### Development Resources
+### Quick Contribution Guide
 
-- [Setting Up Your Environment](./technical/setup.md)
-- [Running Tests](./technical/testing.md)
-- [Code Style Guide](./technical/code-style.md)
-- [Debugging](./technical/debugging.md)
-- [Deployment Guide](./DEPLOYMENT.md)
-- [Release Checklist](./RELEASE_CHECKLIST.md)
-- [Performance Optimization](./technical/performance.md)
+1. **For Content Updates**:
+   - Edit files in `/docs/chainmove-docs/docs/`
+   - Test locally with `npm start`
+   - Submit a pull request
+
+2. **For Configuration Changes**:
+   - Modify `docusaurus.config.ts`
+   - Update `sidebars.ts` for navigation changes
+   - Test thoroughly before submitting
+
+3. **For New Features/Sections**:
+   - Create new markdown files in appropriate directories
+   - Update `sidebars.ts` to include in navigation
+   - Add any necessary assets to `/docs/chainmove-docs/static/`
+
+## 🔄 Documentation Update Guidelines for Developers
+
+When making changes to the ChainMove platform, update the corresponding documentation:
+
+### Frontend Changes
+- **Component Updates**: Update [UI Components](https://docs.chainmove.xyz/docs/technical/frontend/components)
+- **New Features**: Add to [User Guide](https://docs.chainmove.xyz/docs/user-guide/)
+- **API Integration**: Update [API Usage Examples](https://docs.chainmove.xyz/docs/api/examples)
+
+### Backend Changes
+- **API Endpoints**: Update [API Reference](https://docs.chainmove.xyz/docs/api/)
+- **Database Schema**: Update [Database Documentation](https://docs.chainmove.xyz/docs/technical/database)
+- **Authentication**: Update [Auth Guide](https://docs.chainmove.xyz/docs/api/authentication)
+
+### Smart Contract Changes
+- **Contract Updates**: Update [Smart Contracts](https://docs.chainmove.xyz/docs/smart-contracts/)
+- **ABI Changes**: Update [Integration Guide](https://docs.chainmove.xyz/docs/smart-contracts/integration)
+- **Deployment**: Update [Deployment Guide](https://docs.chainmove.xyz/docs/smart-contracts/deployment)
+
+### Configuration Changes
+- **Environment Variables**: Update [Configuration Guide](https://docs.chainmove.xyz/getting-started/configuration)
 
 ## 🚀 Deployment
 
-- [Production Deployment](./technical/deployment/production.md)
-- [CI/CD Pipeline](./technical/deployment/ci-cd.md)
-- [Monitoring & Logging](./technical/deployment/monitoring.md)
-- [Backup & Recovery](./technical/deployment/backup.md)
+The documentation is automatically deployed to `docs.chainmove.xyz` when changes are pushed to the `documentation` branch. For manual deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
-## 🤝 Contributing
+## 📱 Mobile and Accessibility
 
-We welcome contributions from the community! Please read our [Contribution Guidelines](./CONTRIBUTING.md) to get started.
-
-- [How to Contribute](./CONTRIBUTING.md)
-- [Code of Conduct](./CODE_OF_CONDUCT.md)
-- [Reporting Issues](./.github/ISSUE_TEMPLATE/bug_report.md)
-- [Feature Requests](./.github/ISSUE_TEMPLATE/feature_request.md)
-- [Pull Request Template](./.github/PULL_REQUEST_TEMPLATE.md)
-
-## 📚 Additional Resources
-
-- [FAQ](./resources/faq.md) - Frequently asked questions
-- [Troubleshooting](./resources/troubleshooting.md) - Common issues and solutions
-- [Changelog](./CHANGELOG.md) - Release history and version information
-- [Contributing](./CONTRIBUTING.md) - How to contribute to the documentation
-- [Code of Conduct](./CODE_OF_CONDUCT.md) - Community guidelines
-- [Glossary](./user-guide/glossary.md) - Key terms and definitions
-- [API Reference](./api/README.md) - Complete API documentation
-- [Smart Contracts](./smart-contracts/README.md) - Technical documentation for developers
-
-## 📦 Available Formats
-
-The documentation is available in multiple formats for your convenience:
-
-| Format | Command | Output |
-|--------|---------|--------|
-| HTML | `npm run build:html` | `_book/` |
-| PDF | `npm run build:pdf` | `_book/chainmove-documentation.pdf` |
-| Word | `npm run build:word` | `_book/chainmove-documentation.docx` |
-| EPUB | `npm run build:epub` | `_book/chainmove-documentation.epub` |
+The documentation is fully responsive and accessible:
+- Works on all modern browsers
+- Mobile-friendly responsive design
+- Keyboard navigation support
+- Screen reader compatible
+- High contrast mode support
 
 ## 🔍 Search
 
-Use the search functionality to quickly find what you're looking for. The search index is built automatically and supports:
+The documentation includes powerful search capabilities:
+- **Algolia Search**: Fast, typo-tolerant search
+- **Keyboard Shortcuts**: `Ctrl+K` or `Cmd+K` to open search
+- **Faceted Search**: Filter by document type and category
+- **Highlight Results**: Search terms highlighted in results
 
-- Full-text search across all pages
-- Fuzzy matching for typos
-- Keyword highlighting in results
-- Section hierarchy in results
+## 📦 Available Formats
 
-## 📱 Mobile Support
+The documentation is primarily available as a web application, with additional formats available on request:
 
-The documentation is fully responsive and works on:
+| Format | Access Method | Best For |
+|--------|--------------|----------|
+| **Web** | [docs.chainmove.xyz](https://docs.chainmove.xyz) | Interactive browsing, search |
+| **PDF** | Download from website | Offline reading, printing |
+| **Mobile** | Responsive web design | Mobile devices, tablets |
 
-- Desktop browsers (Chrome, Firefox, Safari, Edge)
-- Tablets (iPad, Android)
-- Mobile devices (iPhone, Android)
-- E-readers (Kindle, Kobo, etc.)
+## 🤝 Contributing
 
-## 📝 License
+We welcome contributions from the community! Here's how you can help:
+
+- [How to Contribute](./CONTRIBUTING.md) - Complete contribution guide
+- [Code of Conduct](./CODE_OF_CONDUCT.md) - Community guidelines
+- [Issue Templates](./.github/ISSUE_TEMPLATE/) - Report bugs or request features
+- [Pull Request Template](./.github/PULL_REQUEST_TEMPLATE.md) - Submit changes
+
+### Types of Contributions Needed
+
+- **Content**: Writing, editing, and improving documentation
+- **Technical**: Code examples, API documentation, troubleshooting guides
+- **Design**: UI/UX improvements, accessibility enhancements
+- **Translation**: Multi-language support (coming soon)
+
+## 📚 Additional Resources
+
+- [FAQ](https://docs.chainmove.xyz/resources/faq) - Frequently asked questions
+- [Troubleshooting](https://docs.chainmove.xyz/resources/troubleshooting) - Common issues and solutions
+- [Changelog](./CHANGELOG.md) - Release history and version information
+- [Glossary](https://docs.chainmove.xyz/docs/resources/glossary) - Key terms and definitions
+- [Contributing](https://docs.chainmove.xyz/resources/contributing) - Contributing to the project
+
+## 🔧 Technical Documentation
+
+### For Platform Developers
+- [Development Setup](https://docs.chainmove.xyz/technical/setup)
+- [Architecture Overview](https://docs.chainmove.xyz/technical/architecture)
+- [Testing Guide](https://docs.chainmove.xyz/technical/testing)
+- [Deployment Guide](https://docs.chainmove.xyz/technical/deployment)
+
+### For Integration Partners
+- [API Documentation](https://docs.chainmove.xyz/api/)
+- [SDK Documentation](https://docs.chainmove.xyz/api/sdks)
+- [Webhook Guide](https://docs.chainmove.xyz/api/webhooks)
+- [Partner Portal](https://docs.chainmove.xyz/partners/)
+
+## 📧 Contact & Support
+
+- **Documentation Issues**: [GitHub Issues](https://github.com/obiajulu-gif/chain_move/issues)
+- **General Support**: [support@chainmove.xyz](mailto:support@chainmove.xyz)
+- **Documentation Team**: [docs@chainmove.xyz](mailto:docs@chainmove.xyz)
+- **Community**: [Discord](https://discord.gg/chainmove) | [Telegram](https://t.me/chainmove)
+
+## 📄 License
 
 This documentation is licensed under the [MIT License](LICENSE).
 
-## 📬 Contact
-
-For documentation-related questions or feedback, please [open an issue](https://github.com/obiajulu-gif/chain_move/issues) or contact our team at docs@chainmove.io.
-
 ---
 
-*Last Updated: June 2025*
+## 🌐 Quick Links
 
-## 📚 Resources
-
-- [Blog](https://blog.chainmove.io) - Latest news and updates
-- [Community Forum](https://community.chainmove.io) - Join the discussion
-- [GitHub Repository](https://github.com/your-org/chain-move) - Source code
-- [Status Page](https://status.chainmove.io) - System status and incidents
-
-## ❓ Need Help?
-
-- [FAQs](./user-guide/faq.md) - Common questions and answers
-- [Troubleshooting Guide](./user-guide/troubleshooting.md)
-- [Contact Support](mailto:support@chainmove.io)
-- [Community Chat](https://discord.gg/your-invite)
+- [🏠 Main Website](https://chainmove.xyz) - ChainMove platform
+- [📖 Documentation](https://docs.chainmove.xyz) - This documentation site
+- [💻 GitHub](https://github.com/obiajulu-gif/chain_move) - Source code
+- [📊 Status](https://status.chainmove.xyz) - System status
+- [📰 Blog](https://blog.chainmove.xyz) - Latest updates
+- [💬 Community](https://community.chainmove.xyz) - Community forum
 
 ---
 
 <p align="center">
   📄 <a href="./CHANGELOG.md">View Changelog</a> • 
   📝 <a href="./LICENSE">License</a> • 
-  🌐 <a href="https://chainmove.io">Website</a>
+  🌐 <a href="https://chainmove.xyz">Website</a> •
+  📖 <a href="https://docs.chainmove.xyz">Documentation</a>
 </p>
+
+---
+
+*Last Updated: December 2024*  
+*Documentation Version: 2.0.0*  
+*Platform Version: Compatible with ChainMove v1.x*
