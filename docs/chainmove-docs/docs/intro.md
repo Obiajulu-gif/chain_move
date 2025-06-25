@@ -14,7 +14,7 @@ Welcome to the official documentation for ChainMove, the revolutionary blockchai
 [![GitHub Issues](https://img.shields.io/github/issues/obiajulu-gif/chain_move?style=for-the-badge&logo=github&color=red)](https://github.com/obiajulu-gif/chain_move/issues)
 [![License](https://img.shields.io/github/license/obiajulu-gif/chain_move?style=for-the-badge&color=green)](https://github.com/obiajulu-gif/chain_move/blob/documentation/LICENSE)
 
-[![Telegram](https://img.shields.io/badge/Telegram-Join%20Community-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/chainmove)
+[![Telegram](https://img.shields.io/badge/Telegram-Join%20Community-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/Chainmoveinnovations)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ChainMove1?style=for-the-badge&logo=twitter&color=1DA1F2)](https://twitter.com/ChainMove1)
 [![Website](https://img.shields.io/badge/Website-chainmove.xyz-000000?style=for-the-badge&logo=world&logoColor=white)](https://www.chainmove.xyz)
 [![Docs](https://img.shields.io/badge/Docs-Latest-brightgreen?style=for-the-badge&logo=gitbook&logoColor=white)](/)
