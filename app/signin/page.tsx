@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Eye, EyeOff, User, Lock, AlertCircle, CheckCircle, ArrowRight } from "lucide-react"
+import { Eye, EyeOff, User, Lock, AlertCircle, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -22,11 +22,6 @@ export default function SignInPage() {
   const [error, setError] = useState("")
   const router = useRouter()
   const { toast } = useToast()
-
-  const handleDemoLogin = (account: {email: string, password: string}) => {
-    setEmail(account.email);
-    setPassword(account.password);
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,13 +52,6 @@ export default function SignInPage() {
         setIsLoading(false)
     }
   }
-
-  const demoAccounts = [
-    { email: "driver@chainmove.com", password: "password123", role: "driver" },
-    { email: "investor@chainmove.com", password: "password123", role: "investor" },
-    { email: "admin@chainmove.com", password: "password123", role: "admin" },
-  ]
-
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -164,36 +152,6 @@ export default function SignInPage() {
                   Don't have an account? Get Started
                 </Link>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Demo Accounts */}
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-foreground">Demo Accounts</CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Click to populate login fields with demo credentials.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {demoAccounts.map((account) => (
-                <Button
-                  key={account.role}
-                  variant="outline"
-                  className="w-full justify-start text-left h-auto p-3"
-                  onClick={() => handleDemoLogin(account)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-[#E57700] rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground capitalize">{account.role}</p>
-                      <p className="text-sm text-muted-foreground truncate">{account.email}</p>
-                    </div>
-                  </div>
-                </Button>
-              ))}
             </CardContent>
           </Card>
         </div>

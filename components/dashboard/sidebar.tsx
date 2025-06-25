@@ -2,12 +2,13 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "../../lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ChainMoveLogo } from "@/components/chain-move-logo"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useToast } from "@/components/ui/use-toast"
 
 import {
   BarChart3,
@@ -70,7 +71,29 @@ const navigationItems = {
 export function Sidebar({ role }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter() // Initialize router
+  const { toast } = useToast() // Initialize toast
   const items = navigationItems[role]
+
+ 
+  const handleLogout = async () => {
+    try {
+      const res = await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+
+      if (res.ok) {
+        toast({ title: "Logged Out", description: "You have been successfully logged out." });
+        
+        router.push('/signin');
+        router.refresh();
+      } else {
+        toast({ title: "Logout Failed", description: "Something went wrong.", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "An unexpected error occurred during logout.", variant: "destructive" });
+    }
+  };
 
   return (
     <>
@@ -87,8 +110,8 @@ export function Sidebar({ role }: SidebarProps) {
 
       {/* Overlay for mobile with backdrop blur */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300" 
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
           aria-hidden="true"
         />
@@ -140,16 +163,16 @@ export function Sidebar({ role }: SidebarProps) {
                     onClick={() => setIsOpen(false)}
                     aria-current={isActive ? 'page' : undefined}
                   >
-                    <item.icon 
+                    <item.icon
                       className={cn(
                         "mr-3 h-5 w-5 shrink-0 transition-transform duration-200",
                         isActive ? "scale-110" : "group-hover:scale-110"
-                      )} 
+                      )}
                       aria-hidden="true"
                     />
                     <span className="truncate">{item.name}</span>
                     {isActive && (
-                      <span 
+                      <span
                         className="absolute right-4 top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-primary"
                         aria-hidden="true"
                       />
@@ -171,10 +194,7 @@ export function Sidebar({ role }: SidebarProps) {
             </Link>
             <button
               className="flex items-center space-x-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors w-full"
-              onClick={() => {
-                // simple client-side logout redirect; replace with real action if needed
-                window.location.href = "/signin"
-              }}
+              onClick={handleLogout}
             >
               <LogOut className="h-5 w-5" />
               <span>Log out</span>

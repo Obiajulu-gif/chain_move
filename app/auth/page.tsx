@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Wallet, Mail, Car, TrendingUp, ArrowLeft, Shield, Zap } from "lucide-react"
+import { Wallet, Mail, Car, TrendingUp, ArrowLeft, Shield, Zap, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+
 
 export default function AuthPage() {
   const searchParams = useSearchParams()
@@ -29,13 +31,17 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // State for inline error messages
+  const [error, setError] = useState<string | null>(null);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null); // Clear previous errors
 
+    // --- FIX FOR PASSWORD MISMATCH ---
     if (password !== confirmPassword) {
-      toast({ title: "Error", description: "Passwords do not match.", variant: "destructive" });
+      setError("Passwords do not match. Please try again.");
       setIsLoading(false);
       return;
     }
@@ -43,22 +49,24 @@ export default function AuthPage() {
     try {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role: selectedRole }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        toast({ title: "Success", description: "Account created successfully! Please sign in." });
+        toast({
+          title: "Success",
+          description: "Account created successfully! Please sign in.",
+        });
         router.push('/signin');
       } else {
-        toast({ title: "Registration Failed", description: data.message || "An error occurred.", variant: "destructive" });
+        // --- FIX FOR EXISTING EMAIL & OTHER SERVER ERRORS ---
+        setError(data.message || "An unexpected error occurred.");
       }
-    } catch (error) {
-      toast({ title: "Error", description: "An unexpected error occurred. Please try again.", variant: "destructive" });
+    } catch (err) {
+      setError("A network error occurred. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -237,7 +245,7 @@ export default function AuthPage() {
           <CardContent>
             <Tabs defaultValue="email" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="wallet" className="flex items-center">
+                 <TabsTrigger value="wallet" className="flex items-center">
                   <Wallet className="h-4 w-4 mr-2" />
                   Wallet
                 </TabsTrigger>
@@ -246,8 +254,7 @@ export default function AuthPage() {
                   Email
                 </TabsTrigger>
               </TabsList>
-
-              <TabsContent value="wallet" className="space-y-4">
+                 <TabsContent value="wallet" className="space-y-4">
                 <div className="space-y-4">
                   <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3 flex items-center justify-center">
                     <Wallet className="h-5 w-5 mr-2" />
@@ -277,54 +284,33 @@ export default function AuthPage() {
 
               <TabsContent value="email" className="space-y-4">
                 <form onSubmit={handleEmailSignup} className="space-y-4">
-                  <div className="space-y-2">
+                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
-                      required
-                    />
+                    <Input id="name" type="text" placeholder="Enter your full name" value={name} onChange={(e) => setName(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
-                      required
-                    />
+                    <Input id="email" type="email" placeholder="Enter your email address" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Create a secure password"
-                       value={password}
-                       onChange={(e) => setPassword(e.target.value)}
-                      className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
-                      required
-                    />
+                    <Input id="password" type="password" placeholder="Create a secure password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword">Confirm Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="Confirm your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
-                      required
-                    />
+                    <Input id="confirmPassword" type="password" placeholder="Confirm your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                   </div>
+                  
+                  {/* --- NEW: INLINE ERROR MESSAGE --- */}
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        {error}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <Button type="submit" disabled={isLoading} className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3">
                     {isLoading ? "Creating Account..." : "Create Account"}
                   </Button>
@@ -339,13 +325,6 @@ export default function AuthPage() {
                 </div>
               </TabsContent>
             </Tabs>
-
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center text-sm text-gray-600">
-                <Shield className="h-4 w-4 mr-2 text-[#E57700]" />
-                <span>Your data is secured with enterprise-grade encryption</span>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
