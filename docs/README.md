@@ -259,6 +259,6 @@ This documentation is licensed under the [Apache License 2.0](../LICENSE).
 
 ---
 
-*Last Updated: December 2024*  
+*Last Updated: December 2025*  
 *Documentation Version: 2.0.0*  
 *Platform Version: Compatible with ChainMove v1.x*

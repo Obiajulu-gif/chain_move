@@ -12,7 +12,7 @@ Welcome to the official documentation for ChainMove, the revolutionary blockchai
 [![GitHub Stars](https://img.shields.io/github/stars/obiajulu-gif/chain_move?style=for-the-badge&logo=github&color=yellow)](https://github.com/obiajulu-gif/chain_move/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/obiajulu-gif/chain_move?style=for-the-badge&logo=github&color=blue)](https://github.com/obiajulu-gif/chain_move/network/members)
 [![GitHub Issues](https://img.shields.io/github/issues/obiajulu-gif/chain_move?style=for-the-badge&logo=github&color=red)](https://github.com/obiajulu-gif/chain_move/issues)
-[![License](https://img.shields.io/github/license/obiajulu-gif/chain_move?style=for-the-badge&color=green)](https://github.com/obiajulu-gif/chain_move/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/obiajulu-gif/chain_move?style=for-the-badge&color=green)](https://github.com/Obiajulu-gif/chain_move/edit/documentation/LICENSE)
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/chainmove)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ChainMove1?style=for-the-badge&logo=twitter&color=1DA1F2)](https://twitter.com/ChainMove1)
