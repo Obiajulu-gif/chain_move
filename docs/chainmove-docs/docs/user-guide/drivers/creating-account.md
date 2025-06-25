@@ -23,7 +23,7 @@ ChainMove is currently available in:
 
 ## Step 1: Sign Up
 
-1. Visit [ChainMove Driver Portal](https://driver.chainmove.io/signup)
+1. Visit [ChainMove Driver Portal](https://www.chainmove.xyz/auth)
 2. Click on "Sign Up as a Driver"
 3. Enter your email address and create a strong password
 4. Click "Continue"
