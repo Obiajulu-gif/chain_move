@@ -10,14 +10,60 @@ import { Badge } from "@/components/ui/badge"
 import { Wallet, Mail, Car, TrendingUp, ArrowLeft, Shield, Zap } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function AuthPage() {
   const searchParams = useSearchParams()
+  const router = useRouter();
+  const { toast } = useToast();
+
   const roleParam = searchParams.get("role")
   const [selectedRole, setSelectedRole] = useState<"driver" | "investor" | null>(
     (roleParam as "driver" | "investor") || null,
   )
+
+  // State for the email signup form
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleEmailSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    if (password !== confirmPassword) {
+      toast({ title: "Error", description: "Passwords do not match.", variant: "destructive" });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password, role: selectedRole }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({ title: "Success", description: "Account created successfully! Please sign in." });
+        router.push('/signin');
+      } else {
+        toast({ title: "Registration Failed", description: data.message || "An error occurred.", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "An unexpected error occurred. Please try again.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   if (!selectedRole) {
     return (
@@ -189,7 +235,7 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="wallet" className="w-full">
+            <Tabs defaultValue="email" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="wallet" className="flex items-center">
                   <Wallet className="h-4 w-4 mr-2" />
@@ -230,14 +276,29 @@ export default function AuthPage() {
               </TabsContent>
 
               <TabsContent value="email" className="space-y-4">
-                <div className="space-y-4">
+                <form onSubmit={handleEmailSignup} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
+                      required
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
                     <Input
                       id="email"
                       type="email"
                       placeholder="Enter your email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -246,7 +307,10 @@ export default function AuthPage() {
                       id="password"
                       type="password"
                       placeholder="Create a secure password"
+                       value={password}
+                       onChange={(e) => setPassword(e.target.value)}
                       className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -255,15 +319,20 @@ export default function AuthPage() {
                       id="confirmPassword"
                       type="password"
                       placeholder="Confirm your password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       className="border-gray-300 focus:border-[#E57700] focus:ring-[#E57700]"
+                      required
                     />
                   </div>
-                  <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3">Create Account</Button>
-                </div>
+                  <Button type="submit" disabled={isLoading} className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3">
+                    {isLoading ? "Creating Account..." : "Create Account"}
+                  </Button>
+                </form>
                 <div className="text-center">
                   <p className="text-sm text-gray-500">
                     Already have an account?{" "}
-                    <Link href="#" className="text-[#E57700] hover:underline">
+                    <Link href="/signin" className="text-[#E57700] hover:underline">
                       Sign in
                     </Link>
                   </p>
