@@ -12,14 +12,14 @@ Welcome to the official documentation for ChainMove, the revolutionary blockchai
 [![GitHub Stars](https://img.shields.io/github/stars/obiajulu-gif/chain_move?style=for-the-badge&logo=github&color=yellow)](https://github.com/obiajulu-gif/chain_move/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/obiajulu-gif/chain_move?style=for-the-badge&logo=github&color=blue)](https://github.com/obiajulu-gif/chain_move/network/members)
 [![GitHub Issues](https://img.shields.io/github/issues/obiajulu-gif/chain_move?style=for-the-badge&logo=github&color=red)](https://github.com/obiajulu-gif/chain_move/issues)
-[![License](https://img.shields.io/github/license/obiajulu-gif/chain_move?style=for-the-badge&color=green)](https://github.com/Obiajulu-gif/chain_move/edit/documentation/LICENSE)
+[![License](https://img.shields.io/github/license/obiajulu-gif/chain_move?style=for-the-badge&color=green)](https://github.com/obiajulu-gif/chain_move/blob/documentation/LICENSE)
 
-[![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/chainmove)
+[![Telegram](https://img.shields.io/badge/Telegram-Join%20Community-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/chainmove)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ChainMove1?style=for-the-badge&logo=twitter&color=1DA1F2)](https://twitter.com/ChainMove1)
 [![Website](https://img.shields.io/badge/Website-chainmove.xyz-000000?style=for-the-badge&logo=world&logoColor=white)](https://www.chainmove.xyz)
 [![Docs](https://img.shields.io/badge/Docs-Latest-brightgreen?style=for-the-badge&logo=gitbook&logoColor=white)](/)
 
-[![Built on Lisk](https://img.shields.io/badge/Built%20on-Lisk%20L2-004CFF?style=for-the-badge&logo=blockchain&logoColor=white)](https://lisk.com)
+[![Built on Lisk](https://img.shields.io/badge/Built%20on-Lisk-004CFF?style=for-the-badge&logo=blockchain&logoColor=white)](https://lisk.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-Framework-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
@@ -33,7 +33,7 @@ ChainMove is a revolutionary blockchain platform enabling fractional vehicle own
 - **Co-Investment Platform**: Pool resources with other investors to co-own high-value mobility assets
 - **Shared Returns**: Earn proportional returns from vehicle usage and appreciation
 - **Smart Contract Security**: All co-ownership agreements secured by smart contracts
-- **Lisk Blockchain**: Built on secure and scalable Lisk Layer 2 technology
+- **Lisk Blockchain**: Built on secure and scalable Lisk technology
 
 ## 🚀 Quick Start
 
@@ -89,7 +89,7 @@ Here are some of the most accessed sections of our documentation:
 
 Join our vibrant community:
 
-- **Discord**: [Join our server](https://discord.gg/chainmove) for real-time discussions
+- **Telegram**: [Join our channel](https://t.me/chainmove) for real-time discussions
 - **GitHub**: [Contribute to the project](https://github.com/obiajulu-gif/chain_move)
 - **Support**: [Get help](mailto:support@chainmove.xyz) from our team
 
