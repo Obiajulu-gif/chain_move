@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 import {
@@ -15,6 +16,7 @@ import {
   Calendar as CalendarIcon,
   CreditCard,
   Clock,
+  FileText,
 } from "lucide-react";
 
 const DriverRepaymentPage = () => {
@@ -23,8 +25,8 @@ const DriverRepaymentPage = () => {
       <Sidebar role="driver" className="md:w-64 lg:w-72" />
 
       <div className="md:ml-64 lg:ml-72">
-        <Header 
-          userName="Driver" 
+        <Header
+          userName="Driver"
           userStatus="Active"
           className="md:pl-6 lg:pl-8"
         />
@@ -41,7 +43,7 @@ const DriverRepaymentPage = () => {
                   Manage your loan payments and view transaction history
                 </p>
               </div>
-              <Badge 
+              <Badge
                 className="bg-yellow-600 text-white px-3 py-1 flex items-center gap-1"
                 variant="outline"
               >
@@ -118,15 +120,15 @@ const DriverRepaymentPage = () => {
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <Button 
+                  <Button
                     className="bg-[#E57700] hover:bg-[#E57700]/90 text-white w-full sm:w-auto"
                     variant="default"
                   >
                     <DollarSign className="h-4 w-4 mr-2" />
                     Make a Payment
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full sm:w-auto hover:bg-muted/50 transition-colors duration-200"
                   >
                     <FileText className="h-4 w-4 mr-2" />

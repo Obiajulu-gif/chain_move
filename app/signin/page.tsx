@@ -12,12 +12,7 @@ import { Eye, EyeOff, User, Lock, AlertCircle, CheckCircle, ArrowRight } from "l
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-
-const demoAccounts = [
-  { email: "driver@chainmove.com", password: "password123", role: "driver", name: "Emmanuel" },
-  { email: "investor@chainmove.com", password: "password123", role: "investor", name: "Marcus" },
-  { email: "admin@chainmove.com", password: "password123", role: "admin", name: "Admin" },
-]
+import { useToast } from "@/components/ui/use-toast"
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
@@ -25,39 +20,50 @@ export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
   const router = useRouter()
+  const { toast } = useToast()
+
+  const handleDemoLogin = (account: {email: string, password: string}) => {
+    setEmail(account.email);
+    setPassword(account.password);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
-    setSuccess("")
 
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+        });
 
-    // Check demo accounts
-    const account = demoAccounts.find((acc) => acc.email === email && acc.password === password)
+        const data = await res.json();
 
-    if (account) {
-      setSuccess(`Welcome back, ${account.name}! Redirecting to your dashboard...`)
-      setTimeout(() => {
-        router.push(`/dashboard/${account.role}`)
-      }, 1500)
-    } else {
-      setError("Invalid email or password. Please try again or use demo credentials.")
+        if (res.ok) {
+            toast({ title: "Login Successful", description: `Welcome back, ${data.user.name}!` });
+            // Redirect based on role
+            router.push(`/dashboard/${data.user.role}`);
+        } else {
+            setError(data.message || "An error occurred.");
+        }
+    } catch (err) {
+        setError("An unexpected error occurred. Please try again.");
+    } finally {
+        setIsLoading(false)
     }
-
-    setIsLoading(false)
   }
 
-  const handleDemoLogin = (account: (typeof demoAccounts)[0]) => {
-    setEmail(account.email)
-    setPassword(account.password)
-    setError("")
-    setSuccess("")
-  }
+  const demoAccounts = [
+    { email: "driver@chainmove.com", password: "password123", role: "driver" },
+    { email: "investor@chainmove.com", password: "password123", role: "investor" },
+    { email: "admin@chainmove.com", password: "password123", role: "admin" },
+  ]
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -128,16 +134,9 @@ export default function SignInPage() {
                 </div>
 
                 {error && (
-                  <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
-                    <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                    <AlertDescription className="text-red-800 dark:text-red-200">{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {success && (
-                  <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    <AlertDescription className="text-green-800 dark:text-green-200">{success}</AlertDescription>
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
 
@@ -173,13 +172,13 @@ export default function SignInPage() {
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-foreground">Demo Accounts</CardTitle>
               <CardDescription className="text-muted-foreground">
-                Try ChainMove with these demo credentials
+                Click to populate login fields with demo credentials.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {demoAccounts.map((account, index) => (
+              {demoAccounts.map((account) => (
                 <Button
-                  key={index}
+                  key={account.role}
                   variant="outline"
                   className="w-full justify-start text-left h-auto p-3"
                   onClick={() => handleDemoLogin(account)}
