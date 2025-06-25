@@ -59,6 +59,7 @@ const navigationItems = {
   ],
   admin: [
     { name: "KYC Management", href: "/dashboard/admin", icon: UserCheck },
+    { name: "User Management", href: "/dashboard/admin/users", icon: Users },
     { name: "Driver Onboarding Review", href: "/dashboard/admin/drivers", icon: Users },
     { name: "Vehicle Approval", href: "/dashboard/admin/vehicles", icon: Car },
     { name: "Issue Resolution", href: "/dashboard/admin/issues", icon: AlertTriangle },
