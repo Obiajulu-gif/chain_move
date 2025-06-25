@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Bell, User } from "lucide-react"
 import { WalletConnect } from "@/components/wallet/wallet-connect"
-
+import { cn } from "@/lib/utils";
 interface HeaderProps {
   userName: string
   userStatus: string

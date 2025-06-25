@@ -166,7 +166,7 @@ export default function DriverDashboard() {
           userStatus="Verified Driver"
           notificationCount={unreadNotifications}
         />
-        
+
         <main className="flex-1 overflow-auto">
           <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto w-full">
             {/* Real-time Status Cards */}
@@ -245,8 +245,8 @@ export default function DriverDashboard() {
                       .filter((n) => !n.read)
                       .slice(0, 3)
                       .map((notification) => (
-                        <div 
-                          key={notification.id} 
+                        <div
+                          key={notification.id}
                           className="flex items-center justify-between p-3 bg-white dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-800"
                         >
                           <div>
@@ -278,8 +278,8 @@ export default function DriverDashboard() {
             <Tabs defaultValue="overview" className="space-y-4">
               <div className="overflow-x-auto">
                 <TabsList className="w-full grid grid-cols-3 sm:grid-cols-6 bg-muted p-1 h-auto">
-                  <TabsTrigger 
-                    value="overview" 
+                  <TabsTrigger
+                    value="overview"
                     className="text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
                   >
                     Overview
@@ -290,8 +290,8 @@ export default function DriverDashboard() {
                   >
                     Repayments
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="funding" 
+                  <TabsTrigger
+                    value="funding"
                     className="text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
                   >
                     Funding
@@ -303,8 +303,8 @@ export default function DriverDashboard() {
                     <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
                     <span>Analytics</span>
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="chat" 
+                  <TabsTrigger
+                    value="chat"
                     className="hidden sm:flex items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
                   >
                     <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
@@ -490,30 +490,33 @@ export default function DriverDashboard() {
                         <div>
                           <h4 className="text-sm font-medium text-foreground mb-3">Investor Commitments</h4>
                           <div className="space-y-3">
-                            {activeLoan.investorCommitments.length > 0 ? (
-                              activeLoan.investorCommitments.map((commitment) => (
-                                <div key={commitment.id} className="flex items-center justify-between p-3 bg-muted/30 dark:bg-muted/10 rounded-lg">
-                                  <div className="flex items-center space-x-3">
-                                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                                      <span className="text-xs font-medium">
-                                        {commitment.investorName.charAt(0).toUpperCase()}
-                                      </span>
+                            {activeLoan.investorApprovals.length > 0 ? (
+                              activeLoan.investorApprovals.map((approval) => {
+                                const investor = state.investors.find(inv => inv.id === approval.investorId);
+                                return (
+                                  <div key={approval.id} className="flex items-center justify-between p-3 bg-muted/30 dark:bg-muted/10 rounded-lg">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                                        <span className="text-xs font-medium">
+                                          {investor ? investor.name.charAt(0).toUpperCase() : '?'}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <p className="font-medium text-foreground">{investor ? investor.name : 'Unknown Investor'}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {new Date(approval.approvedDate).toLocaleDateString()}
+                                        </p>
+                                      </div>
                                     </div>
-                                    <div>
-                                      <p className="font-medium text-foreground">{commitment.investorName}</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {new Date(commitment.date).toLocaleDateString()}
-                                      </p>
+                                    <div className="text-right">
+                                      <p className="font-bold text-foreground">${approval.amount.toLocaleString()}</p>
+                                      <Badge variant="outline" className="text-xs">
+                                        {approval.status}
+                                      </Badge>
                                     </div>
                                   </div>
-                                  <div className="text-right">
-                                    <p className="font-bold text-foreground">${commitment.amount.toLocaleString()}</p>
-                                    <Badge variant="outline" className="text-xs">
-                                      {commitment.status}
-                                    </Badge>
-                                  </div>
-                                </div>
-                              ))
+                                );
+                              })
                             ) : (
                               <div className="text-center py-4">
                                 <p className="text-muted-foreground">No investor commitments yet</p>
