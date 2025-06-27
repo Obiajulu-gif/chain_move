@@ -13,6 +13,7 @@ import Image from "next/image"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { CustomConnectWallet } from "../CustomConnectWallet"
 
 
 export default function AuthPage() {
@@ -256,10 +257,11 @@ export default function AuthPage() {
               </TabsList>
                  <TabsContent value="wallet" className="space-y-4">
                 <div className="space-y-4">
-                  <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3 flex items-center justify-center">
+                  {/* <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3 flex items-center justify-center">
                     <Wallet className="h-5 w-5 mr-2" />
                     Connect MetaMask
-                  </Button>
+                  </Button> */}
+                  <CustomConnectWallet/>
                   <Button
                     variant="outline"
                     className="w-full border-gray-300 hover:bg-gray-50 py-3 flex items-center justify-center"

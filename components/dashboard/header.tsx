@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Bell, User } from "lucide-react"
-import { WalletConnect } from "@/components/wallet/wallet-connect"
+// import { WalletConnect } from "@/components/wallet/wallet-connect"
 import { cn } from "@/lib/utils";
+import { ConnectButtonWidget } from "./ConnectButtonWidget"
 interface HeaderProps {
   userName: string
   userStatus: string
@@ -45,17 +46,20 @@ export function Header({ userName, userStatus }: HeaderProps) {
           </div>
 
           {/* Desktop wallet connect */}
-          <div className="hidden md:flex">
+          {/* <div className="hidden md:flex">
             <WalletConnect />
-          </div>
+          </div> */}
+          {/* replace the hardcoded wallet connect with a real one */}
+
+          {/* <ConnectButtonWidget/> */}
 
           {/* Theme toggle - always visible */}
           <ThemeToggle className="hidden sm:flex" />
 
           {/* Notifications */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="relative h-9 w-9 rounded-full hover:bg-muted/50"
             aria-label="Notifications"
           >
@@ -73,9 +77,10 @@ export function Header({ userName, userStatus }: HeaderProps) {
             </div>
           </div>
 
-          {/* Mobile wallet connect */}
-          <div className="md:hidden">
-            <WalletConnect variant="outline" size="sm" />
+          {/*  wallet connect for all screens */}
+          <div className="">
+            {/* <WalletConnect variant="outline" size="sm" /> */}
+            <ConnectButtonWidget />
           </div>
         </div>
       </div>
