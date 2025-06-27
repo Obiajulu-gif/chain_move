@@ -1,22 +1,13 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -38,6 +29,8 @@ import {
 
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
+import { Edit, Trash2, Eye } from "lucide-react"
+import Image from "next/image"
 
 interface DashboardStats {
   totalUsers: number
@@ -67,6 +60,28 @@ interface DashboardStats {
   }>
 }
 
+interface Vehicle {
+  _id: string
+  name: string
+  type: string
+  year: number
+  price: number
+  image?: string
+  status: "Available" | "Financed" | "Reserved" | "Maintenance"
+  roi: number
+  features: string[]
+  specifications: {
+    engine: string
+    fuelType: string
+    mileage: string
+    transmission: string
+    color: string
+    vin: string
+  }
+  addedDate: string
+  popularity: number
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -80,8 +95,20 @@ export default function AdminDashboard() {
     price: "",
     roi: "",
     features: "",
+    image: "",
+    engine: "",
+    fuelType: "Petrol",
+    transmission: "Automatic",
+    color: "",
+    vin: "",
   })
   const { toast } = useToast()
+
+  const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [vehiclesLoading, setVehiclesLoading] = useState(false)
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
+  const [isEditVehicleOpen, setIsEditVehicleOpen] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   const fetchDashboardStats = async () => {
     try {
@@ -108,26 +135,224 @@ export default function AdminDashboard() {
     }
   }
 
+  const fetchVehicles = async () => {
+    try {
+      setVehiclesLoading(true)
+      const response = await fetch("/api/vehicles")
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch vehicles")
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        setVehicles(data.data)
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch vehicles",
+        variant: "destructive",
+      })
+    } finally {
+      setVehiclesLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchDashboardStats()
+    fetchVehicles()
 
     // Set up auto-refresh every 30 seconds
-    const interval = setInterval(fetchDashboardStats, 30000)
+    const interval = setInterval(() => {
+      fetchDashboardStats()
+      fetchVehicles()
+    }, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  const handleAddVehicle = () => {
-    // This would typically make an API call to add the vehicle
-    toast({
-      title: "Vehicle Added",
-      description: `${newVehicle.name} has been added to the platform`,
+  const handleAddVehicle = async () => {
+    try {
+      const vehicleData = {
+        name: newVehicle.name,
+        type: newVehicle.type,
+        year: Number.parseInt(newVehicle.year),
+        price: Number.parseInt(newVehicle.price),
+        roi: Number.parseFloat(newVehicle.roi),
+        features: newVehicle.features.split(",").map((f) => f.trim()),
+        image: newVehicle.image || "/placeholder.svg?height=200&width=300",
+        status: "Available",
+        specifications: {
+          engine: newVehicle.engine || "2.0L 4-Cylinder",
+          fuelType: newVehicle.fuelType,
+          mileage: "0 km",
+          transmission: newVehicle.transmission,
+          color: newVehicle.color || "White",
+          vin: newVehicle.vin || `VIN${Date.now()}`,
+        },
+        addedDate: new Date().toISOString(),
+        popularity: 0,
+      }
+
+      const response = await fetch("/api/vehicles", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(vehicleData),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "Vehicle Added",
+          description: `${vehicleData.name} has been added to the platform`,
+        })
+
+        setNewVehicle({
+          name: "",
+          type: "",
+          year: "",
+          price: "",
+          roi: "",
+          features: "",
+          image: "",
+          engine: "",
+          fuelType: "Petrol",
+          transmission: "Automatic",
+          color: "",
+          vin: "",
+        })
+        setImagePreview(null)
+        setIsAddVehicleOpen(false)
+
+        // Refresh data
+        fetchVehicles()
+        fetchDashboardStats()
+      } else {
+        throw new Error(data.message || "Failed to add vehicle")
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to add vehicle",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEditVehicle = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle)
+    setNewVehicle({
+      name: vehicle.name,
+      type: vehicle.type,
+      year: vehicle.year.toString(),
+      price: vehicle.price.toString(),
+      roi: vehicle.roi.toString(),
+      features: vehicle.features.join(", "),
+      image: vehicle.image || "",
+      engine: vehicle.specifications.engine,
+      fuelType: vehicle.specifications.fuelType,
+      transmission: vehicle.specifications.transmission,
+      color: vehicle.specifications.color,
+      vin: vehicle.specifications.vin,
     })
+    setIsEditVehicleOpen(true)
+  }
 
-    setNewVehicle({ name: "", type: "", year: "", price: "", roi: "", features: "" })
-    setIsAddVehicleOpen(false)
+  const handleUpdateVehicle = async () => {
+    if (!selectedVehicle) return
 
-    // Refresh stats after adding vehicle
-    fetchDashboardStats()
+    try {
+      const vehicleData = {
+        name: newVehicle.name,
+        type: newVehicle.type,
+        year: Number.parseInt(newVehicle.year),
+        price: Number.parseInt(newVehicle.price),
+        roi: Number.parseFloat(newVehicle.roi),
+        features: newVehicle.features.split(",").map((f) => f.trim()),
+        image: newVehicle.image,
+        specifications: {
+          engine: newVehicle.engine,
+          fuelType: newVehicle.fuelType,
+          mileage: selectedVehicle.specifications.mileage,
+          transmission: newVehicle.transmission,
+          color: newVehicle.color,
+          vin: newVehicle.vin,
+        },
+      }
+
+      const response = await fetch(`/api/vehicles/${selectedVehicle._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(vehicleData),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "Vehicle Updated",
+          description: `${vehicleData.name} has been updated successfully`,
+        })
+
+        setIsEditVehicleOpen(false)
+        setSelectedVehicle(null)
+        fetchVehicles()
+      } else {
+        throw new Error(data.message || "Failed to update vehicle")
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to update vehicle",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteVehicle = async (vehicleId: string, vehicleName: string) => {
+    if (!confirm(`Are you sure you want to delete ${vehicleName}?`)) return
+
+    try {
+      const response = await fetch(`/api/vehicles/${vehicleId}`, {
+        method: "DELETE",
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "Vehicle Deleted",
+          description: `${vehicleName} has been deleted successfully`,
+        })
+        fetchVehicles()
+      } else {
+        throw new Error(data.message || "Failed to delete vehicle")
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to delete vehicle",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const result = reader.result as string
+        setImagePreview(result)
+        setNewVehicle({ ...newVehicle, image: result })
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   const getPriorityColor = (priority: string) => {
@@ -235,91 +460,224 @@ export default function AdminDashboard() {
                     System Online
                   </Badge>
                   <span className="text-sm text-muted-foreground">Last updated: {lastUpdated.toLocaleString()}</span>
-                  <Button variant="outline" size="sm" onClick={fetchDashboardStats} disabled={loading} className="ml-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchDashboardStats}
+                    disabled={loading}
+                    className="ml-2 bg-transparent"
+                  >
                     <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
                     Refresh
                   </Button>
                 </div>
               </div>
-              <Dialog open={isAddVehicleOpen} onOpenChange={setIsAddVehicleOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Vehicle
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-card border-border text-foreground">
-                  <DialogHeader>
-                    <DialogTitle>Add New Vehicle to Platform</DialogTitle>
-                    <DialogDescription className="text-muted-foreground">
-                      Add a new vehicle to the platform for drivers and investors
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
+              <Button
+                onClick={() => setIsAddVehicleOpen(true)}
+                className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Vehicle
+              </Button>
+            </div>
+          </div>
+
+          {/* Add Vehicle Dialog */}
+          {isAddVehicleOpen && (
+            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h2 className="text-lg font-semibold">Add New Vehicle to Platform</h2>
+                      <p className="text-sm text-gray-600">
+                        Add a new vehicle to the platform for drivers and investors
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsAddVehicleOpen(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      ✕
+                    </Button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Image Upload Section */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Vehicle Image</label>
+                      <div className="flex items-center space-x-4">
+                        <div className="w-32 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                          {imagePreview ? (
+                            <Image
+                              src={imagePreview || "/placeholder.svg"}
+                              alt="Vehicle preview"
+                              width={128}
+                              height={96}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          ) : (
+                            <div className="text-center">
+                              <div className="text-gray-400 text-2xl">📷</div>
+                              <p className="text-xs text-gray-500">Upload Image</p>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                            id="vehicle-image"
+                          />
+                          <label htmlFor="vehicle-image" className="cursor-pointer">
+                            <Button type="button" variant="outline" asChild>
+                              <span>Upload Image</span>
+                            </Button>
+                          </label>
+                          <p className="text-xs text-gray-500 mt-1">JPG, PNG up to 5MB</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Basic Information */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Vehicle Name</Label>
-                        <Input
+                        <label className="text-sm font-medium">Vehicle Name *</label>
+                        <input
+                          type="text"
                           value={newVehicle.name}
                           onChange={(e) => setNewVehicle({ ...newVehicle, name: e.target.value })}
                           placeholder="e.g., Toyota Corolla 2024"
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
                         />
                       </div>
                       <div>
-                        <Label>Type</Label>
-                        <Select
+                        <label className="text-sm font-medium">Type *</label>
+                        <select
                           value={newVehicle.type}
-                          onValueChange={(value) => setNewVehicle({ ...newVehicle, type: value })}
+                          onChange={(e) => setNewVehicle({ ...newVehicle, type: e.target.value })}
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Sedan">Sedan</SelectItem>
-                            <SelectItem value="SUV">SUV</SelectItem>
-                            <SelectItem value="Hatchback">Hatchback</SelectItem>
-                            <SelectItem value="Commercial Van">Commercial Van</SelectItem>
-                            <SelectItem value="Truck">Truck</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <option value="">Select type</option>
+                          <option value="Sedan">Sedan</option>
+                          <option value="SUV">SUV</option>
+                          <option value="Hatchback">Hatchback</option>
+                          <option value="Commercial Van">Commercial Van</option>
+                          <option value="Truck">Truck</option>
+                          <option value="Tricycle(Keke)">Tricycle(Keke)</option>
+                        </select>
                       </div>
                       <div>
-                        <Label>Year</Label>
-                        <Input
+                        <label className="text-sm font-medium">Year *</label>
+                        <input
                           type="number"
                           value={newVehicle.year}
                           onChange={(e) => setNewVehicle({ ...newVehicle, year: e.target.value })}
                           placeholder="2024"
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
                         />
                       </div>
                       <div>
-                        <Label>Price ($)</Label>
-                        <Input
+                        <label className="text-sm font-medium">Price ($) *</label>
+                        <input
                           type="number"
                           value={newVehicle.price}
                           onChange={(e) => setNewVehicle({ ...newVehicle, price: e.target.value })}
                           placeholder="25000"
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
                         />
                       </div>
                       <div>
-                        <Label>Expected ROI (%)</Label>
-                        <Input
+                        <label className="text-sm font-medium">Expected ROI (%) *</label>
+                        <input
                           type="number"
                           step="0.1"
                           value={newVehicle.roi}
                           onChange={(e) => setNewVehicle({ ...newVehicle, roi: e.target.value })}
                           placeholder="16.5"
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
                         />
                       </div>
                       <div>
-                        <Label>Features (comma-separated)</Label>
-                        <Input
-                          value={newVehicle.features}
-                          onChange={(e) => setNewVehicle({ ...newVehicle, features: e.target.value })}
-                          placeholder="Fuel Efficient, Reliable"
+                        <label className="text-sm font-medium">Color</label>
+                        <input
+                          type="text"
+                          value={newVehicle.color}
+                          onChange={(e) => setNewVehicle({ ...newVehicle, color: e.target.value })}
+                          placeholder="White"
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
                         />
                       </div>
                     </div>
+
+                    {/* Specifications */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Vehicle Specifications</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Engine</label>
+                          <input
+                            type="text"
+                            value={newVehicle.engine}
+                            onChange={(e) => setNewVehicle({ ...newVehicle, engine: e.target.value })}
+                            placeholder="2.0L 4-Cylinder"
+                            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Fuel Type</label>
+                          <select
+                            value={newVehicle.fuelType}
+                            onChange={(e) => setNewVehicle({ ...newVehicle, fuelType: e.target.value })}
+                            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                          >
+                            <option value="Petrol">Petrol</option>
+                            <option value="Diesel">Diesel</option>
+                            <option value="Electric">Electric</option>
+                            <option value="Hybrid">Hybrid</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Transmission</label>
+                          <select
+                            value={newVehicle.transmission}
+                            onChange={(e) => setNewVehicle({ ...newVehicle, transmission: e.target.value })}
+                            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                          >
+                            <option value="Automatic">Automatic</option>
+                            <option value="Manual">Manual</option>
+                            <option value="CVT">CVT</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">VIN</label>
+                          <input
+                            type="text"
+                            value={newVehicle.vin}
+                            onChange={(e) => setNewVehicle({ ...newVehicle, vin: e.target.value })}
+                            placeholder="Auto-generated if empty"
+                            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Features */}
+                    <div>
+                      <label className="text-sm font-medium">Features (comma-separated)</label>
+                      <textarea
+                        value={newVehicle.features}
+                        onChange={(e) => setNewVehicle({ ...newVehicle, features: e.target.value })}
+                        placeholder="Fuel Efficient, Reliable, GPS Navigation, Air Conditioning"
+                        rows={3}
+                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                      />
+                    </div>
+
                     <div className="flex space-x-2">
                       <Button variant="outline" onClick={() => setIsAddVehicleOpen(false)} className="flex-1">
                         Cancel
@@ -333,10 +691,220 @@ export default function AdminDashboard() {
                       </Button>
                     </div>
                   </div>
-                </DialogContent>
-              </Dialog>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Edit Vehicle Dialog */}
+          {isEditVehicleOpen && (
+            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h2 className="text-lg font-semibold">Edit Vehicle</h2>
+                      <p className="text-sm text-gray-600">Update vehicle information</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditVehicleOpen(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      ✕
+                    </Button>
+                  </div>
+
+                  {/* Same form content as Add Vehicle but with Update button */}
+                  <div className="space-y-6">
+                    {/* Image Upload Section */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Vehicle Image</label>
+                      <div className="flex items-center space-x-4">
+                        <div className="w-32 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                          {newVehicle.image ? (
+                            <Image
+                              src={newVehicle.image || "/placeholder.svg"}
+                              alt="Vehicle preview"
+                              width={128}
+                              height={96}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          ) : (
+                            <div className="text-center">
+                              <div className="text-gray-400 text-2xl">📷</div>
+                              <p className="text-xs text-gray-500">Upload Image</p>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                            id="edit-vehicle-image"
+                          />
+                          <label htmlFor="edit-vehicle-image" className="cursor-pointer">
+                            <Button type="button" variant="outline" asChild>
+                              <span>Change Image</span>
+                            </Button>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Same form fields as Add Vehicle */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Vehicle Name *</label>
+                        <input
+                          type="text"
+                          value={newVehicle.name}
+                          onChange={(e) => setNewVehicle({ ...newVehicle, name: e.target.value })}
+                          placeholder="e.g., Toyota Corolla 2024"
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Type *</label>
+                        <select
+                          value={newVehicle.type}
+                          onChange={(e) => setNewVehicle({ ...newVehicle, type: e.target.value })}
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                        >
+                          <option value="">Select type</option>
+                          <option value="Sedan">Sedan</option>
+                          <option value="SUV">SUV</option>
+                          <option value="Hatchback">Hatchback</option>
+                          <option value="Commercial Van">Commercial Van</option>
+                          <option value="Truck">Truck</option>
+                          <option value="Tricycle(Keke)">Tricycle(Keke)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Year *</label>
+                        <input
+                          type="number"
+                          value={newVehicle.year}
+                          onChange={(e) => setNewVehicle({ ...newVehicle, year: e.target.value })}
+                          placeholder="2024"
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Price ($) *</label>
+                        <input
+                          type="number"
+                          value={newVehicle.price}
+                          onChange={(e) => setNewVehicle({ ...newVehicle, price: e.target.value })}
+                          placeholder="25000"
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Expected ROI (%) *</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={newVehicle.roi}
+                          onChange={(e) => setNewVehicle({ ...newVehicle, roi: e.target.value })}
+                          placeholder="16.5"
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Color</label>
+                        <input
+                          type="text"
+                          value={newVehicle.color}
+                          onChange={(e) => setNewVehicle({ ...newVehicle, color: e.target.value })}
+                          placeholder="White"
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Vehicle Specifications</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Engine</label>
+                          <input
+                            type="text"
+                            value={newVehicle.engine}
+                            onChange={(e) => setNewVehicle({ ...newVehicle, engine: e.target.value })}
+                            placeholder="2.0L 4-Cylinder"
+                            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Fuel Type</label>
+                          <select
+                            value={newVehicle.fuelType}
+                            onChange={(e) => setNewVehicle({ ...newVehicle, fuelType: e.target.value })}
+                            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                          >
+                            <option value="Petrol">Petrol</option>
+                            <option value="Diesel">Diesel</option>
+                            <option value="Electric">Electric</option>
+                            <option value="Hybrid">Hybrid</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Transmission</label>
+                          <select
+                            value={newVehicle.transmission}
+                            onChange={(e) => setNewVehicle({ ...newVehicle, transmission: e.target.value })}
+                            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                          >
+                            <option value="Automatic">Automatic</option>
+                            <option value="Manual">Manual</option>
+                            <option value="CVT">CVT</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">VIN</label>
+                          <input
+                            type="text"
+                            value={newVehicle.vin}
+                            onChange={(e) => setNewVehicle({ ...newVehicle, vin: e.target.value })}
+                            placeholder="Vehicle VIN"
+                            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium">Features (comma-separated)</label>
+                      <textarea
+                        value={newVehicle.features}
+                        onChange={(e) => setNewVehicle({ ...newVehicle, features: e.target.value })}
+                        placeholder="Fuel Efficient, Reliable, GPS Navigation, Air Conditioning"
+                        rows={3}
+                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+                      />
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <Button variant="outline" onClick={() => setIsEditVehicleOpen(false)} className="flex-1">
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleUpdateVehicle}
+                        className="flex-1 bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+                        disabled={!newVehicle.name || !newVehicle.type || !newVehicle.year || !newVehicle.price}
+                      >
+                        Update Vehicle
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Real-time Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -610,36 +1178,176 @@ export default function AdminDashboard() {
             </TabsContent>
 
             {/* Vehicles Tab */}
+
             <TabsContent value="vehicles" className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">{stats.vehicleUtilization.available}</div>
+                  <p className="text-sm text-green-700">Available</p>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{stats.vehicleUtilization.financed}</div>
+                  <p className="text-sm text-blue-700">Financed</p>
+                </div>
+                <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-600">{stats.vehicleUtilization.reserved}</div>
+                  <p className="text-sm text-yellow-700">Reserved</p>
+                </div>
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <div className="text-2xl font-bold text-red-600">{stats.vehicleUtilization.maintenance}</div>
+                  <p className="text-sm text-red-700">Maintenance</p>
+                </div>
+              </div>
+
               <Card className="bg-card border-border">
                 <CardHeader>
-                  <CardTitle className="text-foreground flex items-center">
-                    <Car className="h-5 w-5 mr-2" />
-                    Vehicle Fleet Overview ({stats.totalVehicles})
+                  <CardTitle className="text-foreground flex items-center justify-between">
+                    <span className="flex items-center">
+                      <Car className="h-5 w-5 mr-2" />
+                      Vehicle Management ({vehicles.length})
+                    </span>
+                    <Button onClick={fetchVehicles} variant="outline" size="sm" disabled={vehiclesLoading}>
+                      <RefreshCw className={`h-4 w-4 mr-2 ${vehiclesLoading ? "animate-spin" : ""}`} />
+                      Refresh
+                    </Button>
                   </CardTitle>
                   <CardDescription className="text-muted-foreground">
-                    Current status and distribution of vehicles in the fleet
+                    Manage all vehicles in your fleet - add, edit, or remove vehicles
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{stats.vehicleUtilization.available}</div>
-                      <p className="text-sm text-green-700">Available</p>
+                  {vehiclesLoading ? (
+                    <div className="space-y-4">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg">
+                          <Skeleton className="h-16 w-24 rounded" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-48" />
+                            <Skeleton className="h-3 w-32" />
+                            <Skeleton className="h-3 w-24" />
+                          </div>
+                          <div className="flex space-x-2">
+                            <Skeleton className="h-8 w-8" />
+                            <Skeleton className="h-8 w-8" />
+                            <Skeleton className="h-8 w-8" />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{stats.vehicleUtilization.financed}</div>
-                      <p className="text-sm text-blue-700">Financed</p>
+                  ) : vehicles.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground mb-4">No vehicles found</p>
+                      <Button
+                        onClick={() => setIsAddVehicleOpen(true)}
+                        className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Your First Vehicle
+                      </Button>
                     </div>
-                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                      <div className="text-2xl font-bold text-yellow-600">{stats.vehicleUtilization.reserved}</div>
-                      <p className="text-sm text-yellow-700">Reserved</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {vehicles.map((vehicle) => (
+                        <Card key={vehicle._id} className="bg-muted border-border">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center space-x-4">
+                                <Image
+                                  src={vehicle.image || "/placeholder.svg?height=80&width=120"}
+                                  alt={vehicle.name}
+                                  width={120}
+                                  height={80}
+                                  className="rounded-lg object-cover"
+                                />
+                                <div>
+                                  <h4 className="font-semibold text-foreground">{vehicle.name}</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {vehicle.year} • {vehicle.type}
+                                  </p>
+                                  <div className="flex items-center space-x-2 mt-1">
+                                    <Badge
+                                      className={`${
+                                        vehicle.status === "Available"
+                                          ? "bg-green-100 text-green-800"
+                                          : vehicle.status === "Financed"
+                                            ? "bg-blue-100 text-blue-800"
+                                            : vehicle.status === "Reserved"
+                                              ? "bg-yellow-100 text-yellow-800"
+                                              : "bg-red-100 text-red-800"
+                                      }`}
+                                    >
+                                      {vehicle.status}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">ROI: {vehicle.roi}%</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Added: {new Date(vehicle.addedDate).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-foreground text-lg">${vehicle.price.toLocaleString()}</p>
+                                <p className="text-sm text-muted-foreground">Vehicle Price</p>
+                                <div className="flex space-x-2 mt-3">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-border text-foreground bg-transparent"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-border text-foreground bg-transparent"
+                                    onClick={() => handleEditVehicle(vehicle)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
+                                    onClick={() => handleDeleteVehicle(vehicle._id, vehicle.name)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-4">
+                              <div className="flex flex-wrap gap-1">
+                                {vehicle.features.map((feature, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {feature}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="mt-3 grid grid-cols-4 gap-4 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">Engine</p>
+                                <p className="font-medium text-foreground">{vehicle.specifications.engine}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Fuel</p>
+                                <p className="font-medium text-foreground">{vehicle.specifications.fuelType}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Transmission</p>
+                                <p className="font-medium text-foreground">{vehicle.specifications.transmission}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Color</p>
+                                <p className="font-medium text-foreground">{vehicle.specifications.color}</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                    <div className="text-center p-4 bg-red-50 rounded-lg">
-                      <div className="text-2xl font-bold text-red-600">{stats.vehicleUtilization.maintenance}</div>
-                      <p className="text-sm text-red-700">Maintenance</p>
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
