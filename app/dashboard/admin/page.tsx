@@ -109,6 +109,7 @@ export default function AdminDashboard() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
   const [isEditVehicleOpen, setIsEditVehicleOpen] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageUploading, setImageUploading] = useState(false)
 
   const fetchDashboardStats = async () => {
     try {
@@ -210,6 +211,7 @@ export default function AdminDashboard() {
           description: `${vehicleData.name} has been added to the platform`,
         })
 
+        // Reset form
         setNewVehicle({
           name: "",
           type: "",
@@ -342,16 +344,48 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const result = reader.result as string
-        setImagePreview(result)
-        setNewVehicle({ ...newVehicle, image: result })
+      try {
+        setImageUploading(true)
+
+        // Create a preview for immediate display
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string)
+        }
+        reader.readAsDataURL(file)
+
+        // Upload to Vercel Blob
+        const response = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, {
+          method: "POST",
+          body: file,
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to upload image")
+        }
+
+        const blob = await response.json()
+
+        // Update the vehicle image with the blob URL
+        setNewVehicle({ ...newVehicle, image: blob.url })
+
+        toast({
+          title: "Image Uploaded",
+          description: "Vehicle image has been uploaded successfully",
+        })
+      } catch (error) {
+        toast({
+          title: "Upload Error",
+          description: "Failed to upload image. Please try again.",
+          variant: "destructive",
+        })
+        console.error("Upload error:", error)
+      } finally {
+        setImageUploading(false)
       }
-      reader.readAsDataURL(file)
     }
   }
 
@@ -532,13 +566,16 @@ export default function AdminDashboard() {
                             onChange={handleImageUpload}
                             className="hidden"
                             id="vehicle-image"
+                            disabled={imageUploading}
                           />
                           <label htmlFor="vehicle-image" className="cursor-pointer">
-                            <Button type="button" variant="outline" asChild>
-                              <span>Upload Image</span>
+                            <Button type="button" variant="outline" asChild disabled={imageUploading}>
+                              <span>{imageUploading ? "Uploading..." : "Upload Image"}</span>
                             </Button>
                           </label>
-                          <p className="text-xs text-gray-500 mt-1">JPG, PNG up to 5MB</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            JPG, PNG up to 5MB {imageUploading && "- Uploading..."}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -745,12 +782,14 @@ export default function AdminDashboard() {
                             onChange={handleImageUpload}
                             className="hidden"
                             id="edit-vehicle-image"
+                            disabled={imageUploading}
                           />
                           <label htmlFor="edit-vehicle-image" className="cursor-pointer">
-                            <Button type="button" variant="outline" asChild>
-                              <span>Change Image</span>
+                            <Button type="button" variant="outline" asChild disabled={imageUploading}>
+                              <span>{imageUploading ? "Uploading..." : "Change Image"}</span>
                             </Button>
                           </label>
+                          {imageUploading && <p className="text-xs text-blue-600 mt-1">Uploading image...</p>}
                         </div>
                       </div>
                     </div>
