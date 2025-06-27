@@ -1,3 +1,4 @@
+![Screenshot from 2025-06-27 13-24-20](https://github.com/user-attachments/assets/3c69a96a-a78c-47f6-9016-75ff6eeca476)
 # ChainMove Vehicle Financing Smart Contracts
 
 A decentralised vehicle financing platform built on Ethereum-compatible blockchains, featuring upgradeable smart contracts with a modular architecture. This project supports deployment on Lisk Sepolia, Celo, Alfajores, and local Hardhat networks, leveraging OpenZeppelin's UUPS proxy pattern for upgrades.
