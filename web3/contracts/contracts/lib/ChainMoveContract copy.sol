@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.28;
+
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // ChainMove: Vehicle Financing Smart Contract
 
-contract ChainMove {
+contract ChainMove is Initializable {
     enum VehicleStatus {
         Available,
         Funding,
@@ -90,7 +92,13 @@ contract ChainMove {
         _;
     }
 
+    /* 
     constructor() {
+        admin = msg.sender;
+    } */
+
+    //    constructor for upgradable smart contracts
+    function initialize() public initializer {
         admin = msg.sender;
     }
 
