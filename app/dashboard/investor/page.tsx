@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input, Label } from "@/components/ui/input"
+import { Input } from "@/components/ui/input" // Input was missing from original import
+import { Label } from "@/components/ui/label" // Label was missing from original import
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/dashboard/sidebar"
@@ -28,28 +29,29 @@ import {
   Activity,
   BarChart3,
   MessageCircle,
+  Search
 } from "lucide-react"
 import Image from "next/image"
+
+// --- NEW: IMPORT THE VEHICLE CARD COMPONENT ---
+import { VehicleCard } from "@/components/dashboard/investor/VehicleCard"
 
 export default function InvestorDashboard() {
   const { state, dispatch } = usePlatform()
   const [currentInvestorId] = useState("investor1") // In real app, get from auth
-  const investorData = useInvestorData(currentInvestorId)
+  const { availableVehicles, ...investorData } = useInvestorData(currentInvestorId)
   const [investmentAmount, setInvestmentAmount] = useState("")
   const { toast } = useToast()
 
   // Set current user on mount
   useEffect(() => {
-    dispatch({
-      type: "SET_CURRENT_USER",
-      payload: {
-        id: currentInvestorId,
-        role: "investor",
-        name: investorData.investor?.name || "Investor",
-      },
-    })
-  }, [dispatch, currentInvestorId, investorData.investor?.name])
-
+    if (investorData.investor) {
+        dispatch({
+          type: "SET_CURRENT_USER",
+          payload: { id: currentInvestorId, role: "investor", name: investorData.investor.name },
+        })
+    }
+  }, [dispatch, currentInvestorId, investorData.investor])
   const handleApproveLoan = (loanId: string, amount: number) => {
     if (!investorData.investor || amount > investorData.investor.availableBalance) {
       toast({
@@ -91,6 +93,12 @@ export default function InvestorDashboard() {
       description: "Funds have been released to the driver",
     })
   }
+  const handleInvestNow = (vehicleId: string) => {
+    toast({
+      title: "Investment Feature Coming Soon",
+      description: `You clicked "Invest Now" for vehicle ID: ${vehicleId}.`,
+    })
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -108,17 +116,17 @@ export default function InvestorDashboard() {
     }
   }
 
-  const unreadNotifications = investorData.notifications.filter((n) => !n.read).length
-  const totalInvested = investorData.investments.reduce((sum, inv) => sum + inv.amount, 0)
-  const totalReturns = investorData.investments.reduce((sum, inv) => sum + inv.monthlyReturn * inv.paymentsReceived, 0)
+  const unreadNotifications = state.notifications.filter((n) => n.userId === currentInvestorId && !n.read).length
+  const totalInvested = investorData.investor?.totalInvested || 0
+  const totalReturns = investorData.investor?.totalReturns || 0
   const monthlyIncome = investorData.investments
     .filter((inv) => inv.status === "Active")
     .reduce((sum, inv) => sum + inv.monthlyReturn, 0)
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar 
-        role="investor" 
+      <Sidebar
+        role="investor"
         className="md:w-64 lg:w-72"
         mobileWidth="w-64"
       />
@@ -265,6 +273,32 @@ export default function InvestorDashboard() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+             <TabsContent value="opportunities" className="space-y-6">
+                <Card className="bg-card border-border">
+                    <CardHeader>
+                        <CardTitle className="text-foreground">Investment Opportunities</CardTitle>
+                        <CardDescription className="text-muted-foreground">Browse available vehicles to fund and earn returns.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {availableVehicles.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                {availableVehicles.map((vehicle) => (
+                                    <VehicleCard key={vehicle.id} vehicle={vehicle} onInvest={handleInvestNow} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-16">
+                                <Search className="mx-auto h-12 w-12 text-muted-foreground" />
+                                <h3 className="mt-4 text-lg font-semibold">No Opportunities Available</h3>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    There are currently no new vehicles available for investment. Please check back later.
+                                </p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </TabsContent>
 
             {/* Pending Approvals Tab */}
