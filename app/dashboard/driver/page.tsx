@@ -27,6 +27,7 @@ import {
   Activity,
   MessageCircle,
   BarChart3,
+  Loader2,
 } from "lucide-react"
 
 // Define types for our data
@@ -100,6 +101,14 @@ export default function DriverDashboard() {
   const [currentDriverId] = useState("driver1") // In real app, get from auth
   const driverData = useDriverData(currentDriverId)
   const { toast } = useToast()
+
+  if (state.isLoading || !driverData.driver) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   // Set current user on mount
   useEffect(() => {
