@@ -45,7 +45,7 @@ export default function InvestorDashboard() {
   const { toast } = useToast()
 
   const [isInvestDialogOpen, setIsInvestDialogOpen] = useState(false)
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
+  const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [investmentAmount, setInvestmentAmount] = useState("")
   const [isFundDialogOpen, setIsFundDialogOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
@@ -60,7 +60,7 @@ export default function InvestorDashboard() {
       })
     }
   }, [dispatch, currentInvestorId, investorData.investor])
-  const handleApproveLoan = (loanId: string, amount: number) => {
+  const handleApproveLoan = (loanId, amount) => {
     if (!investorData.investor || amount > investorData.investor.availableBalance) {
       toast({
         title: "Insufficient Funds",
@@ -87,7 +87,7 @@ export default function InvestorDashboard() {
     setInvestmentAmount("")
   }
 
-  const handleReleaseFunds = (loanId: string) => {
+  const handleReleaseFunds = (loanId) => {
     dispatch({
       type: "RELEASE_FUNDS",
       payload: {
@@ -101,7 +101,7 @@ export default function InvestorDashboard() {
       description: "Funds have been released to the driver",
     })
   }
-  const handleInvestNow = (vehicle: Vehicle) => {
+  const handleInvestNow = (vehicle) => {
     setSelectedVehicle(vehicle)
     setIsInvestDialogOpen(true)
   }
@@ -177,7 +177,7 @@ export default function InvestorDashboard() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status) => {
     switch (status) {
       case "Active":
       case "Approved":
@@ -226,6 +226,7 @@ export default function InvestorDashboard() {
                   <Wallet className="h-4 w-4 text-foreground" />
                 </CardHeader>
                 <CardContent>
+                  <div className="text-2xl font-bold mr-4">${(investorData.investor?.availableBalance || 0).toLocaleString()}</div>
                   {/* ... Balance display ... */}
                   {/* --- MODIFIED BUTTON TO OPEN DIALOG --- */}
                   <Dialog open={isFundDialogOpen} onOpenChange={setIsFundDialogOpen}>
@@ -526,4 +527,3 @@ export default function InvestorDashboard() {
     </>
   )
 }
-
