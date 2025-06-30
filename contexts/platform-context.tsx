@@ -128,13 +128,13 @@ export interface Notification {
   id: string
   userId: string
   type:
-    | "loan_approved"
-    | "payment_due"
-    | "investment_return"
-    | "fund_released"
-    | "application_submitted"
-    | "vehicle_added"
-    | "system_alert"
+  | "loan_approved"
+  | "payment_due"
+  | "investment_return"
+  | "fund_released"
+  | "application_submitted"
+  | "vehicle_added"
+  | "system_alert"
   title: string
   message: string
   timestamp: string
@@ -163,7 +163,8 @@ type PlatformAction =
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "SET_CURRENT_USER"; payload: User | null }
-  | { type: "SET_USERS"; payload: User[] }
+  | { type: "SET_USERS"; payload: any[] }
+  | { type: "SET_DATA"; payload: { users: any[]; vehicles: Vehicle[] } }
   | { type: "SET_VEHICLES"; payload: Vehicle[] }
   | { type: "ADD_VEHICLE"; payload: Vehicle }
   | { type: "UPDATE_VEHICLE"; payload: { id: string; updates: Partial<Vehicle> } }
@@ -232,6 +233,13 @@ function platformReducer(state: PlatformState, action: PlatformAction): Platform
 
     case "SET_USERS":
       return { ...state, users: action.payload, lastUpdated: new Date().toISOString() }
+    case "SET_DATA":
+      return {
+        ...state,
+        users: action.payload.users,
+        vehicles: action.payload.vehicles,
+        isLoading: false
+      }
 
     case "SET_VEHICLES":
       return { ...state, vehicles: action.payload, lastUpdated: new Date().toISOString() }
@@ -276,12 +284,12 @@ function platformReducer(state: PlatformState, action: PlatformAction): Platform
         loanApplications: state.loanApplications.map((loan) =>
           loan.id === loanId
             ? {
-                ...loan,
-                status,
-                adminNotes,
-                reviewedDate: status === "Under Review" ? new Date().toISOString() : loan.reviewedDate,
-                approvedDate: status === "Approved" ? new Date().toISOString() : loan.approvedDate,
-              }
+              ...loan,
+              status,
+              adminNotes,
+              reviewedDate: status === "Under Review" ? new Date().toISOString() : loan.reviewedDate,
+              approvedDate: status === "Approved" ? new Date().toISOString() : loan.approvedDate,
+            }
             : loan,
         ),
         lastUpdated: new Date().toISOString(),
@@ -381,23 +389,37 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
         if (!vehiclesRes.ok || !usersRes.ok) {
           throw new Error('Failed to fetch initial platform data');
         }
-        
+
         const vehiclesData = await vehiclesRes.json();
         const usersData = await usersRes.json();
-        
+
         // Dispatch both sets of data to the global state
-        dispatch({ type: "SET_VEHICLES", payload: vehiclesData.data || [] });
-        dispatch({ type: "SET_USERS", payload: usersData.users || [] });
+        // dispatch({ type: "SET_VEHICLES", payload: vehiclesData.data || [] });
+        // dispatch({ type: "SET_USERS", payload: usersData.users || [] });
+        dispatch({
+          type: "SET_DATA",
+          payload: {
+            users: usersData.users || [],
+            vehicles: vehiclesData.data || []
+          }
+        });
 
       } catch (err) {
         const message = err instanceof Error ? err.message : "An unknown error occurred";
         dispatch({ type: "SET_ERROR", payload: message });
-      } finally {
-        dispatch({ type: "SET_LOADING", payload: false });
-      }
+      } 
+      // finally {
+      //   dispatch({ type: "SET_LOADING", payload: false });
+      // }
     };
 
     fetchInitialData();
+    window.addEventListener('focus', fetchInitialData);
+
+    // Clean up the event listener
+    return () => {
+      window.removeEventListener('focus', fetchInitialData);
+    }
   }, []); // Runs once on app load
 
   return (
