@@ -376,8 +376,7 @@ const PlatformContext = createContext<{
 export function PlatformProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(platformReducer, initialState);
 
-  useEffect(() => {
-    const fetchInitialData = async () => {
+  const fetchInitialData = async () => {
       dispatch({ type: "SET_LOADING", payload: true });
       try {
         // --- MODIFICATION: FETCH USERS AND VEHICLES ---
@@ -412,7 +411,7 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
       //   dispatch({ type: "SET_LOADING", payload: false });
       // }
     };
-
+  useEffect(() => {
     fetchInitialData();
     window.addEventListener('focus', fetchInitialData);
 
@@ -422,11 +421,13 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     }
   }, []); // Runs once on app load
 
-  return (
-    <PlatformContext.Provider value={{ state, dispatch }}>
-      {children}
-    </PlatformContext.Provider>
-  );
+  const contextValue = {
+    state,
+    dispatch,
+    fetchData: fetchInitialData // Pass the function through the context
+  };
+
+  return <PlatformContext.Provider value={contextValue}>{children}</PlatformContext.Provider>
 }
 
 // Hook
@@ -474,26 +475,26 @@ export const useDashboardStats = () => {
 export const useDriverData = (driverId: string) => {
   const { state } = usePlatform()
   return {
-    driver: state.users.find((u) => u.id === driverId && u.role === "driver"),
-    loans: state.loanApplications.filter((l) => l.driverId === driverId),
-    vehicles: state.vehicles.filter((v) => v.driverId === driverId),
-    transactions: state.transactions.filter((t) => t.userId === driverId),
-    notifications: state.notifications.filter((n) => n.userId === driverId),
-    availableVehicles: state.vehicles.filter((v) => v.status === "Available"),
+    driver: state.users.find((u: any) => u._id === driverId && u.role === "driver"),
+    loans: state.loanApplications.filter((l: any) => l.driverId === driverId),
+    vehicles: state.vehicles.filter((v: any) => v.driverId === driverId),
+    transactions: state.transactions.filter((t: any) => t.userId === driverId),
+    notifications: state.notifications.filter((n: any) => n.userId === driverId),
+    availableVehicles: state.vehicles.filter((v: any) => v.status === "Available"),
   }
 }
 
 export const useInvestorData = (investorId: string) => {
   const { state } = usePlatform()
   return {
-    investor: state.users.find((u) => u.id === investorId && u.role === "investor"),
-    investments: state.investments.filter((i) => i.investorId === investorId),
-    availableLoans: state.loanApplications.filter((l) => l.status === "Under Review" || l.status === "Pending"),
-    availableVehicles: state.vehicles.filter((v) => v.status === "Available"),
-    transactions: state.transactions.filter((t) => t.userId === investorId),
-    notifications: state.notifications.filter((n) => n.userId === investorId),
-    pendingReleases: state.loanApplications.filter((loan) =>
-      loan.investorApprovals?.some((approval) => approval.investorId === investorId && approval.status === "Approved"),
+    investor: state.users.find((u: any) => u._id === investorId && u.role === "investor"),
+    investments: state.investments.filter((i: any) => i.investorId === investorId),
+    availableLoans: state.loanApplications.filter((l: any) => l.status === "Under Review" || l.status === "Pending"),
+    availableVehicles: state.vehicles.filter((v: any) => v.status === "Available"),
+    transactions: state.transactions.filter((t: any) => t.userId === investorId),
+    notifications: state.notifications.filter((n: any) => n.userId === investorId),
+    pendingReleases: state.loanApplications.filter((loan: any) =>
+      loan.investorApprovals?.some((approval: any) => approval.investorId === investorId && approval.status === "Approved"),
     ),
   }
 }
