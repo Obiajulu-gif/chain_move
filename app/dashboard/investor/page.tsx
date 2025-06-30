@@ -136,6 +136,17 @@ export default function InvestorDashboard() {
     setIsFunding(true);
     const amount = parseFloat(depositAmount);
 
+
+    if (!state.currentUser?.email) {
+      toast({
+        title: "Authentication Error",
+        description: "Could not find user email. Please log in again.",
+        variant: "destructive",
+      });
+      setIsFunding(false);
+      return;
+    }
+
     if (isNaN(amount) || amount <= 0) {
       toast({ title: "Invalid Amount", description: "Please enter a valid amount.", variant: "destructive" });
       setIsFunding(false);
@@ -148,7 +159,7 @@ export default function InvestorDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: depositAmount,
-          email: state.currentUser?.email, // Get email from context
+          email: state.currentUser.email,
         }),
       });
 
