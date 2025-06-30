@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger  } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/dashboard/sidebar"
@@ -47,6 +47,9 @@ export default function InvestorDashboard() {
   const [isInvestDialogOpen, setIsInvestDialogOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
   const [investmentAmount, setInvestmentAmount] = useState("")
+  const [isFundDialogOpen, setIsFundDialogOpen] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [isFunding, setIsFunding] = useState(false);
 
   // Set current user on mount
   useEffect(() => {
@@ -129,6 +132,39 @@ export default function InvestorDashboard() {
     setSelectedVehicle(null)
     setInvestmentAmount("")
   }
+  const handleFundWallet = async () => {
+    setIsFunding(true);
+    const amount = parseFloat(depositAmount);
+
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Invalid Amount", description: "Please enter a valid amount.", variant: "destructive" });
+      setIsFunding(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/payments/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: depositAmount,
+          email: state.currentUser?.email, // Get email from context
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Redirect to Paystack's payment page
+        window.location.href = data.data.authorization_url;
+      } else {
+        throw new Error(data.message || 'Failed to initialize payment.');
+      }
+    } catch (error) {
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+      setIsFunding(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -179,12 +215,40 @@ export default function InvestorDashboard() {
                   <Wallet className="h-4 w-4 text-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">${investorData.investor?.availableBalance.toLocaleString() || "0"}</div>
-                  {/* --- NEW: ADD FUND ACCOUNT BUTTON --- */}
-                  <Button variant="outline" size="sm" className="mt-2 w-full">
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Fund Account
-                  </Button>
+                  {/* ... Balance display ... */}
+                  {/* --- MODIFIED BUTTON TO OPEN DIALOG --- */}
+                  <Dialog open={isFundDialogOpen} onOpenChange={setIsFundDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="mt-2 w-full">
+                        <PlusCircle className="h-4 w-4 mr-2"/>
+                        Fund Account
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Fund Your Wallet</DialogTitle>
+                        <DialogDescription>
+                          Enter the amount you would like to deposit. You will be redirected to our secure payment partner to complete the transaction.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <Label htmlFor="deposit-amount">Amount (NGN)</Label>
+                        <Input
+                          id="deposit-amount"
+                          type="number"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                          placeholder="e.g., 50000"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsFundDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleFundWallet} disabled={isFunding} className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                          {isFunding ? 'Processing...' : 'Proceed to Payment'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
 
