@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         userId: user._id,
         userType: 'investor', // Or determine dynamically if needed
         amount: amountInNaira,
-        status: 'completed',
+        status: 'Completed',
         type: 'deposit',
         method: 'gateway',
         gatewayReference: reference,
