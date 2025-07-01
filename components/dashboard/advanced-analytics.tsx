@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { usePlatform } from "@/contexts/platform-context"
-import { BarChart3, TrendingUp, DollarSign, Users, Car, Target, Activity, PieChart, LineChart } from "lucide-react"
+import { BarChart3, TrendingUp, DollarSign, Users, Car, Target, Activity, PieChart, LineChart, Loader2  } from "lucide-react"
 
 interface AnalyticsProps {
   userRole: "driver" | "investor" | "admin"
@@ -14,6 +14,19 @@ interface AnalyticsProps {
 
 export function AdvancedAnalytics({ userRole, userId }: AnalyticsProps) {
   const { state } = usePlatform()
+
+  if (state.isLoading || !state.drivers || !state.investors || !state.vehicles || !state.loanApplications) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Loading Analytics...</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
+  }
 
   // Calculate analytics data
   const analytics = {

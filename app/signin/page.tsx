@@ -13,6 +13,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
+import { usePlatform } from "@/contexts/platform-context" // --- IMPORT USEPLATFORM ---
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
@@ -22,6 +23,7 @@ export default function SignInPage() {
   const [error, setError] = useState("")
   const router = useRouter()
   const { toast } = useToast()
+  const { dispatch } = usePlatform() // --- GET DISPATCH FROM CONTEXT ---
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,9 +33,7 @@ export default function SignInPage() {
     try {
         const res = await fetch('/api/auth/login', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
         });
 
@@ -41,6 +41,18 @@ export default function SignInPage() {
 
         if (res.ok) {
             toast({ title: "Login Successful", description: `Welcome back, ${data.user.name}!` });
+            
+            // --- SET THE USER IN THE GLOBAL CONTEXT ---
+            dispatch({
+                type: 'SET_CURRENT_USER',
+                payload: {
+                    id: data.user.id,
+                    name: data.user.name,
+                    email: data.user.email,
+                    role: data.user.role,
+                },
+            });
+
             // Redirect based on role
             router.push(`/dashboard/${data.user.role}`);
         } else {

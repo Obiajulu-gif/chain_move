@@ -33,6 +33,10 @@ const UserSchema = new mongoose.Schema({
     enum: ["driver", "investor", "admin"],
     required: [true, "Please specify a role."],
   },
+  availableBalance: {
+    type: Number,
+    default: 0,
+  },
 }, { timestamps: true });
 
 export default mongoose.models.User || mongoose.model("User", UserSchema);

@@ -1,0 +1,31 @@
+{
+  "name": "hardhat-sample",
+  "version": "2.0.2",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "dl": "npx hardhat run scripts/deploy.ts --network localhost",
+    "dls": "npx hardhat run scripts/deploy.ts --network lisk-sepolia",
+    "dc": "npx hardhat run scripts/deploy.ts --network celo",
+    "da": "npx hardhat run scripts/deploy.ts --network alfajores",
+    "": "",
+    "ul": "npx hardhat run scripts/deploy_upgrade.ts --network localhost",
+    "uls": "npx hardhat run scripts/deploy_upgrade.ts --network lisk-sepolia",
+    "uc": "npx hardhat run scripts/deploy_upgrade.ts --network celo",
+    "ua": "npx hardhat run scripts/deploy_upgrade.ts --network alfajores"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.0.0",
+    "@openzeppelin/contracts-upgradeable": "^5.0.0",
+    "@openzeppelin/hardhat-upgrades": "^3.0.0",
+    "hardhat": "^2.16.1"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "hardhat-deploy": "^1.0.3"
+  }
+}

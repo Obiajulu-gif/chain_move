@@ -1,0 +1,1 @@
+export const proxyAddress = "0xB581C9264f59BF0289fA76D61B2D0746dCE3C30D" as const;
