@@ -23,6 +23,7 @@ import { RealTimeChat } from "@/components/dashboard/real-time-chat"
 import { AdvancedAnalytics } from "@/components/dashboard/advanced-analytics"
 import { NotificationCenter } from "@/components/dashboard/notification-center"
 import { usePlatform, useInvestorData } from "@/contexts/platform-context"
+import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
@@ -42,9 +43,8 @@ import { VehicleCard } from "@/components/dashboard/investor/VehicleCard"
 
 export default function InvestorDashboard() {
   const { state, dispatch } = usePlatform()
-  // Get the current investor from the users array
-  const currentInvestor = state.users.find((u) => u.role === "investor")
-  const currentInvestorId = currentInvestor?._id || currentInvestor?.id || ""
+  const { user: authUser, loading: authLoading } = useAuth()
+  const currentInvestorId = authUser?.id || ""
   const { availableVehicles, ...investorData } = useInvestorData(currentInvestorId)
   const { toast } = useToast()
   const router = useRouter()
@@ -58,8 +58,8 @@ export default function InvestorDashboard() {
   const [isFunding, setIsFunding] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Add state for real-time balance
-  const [currentBalance, setCurrentBalance] = useState(investorData.investor?.availableBalance || 0)
+  // Add state for real-time balance - use authUser balance as primary source
+  const [currentBalance, setCurrentBalance] = useState(authUser?.availableBalance || 0)
 
   // Function to refresh user data
   const refreshUserData = async () => {
@@ -130,25 +130,31 @@ export default function InvestorDashboard() {
     }
   }, [searchParams, router])
 
-  // Update local balance when investorData changes
+  // Update local balance when authUser changes
   useEffect(() => {
-    if (investorData.investor?.availableBalance !== undefined) {
-      setCurrentBalance(investorData.investor.availableBalance)
+    if (authUser?.availableBalance !== undefined) {
+      setCurrentBalance(authUser.availableBalance)
     }
-  }, [investorData.investor?.availableBalance])
+  }, [authUser?.availableBalance])
 
   // Set current user on mount
   useEffect(() => {
-    if (investorData.investor) {
+    if (authUser) {
       dispatch({
         type: "SET_CURRENT_USER",
-        payload: { id: currentInvestorId, role: "investor", name: investorData.investor.name },
+        payload: {
+          id: authUser.id,
+          role: authUser.role as "investor",
+          name: authUser.name,
+          email: authUser.email,
+          availableBalance: authUser.availableBalance,
+        },
       })
     }
-  }, [dispatch, currentInvestorId, investorData.investor])
+  }, [dispatch, authUser])
 
   const handleApproveLoan = (loanId, amount) => {
-    if (!investorData.investor || amount > currentBalance) {
+    if (!authUser || amount > currentBalance) {
       toast({
         title: "Insufficient Funds",
         description: "You don't have enough balance for this investment",
@@ -231,7 +237,7 @@ export default function InvestorDashboard() {
     setIsFunding(true)
     const amount = Number.parseFloat(depositAmount)
 
-    if (!state.currentUser?.email) {
+    if (!authUser?.email) {
       toast({
         title: "Authentication Error",
         description: "Could not find user email. Please log in again.",
@@ -253,7 +259,7 @@ export default function InvestorDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: depositAmount,
-          email: state.currentUser.email,
+          email: authUser.email,
         }),
       })
 
@@ -291,18 +297,32 @@ export default function InvestorDashboard() {
   }
 
   const unreadNotifications = state.notifications.filter((n) => n.userId === currentInvestorId && !n.read).length
-  const totalInvested = investorData.investor?.totalInvested || 0
-  const totalReturns = investorData.investor?.totalReturns || 0
+  const totalInvested = authUser?.totalInvested || 0
+  const totalReturns = authUser?.totalReturns || 0
   const monthlyIncome = investorData.investments
     .filter((inv) => inv.status === "Active")
     .reduce((sum, inv) => sum + inv.monthlyReturn, 0)
 
-  if (!currentInvestor || !currentInvestorId) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Loading investor data...</h2>
+          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
           <p className="text-muted-foreground">Please wait while we fetch your account information.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!authUser || authUser.role !== "investor") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <p className="text-muted-foreground">You need to be logged in as an investor to access this page.</p>
+          <Button onClick={() => router.push("/signin")} className="mt-4">
+            Sign In
+          </Button>
         </div>
       </div>
     )
@@ -314,7 +334,7 @@ export default function InvestorDashboard() {
         <Sidebar role="investor" className="md:w-64 lg:w-72" mobileWidth="w-64" />
         <div className="md:ml-64 lg:ml-72">
           <Header
-            userName={investorData.investor?.name || "Investor"}
+            userName={authUser.name || "Investor"}
             userStatus="Verified Investor"
             notificationCount={unreadNotifications}
             className="md:pl-6 lg:pl-8"
