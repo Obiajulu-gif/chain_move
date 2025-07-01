@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger  } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/dashboard/sidebar"
@@ -16,6 +16,7 @@ import { AdvancedAnalytics } from "@/components/dashboard/advanced-analytics"
 import { NotificationCenter } from "@/components/dashboard/notification-center"
 import { usePlatform, useInvestorData } from "@/contexts/platform-context"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   DollarSign,
   TrendingUp,
@@ -40,9 +41,12 @@ import { VehicleCard } from "@/components/dashboard/investor/VehicleCard"
 
 export default function InvestorDashboard() {
   const { state, dispatch } = usePlatform()
-  const [currentInvestorId] = useState("investor1") // In real app, get from auth
+  const [currentInvestorId] = useState("investor1")
   const { availableVehicles, ...investorData } = useInvestorData(currentInvestorId)
   const { toast } = useToast()
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [isInvestDialogOpen, setIsInvestDialogOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
@@ -51,6 +55,23 @@ export default function InvestorDashboard() {
   const [depositAmount, setDepositAmount] = useState("");
   const [isFunding, setIsFunding] = useState(false);
 
+
+  useEffect(() => {
+    // Get the transaction reference from the URL
+    const reference = searchParams.get('reference');
+
+    // If a reference exists, it means the user just returned from a payment
+    if (reference) {
+      toast({
+        title: "Processing Payment...",
+        description: "Verifying your transaction. Your balance will update shortly.",
+      });
+
+      // This tells Next.js to re-fetch the page's data from the server.
+      // It's a soft refresh, not a full page reload.
+      router.refresh();
+    }
+  }, [searchParams, router])
   // Set current user on mount
   useEffect(() => {
     if (investorData.investor) {
@@ -232,7 +253,7 @@ export default function InvestorDashboard() {
                   <Dialog open={isFundDialogOpen} onOpenChange={setIsFundDialogOpen}>
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm" className="mt-2 w-full">
-                        <PlusCircle className="h-4 w-4 mr-2"/>
+                        <PlusCircle className="h-4 w-4 mr-2" />
                         Fund Account
                       </Button>
                     </DialogTrigger>
