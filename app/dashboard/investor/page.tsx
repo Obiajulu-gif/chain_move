@@ -30,6 +30,7 @@ import {
   MessageCircle,
 } from "lucide-react"
 import Image from "next/image"
+import ListVehicle from "./ListVehicle"
 
 export default function InvestorDashboard() {
   const { state, dispatch } = usePlatform()
@@ -187,7 +188,7 @@ export default function InvestorDashboard() {
           <Tabs defaultValue="investments" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-5">
               <TabsTrigger value="investments">My Investments</TabsTrigger>
-              <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
+              <TabsTrigger value="listVehicle">List Vehicle</TabsTrigger>
               <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="chat">Chat</TabsTrigger>
@@ -265,6 +266,11 @@ export default function InvestorDashboard() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* List Vehicle Tab */}
+            <TabsContent value="listVehicle" className="space-y-6">
+              <ListVehicle />
             </TabsContent>
 
             {/* Pending Approvals Tab */}
