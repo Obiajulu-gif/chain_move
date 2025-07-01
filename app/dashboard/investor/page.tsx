@@ -6,7 +6,15 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/dashboard/sidebar"
@@ -16,27 +24,20 @@ import { AdvancedAnalytics } from "@/components/dashboard/advanced-analytics"
 import { NotificationCenter } from "@/components/dashboard/notification-center"
 import { usePlatform, useInvestorData } from "@/contexts/platform-context"
 import { useToast } from "@/hooks/use-toast"
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   DollarSign,
   TrendingUp,
-  Car,
   CheckCircle,
   Clock,
-  Eye,
-  ThumbsUp,
   Send,
   Wallet,
-  Bell,
-  Activity,
   BarChart3,
-  MessageCircle,
   Search,
-  PlusCircle
+  PlusCircle,
+  RefreshCw,
 } from "lucide-react"
 import Image from "next/image"
-
-
 import { VehicleCard } from "@/components/dashboard/investor/VehicleCard"
 
 export default function InvestorDashboard() {
@@ -44,34 +45,100 @@ export default function InvestorDashboard() {
   const [currentInvestorId] = useState("investor1")
   const { availableVehicles, ...investorData } = useInvestorData(currentInvestorId)
   const { toast } = useToast()
-
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [isInvestDialogOpen, setIsInvestDialogOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [investmentAmount, setInvestmentAmount] = useState("")
-  const [isFundDialogOpen, setIsFundDialogOpen] = useState(false);
-  const [depositAmount, setDepositAmount] = useState("");
-  const [isFunding, setIsFunding] = useState(false);
+  const [isFundDialogOpen, setIsFundDialogOpen] = useState(false)
+  const [depositAmount, setDepositAmount] = useState("")
+  const [isFunding, setIsFunding] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
+  // Add state for real-time balance
+  const [currentBalance, setCurrentBalance] = useState(investorData.investor?.availableBalance || 0)
+
+  // Function to refresh user data
+  const refreshUserData = async () => {
+    setIsRefreshing(true)
+    try {
+      // Find the actual user ID from the users array
+      const actualUser = state.users.find((u) => u.role === "investor")
+      const userId = actualUser?._id || actualUser?.id
+
+      if (!userId) {
+        toast({
+          title: "Error",
+          description: "Could not find user ID. Please refresh the page.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const response = await fetch(`/api/users/${userId}`)
+      if (response.ok) {
+        const userData = await response.json()
+        setCurrentBalance(userData.availableBalance || 0)
+
+        // Update the platform context
+        dispatch({
+          type: "UPDATE_USER_BALANCE",
+          payload: {
+            userId: userId,
+            balance: userData.availableBalance,
+          },
+        })
+
+        toast({
+          title: "Balance Updated",
+          description: `Your current balance is $${userData.availableBalance?.toLocaleString() || 0}`,
+        })
+      } else {
+        throw new Error("Failed to fetch user data")
+      }
+    } catch (error) {
+      console.error("Error refreshing user data:", error)
+      toast({
+        title: "Refresh Failed",
+        description: "Could not update balance. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   useEffect(() => {
     // Get the transaction reference from the URL
-    const reference = searchParams.get('reference');
+    const reference = searchParams.get("reference")
 
     // If a reference exists, it means the user just returned from a payment
     if (reference) {
       toast({
         title: "Processing Payment...",
         description: "Verifying your transaction. Your balance will update shortly.",
-      });
+      })
 
-      // This tells Next.js to re-fetch the page's data from the server.
-      // It's a soft refresh, not a full page reload.
-      router.refresh();
+      // Wait a moment for webhook processing, then refresh data
+      setTimeout(() => {
+        refreshUserData()
+      }, 3000) // Wait 3 seconds for webhook to process
+
+      // Clean up URL by removing the reference parameter
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete("reference")
+      router.replace(newUrl.pathname + newUrl.search)
     }
   }, [searchParams, router])
+
+  // Update local balance when investorData changes
+  useEffect(() => {
+    if (investorData.investor?.availableBalance !== undefined) {
+      setCurrentBalance(investorData.investor.availableBalance)
+    }
+  }, [investorData.investor?.availableBalance])
+
   // Set current user on mount
   useEffect(() => {
     if (investorData.investor) {
@@ -81,8 +148,9 @@ export default function InvestorDashboard() {
       })
     }
   }, [dispatch, currentInvestorId, investorData.investor])
+
   const handleApproveLoan = (loanId, amount) => {
-    if (!investorData.investor || amount > investorData.investor.availableBalance) {
+    if (!investorData.investor || amount > currentBalance) {
       toast({
         title: "Insufficient Funds",
         description: "You don't have enough balance for this investment",
@@ -100,11 +168,13 @@ export default function InvestorDashboard() {
       },
     })
 
+    // Update local balance
+    setCurrentBalance((prev) => prev - amount)
+
     toast({
       title: "Loan Approved",
       description: `You have approved $${amount.toLocaleString()} for this loan`,
     })
-
     setInvestmentAmount("")
   }
 
@@ -116,87 +186,95 @@ export default function InvestorDashboard() {
         investorId: currentInvestorId,
       },
     })
-
     toast({
       title: "Funds Released",
       description: "Funds have been released to the driver",
     })
   }
+
   const handleInvestNow = (vehicle) => {
     setSelectedVehicle(vehicle)
     setIsInvestDialogOpen(true)
   }
 
   const submitInvestment = () => {
-    const amount = parseFloat(investmentAmount)
+    const amount = Number.parseFloat(investmentAmount)
     if (!selectedVehicle || isNaN(amount) || amount <= 0) {
       toast({ title: "Invalid Amount", description: "Please enter a valid amount to invest.", variant: "destructive" })
       return
     }
 
-    const availableBalance = investorData.investor?.availableBalance || 0;
-
-    if (amount > availableBalance) {
+    if (amount > currentBalance) {
       toast({
         title: "Insufficient Funds",
-        description: `Your investment of $${amount.toLocaleString()} exceeds your available balance of $${availableBalance.toLocaleString()}.`,
-        variant: "destructive"
+        description: `Your investment of $${amount.toLocaleString()} exceeds your available balance of $${currentBalance.toLocaleString()}.`,
+        variant: "destructive",
       })
-      return;
+      return
     }
+
     // Here you would call the POST /api/invest endpoint
     console.log(`Investing $${amount} in vehicle ${selectedVehicle._id}`)
-    toast({ title: "Investment Submitted", description: `Your investment of $${amount.toLocaleString()} for ${selectedVehicle.name} is being processed.` })
+    toast({
+      title: "Investment Submitted",
+      description: `Your investment of $${amount.toLocaleString()} for ${selectedVehicle.name} is being processed.`,
+    })
+
+    // Update local balance optimistically
+    setCurrentBalance((prev) => prev - amount)
 
     // Close dialog and reset state
     setIsInvestDialogOpen(false)
     setSelectedVehicle(null)
     setInvestmentAmount("")
   }
-  const handleFundWallet = async () => {
-    setIsFunding(true);
-    const amount = parseFloat(depositAmount);
 
+  const handleFundWallet = async () => {
+    setIsFunding(true)
+    const amount = Number.parseFloat(depositAmount)
 
     if (!state.currentUser?.email) {
       toast({
         title: "Authentication Error",
         description: "Could not find user email. Please log in again.",
         variant: "destructive",
-      });
-      setIsFunding(false);
-      return;
+      })
+      setIsFunding(false)
+      return
     }
 
     if (isNaN(amount) || amount <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a valid amount.", variant: "destructive" });
-      setIsFunding(false);
-      return;
+      toast({ title: "Invalid Amount", description: "Please enter a valid amount.", variant: "destructive" })
+      setIsFunding(false)
+      return
     }
 
     try {
-      const response = await fetch('/api/payments/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/payments/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: depositAmount,
           email: state.currentUser.email,
         }),
-      });
+      })
 
-      const data = await response.json();
-
+      const data = await response.json()
       if (response.ok) {
+        // Close dialog before redirect
+        setIsFundDialogOpen(false)
+        setDepositAmount("")
         // Redirect to Paystack's payment page
-        window.location.href = data.data.authorization_url;
+        window.location.href = data.data.authorization_url
       } else {
-        throw new Error(data.message || 'Failed to initialize payment.');
+        throw new Error(data.message || "Failed to initialize payment.")
       }
     } catch (error) {
-      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
-      setIsFunding(false);
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" })
+    } finally {
+      setIsFunding(false)
     }
-  };
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -224,12 +302,7 @@ export default function InvestorDashboard() {
   return (
     <>
       <div className="min-h-screen bg-background">
-        <Sidebar
-          role="investor"
-          className="md:w-64 lg:w-72"
-          mobileWidth="w-64"
-        />
-
+        <Sidebar role="investor" className="md:w-64 lg:w-72" mobileWidth="w-64" />
         <div className="md:ml-64 lg:ml-72">
           <Header
             userName={investorData.investor?.name || "Investor"}
@@ -244,15 +317,24 @@ export default function InvestorDashboard() {
               <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Available Balance</CardTitle>
-                  <Wallet className="h-4 w-4 text-foreground" />
+                  <div className="flex items-center space-x-2">
+                    <Wallet className="h-4 w-4 text-foreground" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={refreshUserData}
+                      disabled={isRefreshing}
+                      className="h-6 w-6 p-0"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold mr-4">${(investorData.investor?.availableBalance || 0).toLocaleString()}</div>
-                  {/* ... Balance display ... */}
-                  {/* --- MODIFIED BUTTON TO OPEN DIALOG --- */}
+                  <div className="text-2xl font-bold mr-4">${currentBalance.toLocaleString()}</div>
                   <Dialog open={isFundDialogOpen} onOpenChange={setIsFundDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="mt-2 w-full">
+                      <Button variant="outline" size="sm" className="mt-2 w-full bg-transparent">
                         <PlusCircle className="h-4 w-4 mr-2" />
                         Fund Account
                       </Button>
@@ -261,7 +343,8 @@ export default function InvestorDashboard() {
                       <DialogHeader>
                         <DialogTitle>Fund Your Wallet</DialogTitle>
                         <DialogDescription>
-                          Enter the amount you would like to deposit. You will be redirected to our secure payment partner to complete the transaction.
+                          Enter the amount you would like to deposit. You will be redirected to our secure payment
+                          partner to complete the transaction.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="py-4">
@@ -275,9 +358,15 @@ export default function InvestorDashboard() {
                         />
                       </div>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsFundDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleFundWallet} disabled={isFunding} className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
-                          {isFunding ? 'Processing...' : 'Proceed to Payment'}
+                        <Button variant="outline" onClick={() => setIsFundDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleFundWallet}
+                          disabled={isFunding}
+                          className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+                        >
+                          {isFunding ? "Processing..." : "Proceed to Payment"}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -380,7 +469,6 @@ export default function InvestorDashboard() {
                                     </p>
                                   </div>
                                 </div>
-
                                 <div className="mt-4">
                                   <Progress
                                     value={(investment.paymentsReceived / investment.totalPayments) * 100}
@@ -409,7 +497,9 @@ export default function InvestorDashboard() {
                 <Card className="bg-card border-border">
                   <CardHeader>
                     <CardTitle className="text-foreground">Investment Opportunities</CardTitle>
-                    <CardDescription className="text-muted-foreground">Browse available vehicles to fund and earn returns.</CardDescription>
+                    <CardDescription className="text-muted-foreground">
+                      Browse available vehicles to fund and earn returns.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {availableVehicles.length > 0 ? (
@@ -526,7 +616,8 @@ export default function InvestorDashboard() {
           <DialogHeader>
             <DialogTitle>Invest in {selectedVehicle?.name}</DialogTitle>
             <DialogDescription>
-              Enter the amount you would like to invest in this vehicle. The total funding goal is ${selectedVehicle?.price.toLocaleString()}.
+              Enter the amount you would like to invest in this vehicle. The total funding goal is $
+              {selectedVehicle?.price.toLocaleString()}.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -540,8 +631,12 @@ export default function InvestorDashboard() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsInvestDialogOpen(false)}>Cancel</Button>
-            <Button onClick={submitInvestment} className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">Confirm Investment</Button>
+            <Button variant="outline" onClick={() => setIsInvestDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={submitInvestment} className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+              Confirm Investment
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

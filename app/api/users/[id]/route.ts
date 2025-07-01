@@ -74,3 +74,22 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         return NextResponse.json({ message: "Server error during deletion" }, { status: 500 });
     }
 }
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  try {
+    await dbConnect()
+
+    const user = await User.findById(params.id).select(
+      "name email availableBalance totalInvested totalReturns role status joinedDate",
+    )
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    return NextResponse.json(user)
+  } catch (error) {
+    console.error("Error fetching user:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
