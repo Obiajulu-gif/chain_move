@@ -42,7 +42,9 @@ import { VehicleCard } from "@/components/dashboard/investor/VehicleCard"
 
 export default function InvestorDashboard() {
   const { state, dispatch } = usePlatform()
-  const [currentInvestorId] = useState("investor1")
+  // Get the current investor from the users array
+  const currentInvestor = state.users.find((u) => u.role === "investor")
+  const currentInvestorId = currentInvestor?._id || currentInvestor?.id || ""
   const { availableVehicles, ...investorData } = useInvestorData(currentInvestorId)
   const { toast } = useToast()
   const router = useRouter()
@@ -63,20 +65,16 @@ export default function InvestorDashboard() {
   const refreshUserData = async () => {
     setIsRefreshing(true)
     try {
-      // Find the actual user ID from the users array
-      const actualUser = state.users.find((u) => u.role === "investor")
-      const userId = actualUser?._id || actualUser?.id
-
-      if (!userId) {
+      if (!currentInvestorId) {
         toast({
           title: "Error",
-          description: "Could not find user ID. Please refresh the page.",
+          description: "No investor account found. Please log in again.",
           variant: "destructive",
         })
         return
       }
 
-      const response = await fetch(`/api/users/${userId}`)
+      const response = await fetch(`/api/users/${currentInvestorId}`)
       if (response.ok) {
         const userData = await response.json()
         setCurrentBalance(userData.availableBalance || 0)
@@ -85,7 +83,7 @@ export default function InvestorDashboard() {
         dispatch({
           type: "UPDATE_USER_BALANCE",
           payload: {
-            userId: userId,
+            userId: currentInvestorId,
             balance: userData.availableBalance,
           },
         })
@@ -298,6 +296,17 @@ export default function InvestorDashboard() {
   const monthlyIncome = investorData.investments
     .filter((inv) => inv.status === "Active")
     .reduce((sum, inv) => sum + inv.monthlyReturn, 0)
+
+  if (!currentInvestor || !currentInvestorId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Loading investor data...</h2>
+          <p className="text-muted-foreground">Please wait while we fetch your account information.</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
