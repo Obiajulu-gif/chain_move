@@ -134,21 +134,38 @@ Run deployment with the following commands:
   npm run dls
   ```
 
-- **Celo Alfajores**:
+## Contract Verification
 
-  ```bash
-  npm run da
-  ```
+After deploying your contract to a public network (e.g., Lisk Sepolia), you can verify the implementation contract on a block explorer using Hardhat's verification plugin.
 
-#### Mainnet Deployment
+### Steps to Verify
 
-- **Celo Mainnet**:
+1. **Install the Hardhat verification plugin (if not already installed):**
 
-  ```bash
-  npm run dc
-  ```
+   ```bash
+   npm install --save-dev @nomicfoundation/hardhat-verify
+   ```
 
-**Note**: Ensure your `.env` file contains a valid `PRIVATE_KEY` or `localPK` with sufficient funds for gas fees on the target network.
+2. **Ensure your `hardhat.config.ts` includes the etherscan config:**
+
+   ```typescript
+   import "@nomicfoundation/hardhat-verify";
+
+   export default {
+     // ...existing config...
+     etherscan: {
+       apiKey: process.env.ETHERSCAN_API_KEY,
+     },
+   };
+   ```
+
+4. **Run the verification command:**
+
+   ```bash
+   npx hardhat verify --network <lisk-sepolia> <implementation_contract_address>
+   ```
+
+   - Replace `<implementation_contract_address>` with the address of your implementation contract (not the proxy).
 
 ### Upgrade Script (`scripts/deploy_upgrade.ts`)
 
