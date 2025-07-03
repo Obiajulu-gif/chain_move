@@ -534,8 +534,8 @@ export default function InvestorDashboard() {
                                       <Badge className={getStatusColor(investment.status)}>{investment.status}</Badge>
                                       <p className="text-xs text-muted-foreground mt-1">
                                         Started:{" "}
-                                        {investment.startDate
-                                          ? new Date(investment.startDate).toLocaleDateString()
+                                        {investment.date || investment.startDate
+                                          ? new Date(investment.date || investment.startDate).toLocaleDateString()
                                           : "Recently"}
                                       </p>
                                     </div>
