@@ -95,7 +95,7 @@ export async function POST(request: Request) {
           userId: investorId,
           userType: "investor",
           amount: amount,
-          status: "completed",
+          status: "Completed",
           type: "investment",
           method: "wallet",
           description: `Investment in ${vehicle.name}`,
