@@ -1,0 +1,535 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0xE0F4e7ccdfDa2F9fA068535f1c51077bbA4b473D",
+      "txHash": "0xd12fa69516296017fe52c61b5bce302b4ab817cea323e52f08992d65ffb14c48",
+      "kind": "uups"
+    }
+  ],
+  "impls": {
+    "07485828e850c9d27e85b6c4b800ae2415317f326d053870f558e30dd4676ee6": {
+      "address": "0xf6f576A7589457dc0Bf51200190ae1bbFFae563c",
+      "txHash": "0xcd9f499d60c00b0e85eaf3bf0c72b5fc617e55d40c789b7db5ff99f02a97f9b7",
+      "layout": {
+        "solcVersion": "0.8.28",
+        "storage": [
+          {
+            "label": "vehicleCount",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256",
+            "contract": "VehicleNFT",
+            "src": "contracts\\lib\\VehicleNFT.sol:24"
+          },
+          {
+            "label": "vehicles",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_uint256,t_struct(Vehicle)3454_storage)",
+            "contract": "VehicleNFT",
+            "src": "contracts\\lib\\VehicleNFT.sol:25"
+          },
+          {
+            "label": "investors",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_address,t_struct(Investor)2676_storage)",
+            "contract": "InvestmentPool",
+            "src": "contracts\\lib\\InvestmentPool.sol:14"
+          },
+          {
+            "label": "loanCount",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256",
+            "contract": "RevenueSharing",
+            "src": "contracts\\lib\\RevenueSharing.sol:32"
+          },
+          {
+            "label": "drivers",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_mapping(t_address,t_struct(Driver)2939_storage)",
+            "contract": "RevenueSharing",
+            "src": "contracts\\lib\\RevenueSharing.sol:33"
+          },
+          {
+            "label": "loans",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_mapping(t_uint256,t_struct(Loan)2957_storage)",
+            "contract": "RevenueSharing",
+            "src": "contracts\\lib\\RevenueSharing.sol:34"
+          },
+          {
+            "label": "vehicleToLoan",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "RevenueSharing",
+            "src": "contracts\\lib\\RevenueSharing.sol:35"
+          },
+          {
+            "label": "admin",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_address",
+            "contract": "Governance",
+            "src": "contracts\\lib\\Governance.sol:38"
+          },
+          {
+            "label": "proposalCount",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_uint256",
+            "contract": "Governance",
+            "src": "contracts\\lib\\Governance.sol:39"
+          },
+          {
+            "label": "protocolParams",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_struct(ProtocolParameters)2037_storage",
+            "contract": "Governance",
+            "src": "contracts\\lib\\Governance.sol:40"
+          },
+          {
+            "label": "proposals",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_mapping(t_uint256,t_struct(Proposal)2022_storage)",
+            "contract": "Governance",
+            "src": "contracts\\lib\\Governance.sol:41"
+          },
+          {
+            "label": "votingPower",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "Governance",
+            "src": "contracts\\lib\\Governance.sol:42"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "18",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ChainMoveContract",
+            "src": "contracts\\ChainMoveContract.sol:24"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)73_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)13_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_enum(LoanStatus)2933": {
+            "label": "enum RevenueSharing.LoanStatus",
+            "members": [
+              "None",
+              "Pending",
+              "Active",
+              "Repaid",
+              "Defaulted"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_enum(ProposalStatus)1996": {
+            "label": "enum Governance.ProposalStatus",
+            "members": [
+              "Pending",
+              "Active",
+              "Executed",
+              "Rejected"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_enum(VehicleStatus)3438": {
+            "label": "enum VehicleNFT.VehicleStatus",
+            "members": [
+              "Available",
+              "Funding",
+              "Financed"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Driver)2939_storage)": {
+            "label": "mapping(address => struct RevenueSharing.Driver)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Investor)2676_storage)": {
+            "label": "mapping(address => struct InvestmentPool.Investor)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Loan)2957_storage)": {
+            "label": "mapping(uint256 => struct RevenueSharing.Loan)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Proposal)2022_storage)": {
+            "label": "mapping(uint256 => struct Governance.Proposal)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Vehicle)3454_storage)": {
+            "label": "mapping(uint256 => struct VehicleNFT.Vehicle)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Driver)2939_storage": {
+            "label": "struct RevenueSharing.Driver",
+            "members": [
+              {
+                "label": "registered",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "loans",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Investor)2676_storage": {
+            "label": "struct InvestmentPool.Investor",
+            "members": [
+              {
+                "label": "registered",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "investments",
+                "type": "t_array(t_uint256)dyn_storage",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "amountInvested",
+                "type": "t_mapping(t_uint256,t_uint256)",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(Loan)2957_storage": {
+            "label": "struct RevenueSharing.Loan",
+            "members": [
+              {
+                "label": "vehicleId",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "driver",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "principal",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "repaid",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "startTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "duration",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "interestRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "status",
+                "type": "t_enum(LoanStatus)2933",
+                "offset": 0,
+                "slot": "7"
+              }
+            ],
+            "numberOfBytes": "256"
+          },
+          "t_struct(Proposal)2022_storage": {
+            "label": "struct Governance.Proposal",
+            "members": [
+              {
+                "label": "id",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "description",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "proposer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "votesFor",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "votesAgainst",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "startTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "endTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "status",
+                "type": "t_enum(ProposalStatus)1996",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "hasVoted",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "vote",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "9"
+              }
+            ],
+            "numberOfBytes": "320"
+          },
+          "t_struct(ProtocolParameters)2037_storage": {
+            "label": "struct Governance.ProtocolParameters",
+            "members": [
+              {
+                "label": "platformFeePercent",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "minInvestmentAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "maxLoanDuration",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "minInterestRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "maxInterestRate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "votingPeriod",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "proposalThreshold",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "6"
+              }
+            ],
+            "numberOfBytes": "224"
+          },
+          "t_struct(Vehicle)3454_storage": {
+            "label": "struct VehicleNFT.Vehicle",
+            "members": [
+              {
+                "label": "id",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "metadataURI",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "price",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "status",
+                "type": "t_enum(VehicleStatus)3438",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "owner",
+                "type": "t_address",
+                "offset": 1,
+                "slot": "3"
+              },
+              {
+                "label": "fundedAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "investorCount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              }
+            ],
+            "numberOfBytes": "192"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

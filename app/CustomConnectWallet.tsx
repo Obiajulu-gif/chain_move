@@ -50,6 +50,10 @@ export const CustomConnectWallet = () => {
                 toast({ title: "Login Successful", description: `Welcome back, ${loginData.user.name}!` });
                 // Redirect based on role
                 // router.push(`/dashboard/${loginData.user.role}`);
+                // Redirect if the user is in the login page
+                if (window.location.pathname.startsWith("/auth")) {
+                  router.push(`/dashboard/${loginData.user.role}`);
+                }
               } else {
                 console.log("login failed");
                 setStatus("login failed");

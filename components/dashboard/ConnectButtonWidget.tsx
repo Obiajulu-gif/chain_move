@@ -48,7 +48,7 @@ export const ConnectButtonWidget = () => {
                 setStatus("login complete");
                 toast({ title: "Login Successful", description: `Welcome back, ${loginData.user.name}!` });
                 // Redirect based on role
-                router.push(`/dashboard/${loginData.user.role}`);
+                // router.push(`/dashboard/${loginData.user.role}`);
               } else {
                 console.log("login failed");
                 setStatus("login failed");
