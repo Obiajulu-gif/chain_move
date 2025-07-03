@@ -39,12 +39,11 @@ import {
   RefreshCw,
 } from "lucide-react"
 import Image from "next/image"
-import ListVehicle from "./ListVehicle"
 import { VehicleCard } from "@/components/dashboard/investor/VehicleCard"
 
 export default function InvestorDashboard() {
-  const { state, dispatch } = usePlatform()
-  const { user: authUser, loading: authLoading } = useAuth()
+  const { state, dispatch, fetchData } = usePlatform()
+  const { user: authUser, loading: authLoading, setUser } = useAuth()
   const currentInvestorId = authUser?.id || ""
   const { availableVehicles, ...investorData } = useInvestorData(currentInvestorId)
   const { toast } = useToast()
@@ -61,24 +60,27 @@ export default function InvestorDashboard() {
 
   // Add state for real-time balance - use authUser balance as primary source
   const [currentBalance, setCurrentBalance] = useState(authUser?.availableBalance || 0)
+  const [totalInvested, setTotalInvested] = useState(authUser?.totalInvested || 0)
 
   // Function to refresh user data
   const refreshUserData = async () => {
     setIsRefreshing(true)
     try {
-      // if (!currentInvestorId) {
-      //   toast({
-      //     title: "Error",
-      //     description: "No investor account found. Please log in again.",
-      //     variant: "destructive",
-      //   })
-      //   return
-      // }
-
       const response = await fetch(`/api/users/${currentInvestorId}`)
       if (response.ok) {
         const userData = await response.json()
         setCurrentBalance(userData.availableBalance || 0)
+        setTotalInvested(userData.totalInvested || 0)
+
+        // Update the auth user data
+        if (setUser) {
+          setUser({
+            ...authUser,
+            availableBalance: userData.availableBalance,
+            totalInvested: userData.totalInvested,
+            totalReturns: userData.totalReturns,
+          })
+        }
 
         // Update the platform context
         dispatch({
@@ -90,8 +92,8 @@ export default function InvestorDashboard() {
         })
 
         toast({
-          title: "Balance Updated",
-          description: `Your current balance is $${userData.availableBalance?.toLocaleString() || 0}`,
+          title: "Data Updated",
+          description: `Balance: $${userData.availableBalance?.toLocaleString() || 0} | Invested: $${userData.totalInvested?.toLocaleString() || 0}`,
         })
       } else {
         throw new Error("Failed to fetch user data")
@@ -100,11 +102,27 @@ export default function InvestorDashboard() {
       console.error("Error refreshing user data:", error)
       toast({
         title: "Refresh Failed",
-        description: "Could not update balance. Please try again.",
+        description: "Could not update data. Please try again.",
         variant: "destructive",
       })
     } finally {
       setIsRefreshing(false)
+    }
+  }
+
+  // Function to fetch investments
+  const fetchInvestments = async () => {
+    try {
+      const response = await fetch(`/api/investments?investorId=${currentInvestorId}`)
+      if (response.ok) {
+        const investmentsData = await response.json()
+        dispatch({
+          type: "SET_INVESTMENTS",
+          payload: investmentsData.investments || [],
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching investments:", error)
     }
   }
 
@@ -136,7 +154,17 @@ export default function InvestorDashboard() {
     if (authUser?.availableBalance !== undefined) {
       setCurrentBalance(authUser.availableBalance)
     }
-  }, [authUser?.availableBalance])
+    if (authUser?.totalInvested !== undefined) {
+      setTotalInvested(authUser.totalInvested)
+    }
+  }, [authUser?.availableBalance, authUser?.totalInvested])
+
+  // Fetch investments when component mounts or user changes
+  useEffect(() => {
+    if (currentInvestorId) {
+      fetchInvestments()
+    }
+  }, [currentInvestorId])
 
   // Set current user on mount
   useEffect(() => {
@@ -202,7 +230,7 @@ export default function InvestorDashboard() {
     setIsInvestDialogOpen(true)
   }
 
-  const submitInvestment = () => {
+  const submitInvestment = async () => {
     const amount = Number.parseFloat(investmentAmount)
     if (!selectedVehicle || isNaN(amount) || amount <= 0) {
       toast({ title: "Invalid Amount", description: "Please enter a valid amount to invest.", variant: "destructive" })
@@ -218,20 +246,43 @@ export default function InvestorDashboard() {
       return
     }
 
-    // Here you would call the POST /api/invest endpoint
-    console.log(`Investing $${amount} in vehicle ${selectedVehicle._id}`)
-    toast({
-      title: "Investment Submitted",
-      description: `Your investment of $${amount.toLocaleString()} for ${selectedVehicle.name} is being processed.`,
-    })
+    try {
+      const response = await fetch("/api/invest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vehicleId: selectedVehicle._id,
+          investorId: authUser.id,
+          amount,
+        }),
+      })
 
-    // Update local balance optimistically
-    setCurrentBalance((prev) => prev - amount)
+      const result = await response.json()
 
-    // Close dialog and reset state
-    setIsInvestDialogOpen(false)
-    setSelectedVehicle(null)
-    setInvestmentAmount("")
+      if (!response.ok) {
+        throw new Error(result.message || "Investment failed.")
+      }
+
+      toast({
+        title: "Investment Successful!",
+        description: `Your investment of $${amount.toLocaleString()} in ${selectedVehicle.name} has been confirmed.`,
+      })
+
+      // Update local states optimistically
+      setCurrentBalance((prev) => prev - amount)
+      setTotalInvested((prev) => prev + amount)
+
+      // Refresh all data to update the UI
+      await Promise.all([refreshUserData(), fetchInvestments(), fetchData?.()])
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred."
+      toast({ title: "Investment Failed", description: message, variant: "destructive" })
+    } finally {
+      // Close dialog and reset state
+      setIsInvestDialogOpen(false)
+      setSelectedVehicle(null)
+      setInvestmentAmount("")
+    }
   }
 
   const handleFundWallet = async () => {
@@ -298,11 +349,15 @@ export default function InvestorDashboard() {
   }
 
   const unreadNotifications = state.notifications.filter((n) => n.userId === currentInvestorId && !n.read).length
-  const totalInvested = authUser?.totalInvested || 0
   const totalReturns = authUser?.totalReturns || 0
   const monthlyIncome = investorData.investments
     .filter((inv) => inv.status === "Active")
     .reduce((sum, inv) => sum + inv.monthlyReturn, 0)
+
+  // Get investments from the platform state
+  const investments = state.investments?.filter((inv) => inv.investorId === currentInvestorId) || []
+  const calculatedTotalInvested = investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+  const displayTotalInvested = totalInvested > 0 ? totalInvested : calculatedTotalInvested
 
   if (authLoading) {
     return (
@@ -410,7 +465,7 @@ export default function InvestorDashboard() {
                   <TrendingUp className="h-4 w-4 text-foreground" />
                 </CardHeader>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-foreground">${totalInvested.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-foreground">${displayTotalInvested.toLocaleString()}</div>
                   <p className="text-xs text-blue-500 dark:text-blue-400">Active investments</p>
                 </CardContent>
               </Card>
@@ -444,7 +499,7 @@ export default function InvestorDashboard() {
             <Tabs defaultValue="investments" className="space-y-6">
               <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-5">
                 <TabsTrigger value="investments">My Investments</TabsTrigger>
-                <TabsTrigger value="listVehicle">List Vehicle</TabsTrigger>
+                <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
                 <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 <TabsTrigger value="chat">Chat</TabsTrigger>
@@ -454,54 +509,58 @@ export default function InvestorDashboard() {
               <TabsContent value="investments" className="space-y-6">
                 <Card className="bg-card border-border">
                   <CardHeader>
-                    <CardTitle className="text-foreground">
-                      Active Investments ({investorData.investments.length})
-                    </CardTitle>
-                    <CardDescription className="text-muted-foreground">
-                      Monitor your current investments and returns
-                    </CardDescription>
+                    <CardTitle>My Active Investments ({investments.length})</CardTitle>
+                    <CardDescription>Monitor your current investments and returns.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {investorData.investments.length > 0 ? (
+                    {investments.length > 0 ? (
                       <div className="space-y-4">
-                        {investorData.investments.map((investment) => {
-                          const loan = state.loanApplications.find((l) => l.id === investment.loanId)
-                          const driver = state.drivers.find((d) => d.id === loan?.driverId)
-                          const vehicle = state.vehicles.find((v) => v.id === loan?.vehicleId)
-
+                        {investments.map((investment) => {
+                          const vehicle = state.vehicles.find((v) => v._id === investment.vehicleId)
                           return (
-                            <Card key={investment.id} className="bg-muted border-border">
+                            <Card key={investment.id || investment._id} className="bg-muted border-border">
                               <CardContent className="p-4">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center space-x-4">
                                     <Image
                                       src={vehicle?.image || "/placeholder.svg"}
-                                      alt={vehicle?.name || "Vehicle"}
+                                      alt={vehicle?.name || ""}
                                       width={60}
                                       height={45}
                                       className="rounded-lg object-cover"
                                     />
                                     <div>
                                       <h4 className="font-semibold text-foreground">{vehicle?.name}</h4>
-                                      <p className="text-sm text-muted-foreground">Driver: {driver?.name}</p>
                                       <Badge className={getStatusColor(investment.status)}>{investment.status}</Badge>
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        Started:{" "}
+                                        {investment.startDate
+                                          ? new Date(investment.startDate).toLocaleDateString()
+                                          : "Recently"}
+                                      </p>
                                     </div>
                                   </div>
                                   <div className="text-right">
                                     <p className="text-lg font-bold text-foreground">
                                       ${investment.amount.toLocaleString()}
                                     </p>
-                                    <p className="text-sm text-green-500">
-                                      +${(investment.monthlyReturn * investment.paymentsReceived).toFixed(2)} earned
-                                    </p>
+                                    <p className="text-sm text-green-500">+{investment.expectedROI}% ROI</p>
                                     <p className="text-xs text-muted-foreground">
-                                      {investment.paymentsReceived}/{investment.totalPayments} payments
+                                      ${investment.monthlyReturn?.toFixed(2)}/month
                                     </p>
                                   </div>
                                 </div>
                                 <div className="mt-4">
+                                  <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                                    <span>Progress</span>
+                                    <span>
+                                      {investment.paymentsReceived || 0}/{investment.totalPayments || 12} payments
+                                    </span>
+                                  </div>
                                   <Progress
-                                    value={(investment.paymentsReceived / investment.totalPayments) * 100}
+                                    value={
+                                      ((investment.paymentsReceived || 0) / (investment.totalPayments || 12)) * 100
+                                    }
                                     className="h-2"
                                   />
                                 </div>
@@ -513,10 +572,8 @@ export default function InvestorDashboard() {
                     ) : (
                       <div className="text-center py-12">
                         <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-foreground mb-2">No Active Investments</h3>
-                        <p className="text-muted-foreground">
-                          You haven't made any investments yet. Start by reviewing loan applications.
-                        </p>
+                        <h3 className="text-lg font-medium">No Active Investments</h3>
+                        <p className="text-muted-foreground">Explore opportunities to get started.</p>
                       </div>
                     )}
                   </CardContent>
@@ -551,11 +608,6 @@ export default function InvestorDashboard() {
                 </Card>
               </TabsContent>
 
-            {/* List Vehicle Tab */}
-            <TabsContent value="listVehicle" className="space-y-6">
-              <ListVehicle />
-            </TabsContent>
-
               {/* Pending Approvals Tab */}
               <TabsContent value="approvals" className="space-y-6">
                 <Card className="bg-card border-border">
@@ -575,7 +627,7 @@ export default function InvestorDashboard() {
                           const approval = loan.investorApprovals.find(
                             (a) => a.investorId === currentInvestorId && a.status === "Approved",
                           )
-                          const driver = state.drivers.find((d) => d.id === loan.driverId)
+                          const driver = state.drivers?.find((d) => d.id === loan.driverId)
                           const vehicle = state.vehicles.find((v) => v.id === loan.vehicleId)
 
                           return (
