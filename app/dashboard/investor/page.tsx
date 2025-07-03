@@ -65,15 +65,6 @@ export default function InvestorDashboard() {
   const refreshUserData = async () => {
     setIsRefreshing(true)
     try {
-      // if (!currentInvestorId) {
-      //   toast({
-      //     title: "Error",
-      //     description: "No investor account found. Please log in again.",
-      //     variant: "destructive",
-      //   })
-      //   return
-      // }
-
       const response = await fetch(`/api/users/${currentInvestorId}`)
       if (response.ok) {
         const userData = await response.json()
