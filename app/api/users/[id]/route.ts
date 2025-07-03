@@ -6,16 +6,16 @@ import { cookies } from 'next/headers';
 
 // Helper to get the current user's ID from the token
 async function getUserIdFromToken() {
-    const tokenCookie = cookies().get('token')?.value;
-    if (!tokenCookie) return null;
-
-    try {
-        const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-        const { payload } = await jwtVerify(tokenCookie, secret);
-        return payload.userId as string;
-    } catch (e) {
-        return null;
-    }
+  const cookieStore = await cookies()
+  const tokenCookie = cookieStore.get("token")?.value
+  if (!tokenCookie) return null
+  try {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+    const { payload } = await jwtVerify(tokenCookie, secret)
+    return payload.userId as string
+  } catch (e) {
+    return null
+  }
 }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
@@ -87,7 +87,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    return NextResponse.json(user)
+    return NextResponse.json({
+      ...user.toObject(),
+      availableBalance: user.availableBalance || 0,
+      totalInvested: user.totalInvested || 0,
+      totalReturns: user.totalReturns || 0,
+    })
   } catch (error) {
     console.error("Error fetching user:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
