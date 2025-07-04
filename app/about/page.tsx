@@ -177,7 +177,7 @@ export default function AboutPage() {
         </section>
 
         {/* Team Section */}
-        <section className="py-16">
+        {/* <section className="py-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-[#142841] mb-4">Meet Our Team 👥</h2>
             <p className="text-lg text-gray-600">Experienced leaders from fintech, blockchain, and mobility sectors</p>
@@ -202,7 +202,7 @@ export default function AboutPage() {
               </Card>
             ))}
           </div>
-        </section>
+        </section> */}
 
         {/* Timeline Section */}
         <section className="py-16 bg-gray-50 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
