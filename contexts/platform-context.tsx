@@ -549,6 +549,34 @@ export const useDashboardStats = () => {
 export const useDriverData = (driverId: string) => {
   const { state } = usePlatform()
 
+  // Generate mock repayments for demonstration
+  const mockRepayments = [
+    {
+      id: "payment1",
+      status: "Paid",
+      amount: 500,
+      dueDate: "2024-01-15",
+      paymentNumber: 1,
+      loanId: "loan1",
+    },
+    {
+      id: "payment2",
+      status: "Pending",
+      amount: 500,
+      dueDate: "2024-02-15",
+      paymentNumber: 2,
+      loanId: "loan1",
+    },
+    {
+      id: "payment3",
+      status: "Pending",
+      amount: 500,
+      dueDate: "2024-03-15",
+      paymentNumber: 3,
+      loanId: "loan1",
+    },
+  ]
+
   return {
     driver: state.users.find((u: User) => (u._id === driverId || u.id === driverId) && u.role === "driver"),
     loans: state.loanApplications.filter((l: LoanApplication) => l.driverId === driverId),
@@ -556,6 +584,7 @@ export const useDriverData = (driverId: string) => {
     transactions: state.transactions.filter((t: Transaction) => t.userId === driverId),
     notifications: state.notifications.filter((n: Notification) => n.userId === driverId),
     availableVehicles: state.vehicles.filter((v: Vehicle) => v.status === "Available"),
+    repayments: mockRepayments, // Add repayments data
   }
 }
 
