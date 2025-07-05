@@ -399,18 +399,18 @@ export default function InvestorDashboard() {
       )
     }
 
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-          <p className="text-muted-foreground">You need to be logged in as an investor to access this page.</p>
-          <Button onClick={() => router.push("/signin")} className="mt-4">
-            Sign In
-          </Button>
-        </div>
-      </div>
-    )
-  }
+  //   return (
+  //     <div className="min-h-screen bg-background flex items-center justify-center">
+  //       <div className="text-center">
+  //         <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+  //         <p className="text-muted-foreground">You need to be logged in as an investor to access this page.</p>
+  //         <Button onClick={() => router.push("/signin")} className="mt-4">
+  //           Sign In
+  //         </Button>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   return (
     <>
