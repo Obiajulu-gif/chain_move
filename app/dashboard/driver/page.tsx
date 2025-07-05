@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,9 @@ import { RealTimeChat } from "@/components/dashboard/real-time-chat"
 import { AdvancedAnalytics } from "@/components/dashboard/advanced-analytics"
 import { NotificationCenter } from "@/components/dashboard/notification-center"
 import { usePlatform, useDriverData } from "@/contexts/platform-context"
+import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 import {
   Car,
   Calendar,
@@ -24,108 +26,36 @@ import {
   FileText,
   Bell,
   CreditCard,
-  Activity,
-  MessageCircle,
-  BarChart3,
   Loader2,
 } from "lucide-react"
 
-// Define types for our data
-interface Payment {
-  id: string
-  status: string
-  amount: number
-  dueDate: string
-  paymentNumber: number
-  loanId: string
-}
-
-interface InvestorApproval {
-  id: string
-  investorId: string
-  amount: number
-  status: string
-  approvedDate: string
-}
-
-interface LoanApplication {
-  id: string
-  requestedAmount: number
-  monthlyPayment: number
-  interestRate: number
-  loanTerm: number
-  fundingProgress: number
-  totalFunded: number
-  remainingAmount: number
-  investorApprovals: InvestorApproval[]
-  status: string
-  startDate: string
-  endDate: string
-}
-
-interface DriverData {
-  driver?: {
-    id: string
-    name: string
-    rating: number
-    status: string
-  }
-  notifications: Array<{
-    id: string
-    title: string
-    message: string
-    read: boolean
-    timestamp: string
-  }>
-  repayments: Payment[]
-  activeLoan?: LoanApplication
-  pendingLoans: LoanApplication[]
-}
-
-// Helper function to get status badge color
-const getStatusColor = (status: string): string => {
-  switch (status.toLowerCase()) {
-    case 'paid':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-    case 'overdue':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-  }
-}
-
 export default function DriverDashboard() {
   const { state, dispatch } = usePlatform()
-  const [currentDriverId] = useState("driver1") // In real app, get from auth
-  const driverData = useDriverData(currentDriverId)
+  const { user: authUser, loading: authLoading } = useAuth()
   const { toast } = useToast()
+  const router = useRouter()
 
-  if (state.isLoading || !driverData.driver) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  const currentDriverId = authUser?.id || ""
+  const driverData = useDriverData(currentDriverId)
 
   // Set current user on mount
   useEffect(() => {
-    dispatch({
-      type: "SET_CURRENT_USER",
-      payload: {
-        id: currentDriverId,
-        role: "driver",
-        name: driverData.driver?.name || "Driver",
-      },
-    })
-  }, [dispatch, currentDriverId, driverData.driver?.name])
+    if (authUser) {
+      dispatch({
+        type: "SET_CURRENT_USER",
+        payload: {
+          id: authUser.id,
+          role: authUser.role as "driver",
+          name: authUser.name,
+          email: authUser.email,
+        },
+      })
+    }
+  }, [dispatch, authUser])
 
   const handleMakePayment = (loanId: string, amount: number) => {
     // Find next pending payment
     const nextPayment = driverData.repayments.find((r) => r.loanId === loanId && r.status === "Pending")
-
     if (nextPayment) {
       dispatch({
         type: "MAKE_PAYMENT",
@@ -135,7 +65,6 @@ export default function DriverDashboard() {
           paymentId: nextPayment.id,
         },
       })
-
       toast({
         title: "Payment Successful",
         description: `Payment of $${amount.toLocaleString()} has been processed`,
@@ -159,37 +88,78 @@ export default function DriverDashboard() {
     }
   }
 
+  // Show loading while auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+          <p className="text-muted-foreground">Please wait while we fetch your account information.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Check authentication and role
+  if (!authUser || authUser.role !== "driver") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <p className="text-muted-foreground">You need to be logged in as a driver to access this page.</p>
+          <Button onClick={() => router.push("/signin")} className="mt-4">
+            Sign In
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading while platform data is loading
+  if (state.isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Loading Dashboard...</h2>
+          <p className="text-muted-foreground">Please wait while we load your driver dashboard.</p>
+        </div>
+      </div>
+    )
+  }
+
   const activeLoan = driverData.loans.find((l) => l.status === "Active" || l.status === "Approved")
   const pendingLoans = driverData.loans.filter((l) => l.status === "Pending" || l.status === "Under Review")
-  const totalFundsReceived = activeLoan ? activeLoan.totalFunded : 0
+  const totalFundsReceived = activeLoan ? activeLoan.totalFunded || 0 : 0
   const nextPaymentAmount = activeLoan ? activeLoan.monthlyPayment : 0
   const unreadNotifications = driverData.notifications.filter((n) => !n.read).length
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <Sidebar role="driver" />
+    <>
+      <div className="min-h-screen bg-background">
+        <Sidebar role="driver" className="md:w-64 lg:w-72" mobileWidth="w-64" />
+        <div className="md:ml-64 lg:ml-72">
+          <Header
+            userName={authUser.name || "Driver"}
+            userStatus="Verified Driver"
+            notificationCount={unreadNotifications}
+            className="md:pl-6 lg:pl-8"
+          />
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header
-          userName={driverData.driver?.name || "Driver"}
-          userStatus="Verified Driver"
-          notificationCount={unreadNotifications}
-        />
-
-        <main className="flex-1 overflow-auto">
-          <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto w-full">
-            {/* Real-time Status Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Loan Status</CardTitle>
-                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-[#E57700]" />
+          <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
+            {/* Real-time Portfolio Stats - Match investor dashboard layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Loan Status</CardTitle>
+                  <FileText className="h-4 w-4 text-foreground" />
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">
                     {activeLoan ? "Active" : pendingLoans.length > 0 ? "Pending" : "No Loan"}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                  <p className="text-xs text-muted-foreground">
                     {activeLoan
                       ? `$${activeLoan.requestedAmount.toLocaleString()} approved`
                       : pendingLoans.length > 0
@@ -199,42 +169,38 @@ export default function DriverDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Funds Received</CardTitle>
-                  <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-[#E57700]" />
+              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Funds Received</CardTitle>
+                  <Wallet className="h-4 w-4 text-foreground" />
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">${totalFundsReceived.toLocaleString()}</div>
-                  <p className="text-xs text-green-500">Available for withdrawal</p>
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">${totalFundsReceived.toLocaleString()}</div>
+                  <p className="text-xs text-green-500 dark:text-green-400">Available for withdrawal</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Next Payment</CardTitle>
-                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-[#E57700]" />
+              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Next Payment</CardTitle>
+                  <Calendar className="h-4 w-4 text-foreground" />
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">
                     {nextPaymentAmount > 0 ? `$${nextPaymentAmount}` : "N/A"}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {activeLoan ? "Due in 15 days" : "No active loan"}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{activeLoan ? "Due in 15 days" : "No active loan"}</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Driver Rating</CardTitle>
-                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-[#E57700]" />
+              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Driver Rating</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-foreground" />
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">
-                    {driverData.driver?.rating || "N/A"}
-                  </div>
-                  <p className="text-xs text-green-500">Excellent performance</p>
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">{driverData.driver?.rating || "4.8"}</div>
+                  <p className="text-xs text-green-500 dark:text-green-400">Excellent performance</p>
                 </CardContent>
               </Card>
             </div>
@@ -259,12 +225,8 @@ export default function DriverDashboard() {
                           className="flex items-center justify-between p-3 bg-white dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-800"
                         >
                           <div>
-                            <p className="font-medium text-blue-900 dark:text-blue-100 text-sm">
-                              {notification.title}
-                            </p>
-                            <p className="text-xs text-blue-700 dark:text-blue-300">
-                              {notification.message}
-                            </p>
+                            <p className="font-medium text-blue-900 dark:text-blue-100 text-sm">{notification.title}</p>
+                            <p className="text-xs text-blue-700 dark:text-blue-300">{notification.message}</p>
                             <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                               {new Date(notification.timestamp).toLocaleString()}
                             </p>
@@ -283,55 +245,20 @@ export default function DriverDashboard() {
               </Card>
             )}
 
-            {/* Enhanced Dashboard Tabs */}
-            <Tabs defaultValue="overview" className="space-y-4">
-              <div className="overflow-x-auto">
-                <TabsList className="w-full grid grid-cols-3 sm:grid-cols-6 bg-muted p-1 h-auto">
-                  <TabsTrigger
-                    value="overview"
-                    className="text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="repayments"
-                    className="text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    Repayments
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="funding"
-                    className="text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    Funding
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="analytics"
-                    className="hidden sm:flex items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                    <span>Analytics</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="chat"
-                    className="hidden sm:flex items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                    <span>Chat</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="notifications"
-                    className="hidden sm:flex items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                    <span>Alerts</span>
-                  </TabsTrigger>
-                </TabsList>
-              </div>
+            {/* Main Content Tabs - Match investor dashboard layout */}
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-6">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="repayments">Repayments</TabsTrigger>
+                <TabsTrigger value="funding">Funding</TabsTrigger>
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                <TabsTrigger value="chat">Chat</TabsTrigger>
+                <TabsTrigger value="notifications">Alerts</TabsTrigger>
+              </TabsList>
 
-              <TabsContent value="overview" className="space-y-4">
+              <TabsContent value="overview" className="space-y-6">
                 {activeLoan ? (
-                  <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+                  <Card className="bg-card border-border">
                     <CardHeader>
                       <CardTitle className="text-foreground flex items-center">
                         <Car className="h-5 w-5 mr-2" />
@@ -362,19 +289,19 @@ export default function DriverDashboard() {
                           <p className="text-2xl font-bold text-foreground">{activeLoan.loanTerm} months</p>
                         </div>
                       </div>
-
                       <div className="mt-6">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm text-muted-foreground">Funding Progress</span>
-                          <span className="text-sm text-foreground">{activeLoan.fundingProgress.toFixed(1)}%</span>
+                          <span className="text-sm text-foreground">
+                            {(activeLoan.fundingProgress || 0).toFixed(1)}%
+                          </span>
                         </div>
-                        <Progress value={activeLoan.fundingProgress} className="h-3" />
+                        <Progress value={activeLoan.fundingProgress || 0} className="h-3" />
                         <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                          <span>${activeLoan.totalFunded.toLocaleString()} funded</span>
-                          <span>${activeLoan.remainingAmount.toLocaleString()} remaining</span>
+                          <span>${(activeLoan.totalFunded || 0).toLocaleString()} funded</span>
+                          <span>${(activeLoan.remainingAmount || 0).toLocaleString()} remaining</span>
                         </div>
                       </div>
-
                       <div className="mt-6 flex space-x-2">
                         <Button
                           className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
@@ -383,7 +310,10 @@ export default function DriverDashboard() {
                           <CreditCard className="h-4 w-4 mr-2" />
                           Make Payment
                         </Button>
-                        <Button variant="outline" className="border-border text-foreground hover:bg-muted">
+                        <Button
+                          variant="outline"
+                          className="border-border text-foreground hover:bg-muted bg-transparent"
+                        >
                           <FileText className="h-4 w-4 mr-2" />
                           View Contract
                         </Button>
@@ -391,7 +321,7 @@ export default function DriverDashboard() {
                     </CardContent>
                   </Card>
                 ) : (
-                  <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+                  <Card className="bg-card border-border">
                     <CardContent className="text-center py-12">
                       <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-foreground mb-2">No Active Loan</h3>
@@ -410,7 +340,7 @@ export default function DriverDashboard() {
 
               {/* Repayments Tab */}
               <TabsContent value="repayments" className="space-y-6">
-                <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+                <Card className="bg-card border-border">
                   <CardHeader>
                     <CardTitle className="text-foreground flex items-center">
                       <Calendar className="h-5 w-5 mr-2" />
@@ -424,7 +354,10 @@ export default function DriverDashboard() {
                     {driverData.repayments.length > 0 ? (
                       <div className="space-y-4">
                         {driverData.repayments.slice(0, 5).map((payment) => (
-                          <div key={payment.id} className="flex items-center justify-between p-4 bg-muted/30 dark:bg-muted/10 rounded-lg">
+                          <div
+                            key={payment.id}
+                            className="flex items-center justify-between p-4 bg-muted/30 dark:bg-muted/10 rounded-lg"
+                          >
                             <div className="flex items-center space-x-3">
                               {payment.status === "Paid" ? (
                                 <CheckCircle className="h-5 w-5 text-green-500" />
@@ -437,9 +370,7 @@ export default function DriverDashboard() {
                                 <p className="font-medium text-foreground">
                                   {new Date(payment.dueDate).toLocaleDateString()}
                                 </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {payment.status}
-                                </p>
+                                <p className="text-sm text-muted-foreground">{payment.status}</p>
                               </div>
                             </div>
                             <div className="text-right">
@@ -469,7 +400,7 @@ export default function DriverDashboard() {
 
               {/* Funding Tab */}
               <TabsContent value="funding" className="space-y-6">
-                <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+                <Card className="bg-card border-border">
                   <CardHeader>
                     <CardTitle className="text-foreground flex items-center">
                       <TrendingUp className="h-5 w-5 mr-2" />
@@ -486,32 +417,38 @@ export default function DriverDashboard() {
                           <div className="flex justify-between items-center mb-2">
                             <span className="text-sm text-muted-foreground">Funding Progress</span>
                             <span className="text-sm font-medium text-foreground">
-                              {activeLoan.fundingProgress.toFixed(1)}%
+                              {(activeLoan.fundingProgress || 0).toFixed(1)}%
                             </span>
                           </div>
-                          <Progress value={activeLoan.fundingProgress} className="h-3" />
+                          <Progress value={activeLoan.fundingProgress || 0} className="h-3" />
                           <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                            <span>${activeLoan.totalFunded.toLocaleString()} funded</span>
-                            <span>${activeLoan.remainingAmount.toLocaleString()} remaining</span>
+                            <span>${(activeLoan.totalFunded || 0).toLocaleString()} funded</span>
+                            <span>${(activeLoan.remainingAmount || 0).toLocaleString()} remaining</span>
                           </div>
                         </div>
-
                         <div>
                           <h4 className="text-sm font-medium text-foreground mb-3">Investor Commitments</h4>
                           <div className="space-y-3">
-                            {activeLoan.investorApprovals.length > 0 ? (
-                              activeLoan.investorApprovals.map((approval) => {
-                                const investor = state.investors.find(inv => inv.id === approval.investorId);
+                            {activeLoan.investorApprovals && activeLoan.investorApprovals.length > 0 ? (
+                              activeLoan.investorApprovals.map((approval, index) => {
+                                const investor = state.users.find(
+                                  (user) => user.id === approval.investorId || user._id === approval.investorId,
+                                )
                                 return (
-                                  <div key={approval.id} className="flex items-center justify-between p-3 bg-muted/30 dark:bg-muted/10 rounded-lg">
+                                  <div
+                                    key={`${approval.investorId}-${index}`}
+                                    className="flex items-center justify-between p-3 bg-muted/30 dark:bg-muted/10 rounded-lg"
+                                  >
                                     <div className="flex items-center space-x-3">
                                       <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
                                         <span className="text-xs font-medium">
-                                          {investor ? investor.name.charAt(0).toUpperCase() : '?'}
+                                          {investor ? investor.name.charAt(0).toUpperCase() : "?"}
                                         </span>
                                       </div>
                                       <div>
-                                        <p className="font-medium text-foreground">{investor ? investor.name : 'Unknown Investor'}</p>
+                                        <p className="font-medium text-foreground">
+                                          {investor ? investor.name : "Unknown Investor"}
+                                        </p>
                                         <p className="text-xs text-muted-foreground">
                                           {new Date(approval.approvedDate).toLocaleDateString()}
                                         </p>
@@ -524,7 +461,7 @@ export default function DriverDashboard() {
                                       </Badge>
                                     </div>
                                   </div>
-                                );
+                                )
                               })
                             ) : (
                               <div className="text-center py-4">
@@ -564,9 +501,8 @@ export default function DriverDashboard() {
               </TabsContent>
             </Tabs>
           </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
-
