@@ -26,8 +26,6 @@ import {
   FileText,
   Bell,
   CreditCard,
-  MessageCircle,
-  BarChart3,
   Loader2,
 } from "lucide-react"
 
@@ -138,28 +136,30 @@ export default function DriverDashboard() {
   const unreadNotifications = driverData.notifications.filter((n) => !n.read).length
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <Sidebar role="driver" />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header
-          userName={authUser.name || "Driver"}
-          userStatus="Verified Driver"
-          notificationCount={unreadNotifications}
-        />
-        <main className="flex-1 overflow-auto">
-          <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto w-full">
-            {/* Real-time Status Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Loan Status</CardTitle>
-                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-[#E57700]" />
+    <>
+      <div className="min-h-screen bg-background">
+        <Sidebar role="driver" className="md:w-64 lg:w-72" mobileWidth="w-64" />
+        <div className="md:ml-64 lg:ml-72">
+          <Header
+            userName={authUser.name || "Driver"}
+            userStatus="Verified Driver"
+            notificationCount={unreadNotifications}
+            className="md:pl-6 lg:pl-8"
+          />
+
+          <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
+            {/* Real-time Portfolio Stats - Match investor dashboard layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Loan Status</CardTitle>
+                  <FileText className="h-4 w-4 text-foreground" />
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">
                     {activeLoan ? "Active" : pendingLoans.length > 0 ? "Pending" : "No Loan"}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                  <p className="text-xs text-muted-foreground">
                     {activeLoan
                       ? `$${activeLoan.requestedAmount.toLocaleString()} approved`
                       : pendingLoans.length > 0
@@ -168,40 +168,39 @@ export default function DriverDashboard() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Funds Received</CardTitle>
-                  <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-[#E57700]" />
+
+              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Funds Received</CardTitle>
+                  <Wallet className="h-4 w-4 text-foreground" />
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">
-                    ${totalFundsReceived.toLocaleString()}
-                  </div>
-                  <p className="text-xs text-green-500">Available for withdrawal</p>
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">${totalFundsReceived.toLocaleString()}</div>
+                  <p className="text-xs text-green-500 dark:text-green-400">Available for withdrawal</p>
                 </CardContent>
               </Card>
-              <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Next Payment</CardTitle>
-                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-[#E57700]" />
+
+              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Next Payment</CardTitle>
+                  <Calendar className="h-4 w-4 text-foreground" />
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">
                     {nextPaymentAmount > 0 ? `$${nextPaymentAmount}` : "N/A"}
                   </div>
                   <p className="text-xs text-muted-foreground">{activeLoan ? "Due in 15 days" : "No active loan"}</p>
                 </CardContent>
               </Card>
-              <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Driver Rating</CardTitle>
-                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-[#E57700]" />
+
+              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Driver Rating</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-foreground" />
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">
-                    {driverData.driver?.rating || "4.8"}
-                  </div>
-                  <p className="text-xs text-green-500">Excellent performance</p>
+                <CardContent>
+                  <div className="text-2xl font-bold text-foreground">{driverData.driver?.rating || "4.8"}</div>
+                  <p className="text-xs text-green-500 dark:text-green-400">Excellent performance</p>
                 </CardContent>
               </Card>
             </div>
@@ -246,55 +245,20 @@ export default function DriverDashboard() {
               </Card>
             )}
 
-            {/* Enhanced Dashboard Tabs */}
-            <Tabs defaultValue="overview" className="space-y-4">
-              <div className="overflow-x-auto">
-                <TabsList className="w-full grid grid-cols-3 sm:grid-cols-6 bg-muted p-1 h-auto">
-                  <TabsTrigger
-                    value="overview"
-                    className="text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="repayments"
-                    className="text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    Repayments
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="funding"
-                    className="text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    Funding
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="analytics"
-                    className="hidden sm:flex items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                    <span>Analytics</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="chat"
-                    className="hidden sm:flex items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                    <span>Chat</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="notifications"
-                    className="hidden sm:flex items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  >
-                    <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                    <span>Alerts</span>
-                  </TabsTrigger>
-                </TabsList>
-              </div>
+            {/* Main Content Tabs - Match investor dashboard layout */}
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-6">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="repayments">Repayments</TabsTrigger>
+                <TabsTrigger value="funding">Funding</TabsTrigger>
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                <TabsTrigger value="chat">Chat</TabsTrigger>
+                <TabsTrigger value="notifications">Alerts</TabsTrigger>
+              </TabsList>
 
-              <TabsContent value="overview" className="space-y-4">
+              <TabsContent value="overview" className="space-y-6">
                 {activeLoan ? (
-                  <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+                  <Card className="bg-card border-border">
                     <CardHeader>
                       <CardTitle className="text-foreground flex items-center">
                         <Car className="h-5 w-5 mr-2" />
@@ -357,7 +321,7 @@ export default function DriverDashboard() {
                     </CardContent>
                   </Card>
                 ) : (
-                  <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+                  <Card className="bg-card border-border">
                     <CardContent className="text-center py-12">
                       <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-foreground mb-2">No Active Loan</h3>
@@ -376,7 +340,7 @@ export default function DriverDashboard() {
 
               {/* Repayments Tab */}
               <TabsContent value="repayments" className="space-y-6">
-                <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+                <Card className="bg-card border-border">
                   <CardHeader>
                     <CardTitle className="text-foreground flex items-center">
                       <Calendar className="h-5 w-5 mr-2" />
@@ -436,7 +400,7 @@ export default function DriverDashboard() {
 
               {/* Funding Tab */}
               <TabsContent value="funding" className="space-y-6">
-                <Card className="bg-card/50 hover:bg-card transition-colors duration-200 border-border/50">
+                <Card className="bg-card border-border">
                   <CardHeader>
                     <CardTitle className="text-foreground flex items-center">
                       <TrendingUp className="h-5 w-5 mr-2" />
@@ -537,8 +501,8 @@ export default function DriverDashboard() {
               </TabsContent>
             </Tabs>
           </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
