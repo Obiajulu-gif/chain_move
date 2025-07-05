@@ -132,7 +132,7 @@ export default function DriverDashboard() {
   const activeLoan = driverData.loans.find((l) => l.status === "Active" || l.status === "Approved")
   const pendingLoans = driverData.loans.filter((l) => l.status === "Pending" || l.status === "Under Review")
   const totalFundsReceived = activeLoan ? activeLoan.totalFunded || 0 : 0
-  const nextPaymentAmount = activeLoan ? activeLoan.monthlyPayment : 0
+  const nextPaymentAmount = activeLoan ? activeLoan.monthlyPayment || 0 : 0
   const unreadNotifications = driverData.notifications.filter((n) => !n.read).length
 
   return (
@@ -199,8 +199,12 @@ export default function DriverDashboard() {
                   <TrendingUp className="h-4 w-4 text-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-foreground">{driverData.driver?.rating || "4.8"}</div>
-                  <p className="text-xs text-green-500 dark:text-green-400">Excellent performance</p>
+                  <div className="text-2xl font-bold text-foreground">
+                    {driverData.driver?.rating ? driverData.driver.rating.toFixed(1) : "N/A"}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {driverData.driver?.rating ? "Current rating" : "No rating yet"}
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -389,9 +393,14 @@ export default function DriverDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8">
+                      <div className="text-center py-12">
                         <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No repayment history found</p>
+                        <h3 className="text-lg font-medium text-foreground mb-2">No Repayment Schedule</h3>
+                        <p className="text-muted-foreground">
+                          {activeLoan
+                            ? "Your repayment schedule will appear here once payments begin"
+                            : "Apply for a loan to see your repayment schedule"}
+                        </p>
                       </div>
                     )}
                   </CardContent>
