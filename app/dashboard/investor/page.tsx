@@ -410,7 +410,7 @@ export default function InvestorDashboard() {
   //       </div>
   //     </div>
   //   )
-  // }
+  }
 
   return (
     <>
