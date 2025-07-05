@@ -30,7 +30,7 @@ export async function GET() {
         const totalFundsInvested = investmentAggregation.length > 0 ? investmentAggregation[0].total : 0;
         
         // financial calculations
-        const totalFundsAvailable = 450120; // on this later
+        const totalFundsAvailable = 0; // on this later
         const platformRevenue = totalFundsInvested * 0.05; // Assuming a 5% platform fee for simplicity
 
         // --- Vehicle Stats ---

@@ -126,12 +126,18 @@ export default function InvestorDashboard() {
     }
   }
 
+  // Add a state to track if we're returning from payment
+  const [isReturningFromPayment, setIsReturningFromPayment] = useState(false)
+
+  // Update the useEffect that handles payment returns
   useEffect(() => {
     // Get the transaction reference from the URL
     const reference = searchParams.get("reference")
+    const trxref = searchParams.get("trxref")
 
     // If a reference exists, it means the user just returned from a payment
-    if (reference) {
+    if (reference || trxref) {
+      setIsReturningFromPayment(true)
       toast({
         title: "Processing Payment...",
         description: "Verifying your transaction. Your balance will update shortly.",
@@ -140,11 +146,13 @@ export default function InvestorDashboard() {
       // Wait a moment for webhook processing, then refresh data
       setTimeout(() => {
         refreshUserData()
+        setIsReturningFromPayment(false)
       }, 3000) // Wait 3 seconds for webhook to process
 
       // Clean up URL by removing the reference parameter
       const newUrl = new URL(window.location.href)
       newUrl.searchParams.delete("reference")
+      newUrl.searchParams.delete("trxref")
       router.replace(newUrl.pathname + newUrl.search)
     }
   }, [searchParams, router])
@@ -359,18 +367,38 @@ export default function InvestorDashboard() {
   const calculatedTotalInvested = investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
   const displayTotalInvested = totalInvested > 0 ? totalInvested : calculatedTotalInvested
 
-  if (authLoading) {
+  // Update the loading condition
+  if (authLoading || isReturningFromPayment) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
-          <p className="text-muted-foreground">Please wait while we fetch your account information.</p>
+          <h2 className="text-xl font-semibold mb-2">
+            {isReturningFromPayment ? "Processing Payment..." : "Loading..."}
+          </h2>
+          <p className="text-muted-foreground">
+            {isReturningFromPayment
+              ? "Please wait while we verify your transaction and update your balance."
+              : "Please wait while we fetch your account information."}
+          </p>
         </div>
       </div>
     )
   }
 
-  if (!authUser || authUser.role !== "investor") {
+  // Update the access control check to be more lenient during payment processing
+  if (!authUser || (authUser.role !== "investor" && !isReturningFromPayment)) {
+    // Don't show access denied immediately if we're still loading auth or returning from payment
+    if (authLoading || isReturningFromPayment) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+            <p className="text-muted-foreground">Please wait while we fetch your account information.</p>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
