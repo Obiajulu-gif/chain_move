@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "ChainMove - Decentralized Vehicle Financing Platform",
   description: "Empowering drivers and investors through blockchain-powered vehicle financing",
-  generator: 'v0.dev'
+  generator: 'chainmove.dev'
 }
 
 export default function RootLayout({

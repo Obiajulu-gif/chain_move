@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
+import { Navigation } from "@/components/landing/navigation"
+
 
 const team = [
   {
@@ -80,27 +82,8 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center">
-                <Image src="/logo.svg" alt="ChainMove Logo" width={32} height={32} className="mr-2" />
-                <span className="text-2xl font-bold text-[#E57700]">ChainMove</span>
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" asChild>
-                <Link href="/auth">Login</Link>
-              </Button>
-              <Button className="bg-[#E57700] hover:bg-[#E57700]/90" asChild>
-                <Link href="/auth">Connect Wallet</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
+            <Navigation />
+      
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">

@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Header } from "@/components/dashboard/header"
 import { Search, MapPin, Star, DollarSign, Eye, Heart } from "lucide-react"
 import Image from "next/image"
+import { Navigation } from "@/components/landing/navigation"
+
 
 export default function MarketplacePage() {
   const [activeTab, setActiveTab] = useState("featured")
@@ -179,7 +181,8 @@ export default function MarketplacePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header userName="Guest" userStatus="Browse Marketplace" />
+      {/* <Header userName="Guest" userStatus="Browse Marketplace" /> */}
+      <Navigation />
 
       <div className="p-6">
         {/* Hero Section */}
