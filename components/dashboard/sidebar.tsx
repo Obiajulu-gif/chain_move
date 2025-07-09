@@ -22,7 +22,7 @@ import {
   Menu,
   X,
   Vote,
-  UserCheck,
+  UserCheck, // Using this icon for KYC
   AlertTriangle,
   Wrench,
   FileText,
@@ -42,6 +42,7 @@ interface SidebarProps {
 const navigationItems = {
   driver: [
     { name: "My Vehicle", href: "/dashboard/driver", icon: Car },
+    { name: "KYC Verification", href: "/dashboard/driver/kyc", icon: UserCheck },
     { name: "Maintenance", href: "/dashboard/driver/maintenance", icon: Wrench },
     { name: "Loan Terms", href: "/dashboard/driver/loan-terms", icon: FileText },
     { name: "Repayment", href: "/dashboard/driver/repayment", icon: Calendar },
@@ -76,7 +77,7 @@ export function Sidebar({ role }: SidebarProps) {
   const { toast } = useToast() // Initialize toast
   const items = navigationItems[role]
 
- 
+
   const handleLogout = async () => {
     try {
       const res = await fetch('/api/auth/logout', {
@@ -85,7 +86,7 @@ export function Sidebar({ role }: SidebarProps) {
 
       if (res.ok) {
         toast({ title: "Logged Out", description: "You have been successfully logged out." });
-        
+
         router.push('/signin');
         router.refresh();
       } else {

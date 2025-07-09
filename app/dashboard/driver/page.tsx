@@ -265,7 +265,7 @@ export default function DriverDashboard() {
         <div className="md:ml-64 lg:ml-72">
           <Header
             userName={authUser.name || "Driver"}
-            userStatus="Verified Driver"
+            userStatus="Driver"
             notificationCount={unreadNotifications}
             className="md:pl-6 lg:pl-8"
           />
