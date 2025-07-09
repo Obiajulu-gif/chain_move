@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import Image from "next/image"
 import { ChainMoveLogo } from "@/components/chain-move-logo"
+import { Navigation } from "@/components/landing/navigation"
+
 
 const announcements = [
   {
@@ -98,25 +100,7 @@ export default function AnnouncementsPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-[#E57700]">
-                <ChainMoveLogo />
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" asChild>
-                <Link href="/auth">Login</Link>
-              </Button>
-              <Button className="bg-[#E57700] hover:bg-[#E57700]/90" asChild>
-                <Link href="/auth">Connect Wallet</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navigation />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
