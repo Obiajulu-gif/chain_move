@@ -17,22 +17,29 @@ export async function GET() {
     const { payload } = await jwtVerify(tokenCookie, secret)
 
     await dbConnect()
+
+    // --- IMPORTANT CHANGE HERE ---
+    // Include kycStatus and kycDocuments in the select statement
     const user = await User.findById(payload.userId).select(
-      "name email role availableBalance totalInvested totalReturns",
+      "name email role availableBalance totalInvested totalReturns kycStatus kycDocuments",
     )
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    // --- IMPORTANT CHANGE HERE ---
+    // Ensure the returned JSON includes kycStatus and kycDocuments
     return NextResponse.json({
       id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
       availableBalance: user.availableBalance,
-      totalInvested: user.totalInvested,
-      totalReturns: user.totalReturns,
+      totalInvested: user.totalInvested, // Assuming these fields exist on your User model
+      totalReturns: user.totalReturns, // Assuming these fields exist on your User model
+      kycStatus: user.kycStatus, // Include kycStatus
+      kycDocuments: user.kycDocuments, // Include kycDocuments
     })
   } catch (error) {
     console.error("Auth error:", error)

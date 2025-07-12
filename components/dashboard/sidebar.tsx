@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -9,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { ChainMoveLogo } from "@/components/chain-move-logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useToast } from "@/components/ui/use-toast"
-
 import {
   BarChart3,
   Car,
@@ -22,7 +20,7 @@ import {
   Menu,
   X,
   Vote,
-  UserCheck, // Using this icon for KYC
+  UserCheck,
   AlertTriangle,
   Wrench,
   FileText,
@@ -33,15 +31,14 @@ import {
   Coins,
   Wallet,
 } from "lucide-react"
-
 interface SidebarProps {
   role: "driver" | "investor" | "admin"
 }
-
 /* ---------------- Navigation definitions --------------- */
 const navigationItems = {
   driver: [
     { name: "My Vehicle", href: "/dashboard/driver", icon: Car },
+    { name: "KYC Verification", href: "/dashboard/driver/kyc", icon: UserCheck }, // Added KYC Verification
     { name: "Maintenance", href: "/dashboard/driver/maintenance", icon: Wrench },
     { name: "Loan Terms", href: "/dashboard/driver/loan-terms", icon: FileText },
     { name: "Repayment", href: "/dashboard/driver/repayment", icon: Calendar },
@@ -59,7 +56,7 @@ const navigationItems = {
   ],
   admin: [
     { name: "Overview", href: "/dashboard/admin", icon: UserCheck },
-    { name: "KYC Management", href: "#/dashboard/admin", icon: UserCheck },
+    { name: "KYC Management", href: "/dashboard/admin/kyc-management", icon: UserCheck }, // Changed href for clarity
     { name: "User Management", href: "/dashboard/admin/users", icon: Users },
     { name: "Driver Onboarding Review", href: "/dashboard/admin/drivers", icon: Users },
     { name: "Vehicle Approval", href: "/dashboard/admin/vehicles", icon: Car },
@@ -68,7 +65,6 @@ const navigationItems = {
     { name: "Reports & Analytics", href: "/dashboard/admin/reports", icon: BarChart3 },
   ],
 } as const
-
 /* ---------------- Sidebar component ------------------- */
 export function Sidebar({ role }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -76,27 +72,22 @@ export function Sidebar({ role }: SidebarProps) {
   const router = useRouter() // Initialize router
   const { toast } = useToast() // Initialize toast
   const items = navigationItems[role]
-
-
   const handleLogout = async () => {
     try {
-      const res = await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
-
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+      })
       if (res.ok) {
-        toast({ title: "Logged Out", description: "You have been successfully logged out." });
-
-        router.push('/signin');
-        router.refresh();
+        toast({ title: "Logged Out", description: "You have been successfully logged out." })
+        router.push("/signin")
+        router.refresh()
       } else {
-        toast({ title: "Logout Failed", description: "Something went wrong.", variant: "destructive" });
+        toast({ title: "Logout Failed", description: "Something went wrong.", variant: "destructive" })
       }
     } catch (error) {
-      toast({ title: "Error", description: "An unexpected error occurred during logout.", variant: "destructive" });
+      toast({ title: "Error", description: "An unexpected error occurred during logout.", variant: "destructive" })
     }
-  };
-
+  }
   return (
     <>
       {/* Mobile toggle button */}
@@ -109,7 +100,6 @@ export function Sidebar({ role }: SidebarProps) {
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
-
       {/* Overlay for mobile with backdrop blur */}
       {isOpen && (
         <div
@@ -118,7 +108,6 @@ export function Sidebar({ role }: SidebarProps) {
           aria-hidden="true"
         />
       )}
-
       {/* Drawer with improved transitions and touch targets */}
       <aside
         className={cn(
@@ -138,14 +127,12 @@ export function Sidebar({ role }: SidebarProps) {
             </Link>
             <ThemeToggle />
           </div>
-
           {/* Role Badge */}
           <div className="px-6 py-2">
             <Badge variant="outline" className="text-xs capitalize">
               {role} dashboard
             </Badge>
           </div>
-
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             <nav className="space-y-1 px-2 py-4">
@@ -160,15 +147,15 @@ export function Sidebar({ role }: SidebarProps) {
                       "group relative overflow-hidden",
                       isActive
                         ? "bg-primary/10 text-primary font-semibold"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                     )}
                     onClick={() => setIsOpen(false)}
-                    aria-current={isActive ? 'page' : undefined}
+                    aria-current={isActive ? "page" : undefined}
                   >
                     <item.icon
                       className={cn(
                         "mr-3 h-5 w-5 shrink-0 transition-transform duration-200",
-                        isActive ? "scale-110" : "group-hover:scale-110"
+                        isActive ? "scale-110" : "group-hover:scale-110",
                       )}
                       aria-hidden="true"
                     />
@@ -184,7 +171,6 @@ export function Sidebar({ role }: SidebarProps) {
               })}
             </nav>
           </nav>
-
           {/* Footer actions */}
           <div className="p-4 border-t border-border space-y-2">
             <Link
@@ -207,6 +193,5 @@ export function Sidebar({ role }: SidebarProps) {
     </>
   )
 }
-
 /* default export for backward-compatibility */
 export default Sidebar
