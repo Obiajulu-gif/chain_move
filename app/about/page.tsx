@@ -60,14 +60,14 @@ const values = [
 
 const milestones = [
   {
-    year: "2023",
+    year: "2024",
     title: "Company Founded",
     description: "ChainMove was established with a vision to democratize vehicle financing.",
   },
-  { year: "2023", title: "Seed Funding", description: "Raised $2M in seed funding from leading blockchain VCs." },
   { year: "2024", title: "MVP Launch", description: "Launched our minimum viable product on Lisk testnet." },
+  { year: "2025", title: "Seed Funding", description: "Raised $20,000 in seed funding from AyaHq X LiskHQ Incubation Program." },
   {
-    year: "2024",
+    year: "2025",
     title: "Mainnet Launch",
     description: "Successfully deployed on Lisk mainnet with first vehicle fundings.",
   },
@@ -109,7 +109,7 @@ export default function AboutPage() {
                 efficient, and inclusive financial solutions.
               </p>
               <p className="text-lg text-gray-600 mb-8">
-                Our platform eliminates traditional banking barriers, using alternative credit scoring and smart
+                Our platform eliminates traditional banking barriers and Hire Purchase Model, using alternative credit scoring and smart
                 contracts to serve underbanked communities while providing investors with attractive, asset-backed
                 returns.
               </p>
