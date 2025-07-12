@@ -47,10 +47,9 @@ export function HeroSection() {
 							</span>
 						</h1>
 						<p className="text-xl mb-8 text-gray-200 leading-relaxed animate-fade-in-up delay-700">
-							Revolutionary blockchain platform enabling fractional vehicle
-							ownership and mobility asset tokenization. Co-invest in vehicles,
-							earn from shared mobility, and participate in the future of
-							transportation finance.
+							Revolutionary blockchain platform enabling every mobility
+							entrepreneurs to co-own, invest, and manage mobility
+							assets like vehicles.
 						</p>
 
 						{/* Key Benefits */}

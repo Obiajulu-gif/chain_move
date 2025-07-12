@@ -79,13 +79,11 @@ const featuredVehicles = [
 ]
 
 const partners = [
-  { name: "Lisk", logo: "/images/logo-lisk.png" },
-  { name: "MetaMask", logo: "/images/logo-metamask.png" },
-  { name: "Chainlink", logo: "/images/logo-chainlink.png" },
-  { name: "Polygon", logo: "/images/logo-polygon.png" },
-  { name: "Uniswap", logo: "/images/logo-uniswap.png" },
-  { name: "AAVE", logo: "/images/logo-aave.png" },
-]
+	{ name: "Lisk", logo: "/partners/lisk.png" },
+	{ name: "AyaHq", logo: "/partners/ayahq.png" },
+	{ name: "BlockchainUNN", logo: "/partners/BlockchainUNN.png" },
+	{ name: "GIDA", logo: "/partners/GIDA.jpeg" },
+];
 
 const features = [
   {
