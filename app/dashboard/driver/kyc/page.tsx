@@ -1,209 +1,217 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { useAuth } from "@/hooks/use-auth"
-import { useToast } from "@/components/ui/use-toast"
+import { Badge } from "@/components/ui/badge"
+
+import type React from "react"
+
+import { useState, useEffect } from "react" // Import useCallback
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
-import { Loader2, User, UploadCloud, CheckCircle } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Loader2, UploadCloud, CheckCircle } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
+import { usePlatform } from "@/contexts/platform-context"
 import { Sidebar } from "@/components/dashboard/sidebar"
+import { Header } from "@/components/dashboard/header"
+import { updateUserKycStatus } from "@/actions/user"
 
-
-
-// Helper component for each step
-const Step = ({ title, children }: { title: string, children: React.ReactNode }) => (
-  <div>
-    <h3 className="text-lg font-semibold mb-4">{title}</h3>
-    <div className="space-y-4">{children}</div>
-  </div>
-);
-
-export default function KycPage() {
-  const { user, loading: authLoading } = useAuth()
+export default function KycVerificationPage() {
+  const { user: authUser, loading: authLoading, refetch } = useAuth()
+  const { dispatch } = usePlatform()
   const { toast } = useToast()
+  const router = useRouter()
 
-  const [currentStep, setCurrentStep] = useState(1)
+  const [idDocument, setIdDocument] = useState<File | null>(null)
+  const [addressDocument, setAddressDocument] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState({
-    fullName: "",
-    phoneNumber: "",
-    address: "",
-    dateOfBirth: "",
-    bvn: "",
-    driversLicenseNumber: "",
-  })
-  const [files, setFiles] = useState({
-    identityDocument: null,
-    driversLicense: null,
-    proofOfAddress: null,
-  })
-  const [uploadedFileUrls, setUploadedFileUrls] = useState({
-    identityDocumentUrl: "",
-    driversLicenseUrl: "",
-    proofOfAddressUrl: "",
-  })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target
-    setFormData((prev) => ({ ...prev, [id]: value }))
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, files: inputFiles } = e.target
-    if (inputFiles && inputFiles.length > 0) {
-      setFiles((prev) => ({ ...prev, [id]: inputFiles[0] }))
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: React.Dispatch<React.SetStateAction<File | null>>,
+  ) => {
+    if (e.target.files && e.target.files[0]) {
+      setter(e.target.files[0])
     }
   }
 
-  const uploadFile = async (file: File) => {
-    if (!file) return null;
+  const handleSubmitKyc = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!idDocument || !addressDocument) {
+      toast({
+        title: "Missing Documents",
+        description: "Please upload both your ID and Proof of Address.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
     try {
-      const response = await fetch(`/api/upload?filename=${file.name}`, {
-        method: 'POST',
-        body: file,
-      });
-      if (!response.ok) throw new Error('File upload failed.');
-      const newBlob = await response.json();
-      return newBlob.url;
-    } catch (error) {
-      toast({ title: "Upload Error", description: (error as Error).message, variant: "destructive" });
-      return null;
-    }
-  }
+      const uploadedDocumentNames = [idDocument.name, addressDocument.name]
 
-  const handleNextStep = async () => {
-    if (currentStep === 2) { // Upload files before moving to review step
-      setIsSubmitting(true);
-      const identityUrl = await uploadFile(files.identityDocument!);
-      const licenseUrl = await uploadFile(files.driversLicense!);
-      const addressUrl = await uploadFile(files.proofOfAddress!);
+      const updateRes = await updateUserKycStatus(authUser.id, "pending", uploadedDocumentNames)
 
-      if (identityUrl && licenseUrl && addressUrl) {
-        setUploadedFileUrls({
-          identityDocumentUrl: identityUrl,
-          driversLicenseUrl: licenseUrl,
-          proofOfAddressUrl: addressUrl,
-        });
-        setCurrentStep(3);
+      if (updateRes.success) {
+        toast({
+          title: "KYC Submitted",
+          description: "Your KYC documents have been submitted for review. We will notify you once it's processed.",
+        })
+        await refetch() // Re-fetch user data after DB update
+        router.refresh() // Re-render current route (Server Components)
+        // No need to push here, the useEffect below will handle redirection
       } else {
-        toast({ title: "Upload Incomplete", description: "Please ensure all documents are uploaded.", variant: "destructive" });
+        toast({
+          title: "Submission Failed",
+          description: updateRes.message || "There was an error submitting your KYC. Please try again.",
+          variant: "destructive",
+        })
       }
-      setIsSubmitting(false);
-    } else {
-      setCurrentStep((prev) => prev + 1)
-    }
-  }
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    try {
-        const response = await fetch('/api/kyc/submit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                driverId: user?.id,
-                ...formData,
-                documents: uploadedFileUrls,
-            }),
-        });
-
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.message);
-
-        toast({ title: "KYC Submitted", description: "Your information is under review." });
-        setCurrentStep(4); // Move to success step
     } catch (error) {
-        toast({ title: "Submission Failed", description: (error as Error).message, variant: "destructive" });
+      console.error("KYC submission error:", error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred during KYC submission.",
+        variant: "destructive",
+      })
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false)
     }
   }
+
+  // --- IMPORTANT CHANGE HERE ---
+  // Move the redirection logic into a useEffect hook
+  useEffect(() => {
+    if (!authLoading && authUser) {
+      const kycStatus = (authUser as any)?.kycStatus || "none"
+      console.log("Current authUser kycStatus in useEffect:", kycStatus) // For debugging
+
+      if (kycStatus === "pending" || kycStatus === "approved") {
+        router.replace("/dashboard/driver/kyc/status")
+      }
+    }
+  }, [authLoading, authUser, router]) // Dependencies: re-run when these values change
 
   if (authLoading) {
-    return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+          <p className="text-muted-foreground">Please wait while we fetch your account information.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!authUser || authUser.role !== "driver") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <p className="text-muted-foreground">You need to be logged in as a driver to access this page.</p>
+          <Button onClick={() => router.push("/signin")} className="mt-4">
+            Sign In
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // If the useEffect has already triggered a redirect, this component will unmount.
+  // If kycStatus is pending/approved, we return null here to prevent rendering the form
+  // while the redirect is in progress or if the user somehow lands here with an updated status.
+  const kycStatus = (authUser as any)?.kycStatus || "none"
+  if (kycStatus === "pending" || kycStatus === "approved") {
+    return null
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto">
-    <Sidebar role="driver" className="md:w-64 lg:w-72" mobileWidth="w-64" />
+    <>
+      <div className="min-h-screen bg-background">
+        <Sidebar role="driver" />
+        <div className="md:ml-64 lg:ml-72">
+          <Header
+            userName={authUser.name || "Driver"}
+            userStatus="Driver"
+            notificationCount={0}
+            className="md:pl-6 lg:pl-8"
+          />
+          <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
+            <Card className="max-w-2xl mx-auto">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl font-bold">KYC Verification</CardTitle>
+                <CardDescription>
+                  Please upload the required documents to verify your identity and address.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmitKyc} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="id-document">Government-Issued ID (e.g., Driver's License, Passport)</Label>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        id="id-document"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange(e, setIdDocument)}
+                        className="flex-1"
+                      />
+                      {idDocument && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          Uploaded
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Accepted formats: PDF, JPG, PNG. Max size: 5MB.</p>
+                  </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Driver KYC Verification</CardTitle>
-          <CardDescription>
-            Please provide the following information to verify your identity.
-          </CardDescription>
-          {currentStep <= 3 && <Progress value={(currentStep / 3) * 100} className="mt-4" />}
-        </CardHeader>
-        <CardContent>
-          {currentStep === 1 && (
-            <Step title="Step 1: Personal Information">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><Label htmlFor="fullName">Full Name</Label><Input id="fullName" value={formData.fullName} onChange={handleInputChange} /></div>
-                <div><Label htmlFor="phoneNumber">Phone Number</Label><Input id="phoneNumber" type="tel" value={formData.phoneNumber} onChange={handleInputChange} /></div>
-                <div><Label htmlFor="address">Residential Address</Label><Input id="address" value={formData.address} onChange={handleInputChange} /></div>
-                <div><Label htmlFor="dateOfBirth">Date of Birth</Label><Input id="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={handleInputChange} /></div>
-                <div><Label htmlFor="bvn">Bank Verification Number (BVN)</Label><Input id="bvn" value={formData.bvn} onChange={handleInputChange} /></div>
-                <div><Label htmlFor="driversLicenseNumber">Driver's License Number</Label><Input id="driversLicenseNumber" value={formData.driversLicenseNumber} onChange={handleInputChange} /></div>
-              </div>
-            </Step>
-          )}
+                  <div className="space-y-2">
+                    <Label htmlFor="address-document">Proof of Address (e.g., Utility Bill, Bank Statement)</Label>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        id="address-document"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange(e, setAddressDocument)}
+                        className="flex-1"
+                      />
+                      {addressDocument && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          Uploaded
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Must be dated within the last 3 months.</p>
+                  </div>
 
-          {currentStep === 2 && (
-            <Step title="Step 2: Document Upload">
-              <div><Label htmlFor="identityDocument">National ID (NIN, Passport, etc.)</Label><Input id="identityDocument" type="file" onChange={handleFileChange} /></div>
-              <div><Label htmlFor="driversLicense">Driver's License (Front)</Label><Input id="driversLicense" type="file" onChange={handleFileChange} /></div>
-              <div><Label htmlFor="proofOfAddress">Proof of Address (Utility Bill)</Label><Input id="proofOfAddress" type="file" onChange={handleFileChange} /></div>
-            </Step>
-          )}
-
-          {currentStep === 3 && (
-            <Step title="Step 3: Review and Confirm">
-                <p>Please review your information carefully before submitting.</p>
-                <div className="space-y-2 p-4 border rounded-md bg-muted">
-                    <p><strong>Full Name:</strong> {formData.fullName}</p>
-                    <p><strong>Phone Number:</strong> {formData.phoneNumber}</p>
-                    <p><strong>Address:</strong> {formData.address}</p>
-                    <p><strong>Date of Birth:</strong> {formData.dateOfBirth}</p>
-                    <p><strong>BVN:</strong> {formData.bvn}</p>
-                    <p><strong>License No:</strong> {formData.driversLicenseNumber}</p>
-                    <p><strong>Documents:</strong> {Object.values(files).every(f => f) ? "All documents selected" : "Missing documents"}</p>
-                </div>
-            </Step>
-          )}
-
-          {currentStep === 4 && (
-            <div className="text-center py-12">
-                <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold">Submission Successful!</h3>
-                <p className="text-muted-foreground mt-2">Your KYC information has been submitted for review. You will be notified once the process is complete.</p>
-                <Button onClick={() => router.push('/dashboard/driver')} className="mt-6">Back to Dashboard</Button>
-            </div>
-          )}
-
-          {currentStep <= 3 && (
-            <div className="flex justify-between mt-8">
-              <Button variant="outline" onClick={() => setCurrentStep(p => p - 1)} disabled={currentStep === 1}>
-                Back
-              </Button>
-              {currentStep < 3 ? (
-                <Button onClick={handleNextStep} disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Next
-                </Button>
-              ) : (
-                <Button onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Submit for Review
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="mr-2 h-4 w-4" />
+                        Submit for Verification
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </>
   )
 }

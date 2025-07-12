@@ -1,5 +1,4 @@
 "use client"
-
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -49,7 +48,6 @@ export default function DriverDashboard() {
   const { user: authUser, loading: authLoading } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
-
   const currentDriverId = authUser?.id || ""
   const driverData = useDriverData(currentDriverId)
 
@@ -68,6 +66,11 @@ export default function DriverDashboard() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // KYC state for the dialog
+  const [showKycPromptDialog, setShowKycPromptDialog] = useState(false)
+  const [kycPromptMessage, setKycPromptMessage] = useState("")
+  const [kycPromptAction, setKycPromptAction] = useState<{ label: string; href: string } | null>(null)
+
   // Set current user on mount
   useEffect(() => {
     if (authUser) {
@@ -78,6 +81,8 @@ export default function DriverDashboard() {
           role: authUser.role as "driver",
           name: authUser.name,
           email: authUser.email,
+          // Assuming kycStatus is part of authUser or driverData
+          kycStatus: (authUser as any).kycStatus || "none", // Add kycStatus to the user object
         },
       })
     }
@@ -119,7 +124,6 @@ export default function DriverDashboard() {
       })
       return
     }
-
     setIsSubmitting(true)
     try {
       // Calculate monthly payment (simple calculation)
@@ -127,7 +131,6 @@ export default function DriverDashboard() {
       const rate = 0.15 / 12 // 15% annual rate
       const term = Number.parseInt(loanApplication.loanTerm)
       const monthlyPayment = (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1)
-
       const newLoanApplication = {
         id: `loan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         driverId: currentDriverId,
@@ -147,13 +150,11 @@ export default function DriverDashboard() {
         totalFunded: 0,
         remainingAmount: principal,
       }
-
       // Add to platform state
       dispatch({
         type: "ADD_LOAN_APPLICATION",
         payload: newLoanApplication,
       })
-
       // Update vehicle status to Reserved
       dispatch({
         type: "UPDATE_VEHICLE",
@@ -162,12 +163,10 @@ export default function DriverDashboard() {
           updates: { status: "Reserved", driverId: currentDriverId },
         },
       })
-
       toast({
         title: "Application Submitted",
         description: `Your loan application for ${selectedVehicle.name} has been submitted for review.`,
       })
-
       // Reset form and close dialog
       setIsLoanDialogOpen(false)
       setSelectedVehicle(null)
@@ -189,6 +188,29 @@ export default function DriverDashboard() {
       })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleApplyForLoanClick = () => {
+    const kycStatus = (authUser as any)?.kycStatus || "none" // Assuming kycStatus is on authUser
+    if (kycStatus === "approved") {
+      setIsLoanDialogOpen(true)
+    } else {
+      setShowKycPromptDialog(true)
+      if (kycStatus === "none") {
+        setKycPromptMessage("Please complete your KYC verification first to apply for a loan.")
+        setKycPromptAction({ label: "Go to KYC Page", href: "/dashboard/driver/kyc" })
+      } else if (kycStatus === "pending") {
+        setKycPromptMessage(
+          "Your KYC verification is currently under review. Please wait for approval before applying for a loan.",
+        )
+        setKycPromptAction(null) // No action button for pending
+      } else if (kycStatus === "rejected") {
+        setKycPromptMessage(
+          "Your KYC verification was rejected. Please review the requirements and re-submit or contact support.",
+        )
+        setKycPromptAction({ label: "Re-submit KYC", href: "/dashboard/driver/kyc" })
+      }
     }
   }
 
@@ -254,14 +276,13 @@ export default function DriverDashboard() {
   const totalFundsReceived = activeLoan ? activeLoan.totalFunded || 0 : 0
   const nextPaymentAmount = activeLoan ? activeLoan.monthlyPayment || 0 : 0
   const unreadNotifications = driverData.notifications.filter((n) => !n.read).length
-
   // Get available vehicles for loan application
   const availableVehicles = state.vehicles.filter((v) => v.status === "Financed")
 
   return (
     <>
       <div className="min-h-screen bg-background">
-        <Sidebar role="driver" className="md:w-64 lg:w-72" mobileWidth="w-64" />
+        <Sidebar role="driver" />
         <div className="md:ml-64 lg:ml-72">
           <Header
             userName={authUser.name || "Driver"}
@@ -269,7 +290,6 @@ export default function DriverDashboard() {
             notificationCount={unreadNotifications}
             className="md:pl-6 lg:pl-8"
           />
-
           <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
             {/* Real-time Portfolio Stats - Match investor dashboard layout */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -291,7 +311,6 @@ export default function DriverDashboard() {
                   </p>
                 </CardContent>
               </Card>
-
               <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Funds Received</CardTitle>
@@ -302,7 +321,6 @@ export default function DriverDashboard() {
                   <p className="text-xs text-green-500 dark:text-green-400">Available for withdrawal</p>
                 </CardContent>
               </Card>
-
               <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Next Payment</CardTitle>
@@ -315,7 +333,6 @@ export default function DriverDashboard() {
                   <p className="text-xs text-muted-foreground">{activeLoan ? "Due in 15 days" : "No active loan"}</p>
                 </CardContent>
               </Card>
-
               <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Driver Rating</CardTitle>
@@ -331,7 +348,6 @@ export default function DriverDashboard() {
                 </CardContent>
               </Card>
             </div>
-
             {/* Real-time Notifications */}
             {unreadNotifications > 0 && (
               <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
@@ -371,7 +387,6 @@ export default function DriverDashboard() {
                 </CardContent>
               </Card>
             )}
-
             {/* Main Content Tabs - Match investor dashboard layout */}
             <Tabs defaultValue="overview" className="space-y-6">
               <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-6">
@@ -382,7 +397,6 @@ export default function DriverDashboard() {
                 <TabsTrigger value="chat">Chat</TabsTrigger>
                 <TabsTrigger value="notifications">Alerts</TabsTrigger>
               </TabsList>
-
               <TabsContent value="overview" className="space-y-6">
                 {activeLoan ? (
                   <Card className="bg-card border-border">
@@ -458,207 +472,235 @@ export default function DriverDashboard() {
                           : "Apply for vehicle financing to get started"}
                       </p>
                       {pendingLoans.length === 0 && (
-                        <Dialog open={isLoanDialogOpen} onOpenChange={setIsLoanDialogOpen}>
+                        <Dialog
+                          open={isLoanDialogOpen || showKycPromptDialog}
+                          onOpenChange={(open) => {
+                            setIsLoanDialogOpen(open)
+                            setShowKycPromptDialog(open)
+                          }}
+                        >
                           <DialogTrigger asChild>
-                            <Button className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                            <Button
+                              className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+                              onClick={handleApplyForLoanClick}
+                            >
                               <Plus className="h-4 w-4 mr-2" />
                               Apply for Loan
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
-                              <DialogTitle>Apply for Vehicle Loan</DialogTitle>
-                              <DialogDescription>Select a vehicle and complete your loan application</DialogDescription>
+                              <DialogTitle>
+                                {showKycPromptDialog ? "KYC Verification Required" : "Apply for Vehicle Loan"}
+                              </DialogTitle>
+                              <DialogDescription>
+                                {showKycPromptDialog
+                                  ? kycPromptMessage
+                                  : "Select a vehicle and complete your loan application"}
+                              </DialogDescription>
                             </DialogHeader>
-
-                            <div className="space-y-6">
-                              {/* Vehicle Selection */}
-                              <div>
-                                <h4 className="text-lg font-semibold mb-4">Select a Vehicle</h4>
-                                {availableVehicles.length > 0 ? (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto">
-                                    {availableVehicles.map((vehicle) => (
-                                      <Card
-                                        key={vehicle._id}
-                                        className={`cursor-pointer transition-all ${
-                                          selectedVehicle?._id === vehicle._id
-                                            ? "ring-2 ring-[#E57700] bg-orange-50 dark:bg-orange-950/20"
-                                            : "hover:shadow-md"
-                                        }`}
-                                        onClick={() => handleVehicleSelect(vehicle)}
-                                      >
-                                        <CardContent className="p-4">
-                                          <div className="flex items-center space-x-4">
-                                            <Image
-                                              src={vehicle.image || "/placeholder.svg"}
-                                              alt={vehicle.name}
-                                              width={80}
-                                              height={60}
-                                              className="rounded-lg object-cover"
-                                            />
-                                            <div className="flex-1">
-                                              <h5 className="font-semibold">{vehicle.name}</h5>
-                                              <p className="text-sm text-muted-foreground">
-                                                {vehicle.type} • {vehicle.year}
-                                              </p>
-                                              <div className="flex items-center justify-between mt-2">
-                                                <span className="text-lg font-bold text-[#E57700]">
-                                                  ${vehicle.price.toLocaleString()}
-                                                </span>
-                                                <Badge variant="outline" className="text-xs">
-                                                  {vehicle.roi}% ROI
-                                                </Badge>
+                            {showKycPromptDialog ? (
+                              <div className="py-6 text-center">
+                                <p className="text-lg text-foreground mb-4">{kycPromptMessage}</p>
+                                {kycPromptAction && (
+                                  <Button
+                                    onClick={() => router.push(kycPromptAction.href)}
+                                    className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+                                  >
+                                    {kycPromptAction.label}
+                                  </Button>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="space-y-6">
+                                {/* Vehicle Selection */}
+                                <div>
+                                  <h4 className="text-lg font-semibold mb-4">Select a Vehicle</h4>
+                                  {availableVehicles.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto">
+                                      {availableVehicles.map((vehicle) => (
+                                        <Card
+                                          key={vehicle._id}
+                                          className={`cursor-pointer transition-all ${
+                                            selectedVehicle?._id === vehicle._id
+                                              ? "ring-2 ring-[#E57700] bg-orange-50 dark:bg-orange-950/20"
+                                              : "hover:shadow-md"
+                                          }`}
+                                          onClick={() => handleVehicleSelect(vehicle)}
+                                        >
+                                          <CardContent className="p-4">
+                                            <div className="flex items-center space-x-4">
+                                              <Image
+                                                src={vehicle.image || "/placeholder.svg"}
+                                                alt={vehicle.name}
+                                                width={80}
+                                                height={60}
+                                                className="rounded-lg object-cover"
+                                              />
+                                              <div className="flex-1">
+                                                <h5 className="font-semibold">{vehicle.name}</h5>
+                                                <p className="text-sm text-muted-foreground">
+                                                  {vehicle.type} • {vehicle.year}
+                                                </p>
+                                                <div className="flex items-center justify-between mt-2">
+                                                  <span className="text-lg font-bold text-[#E57700]">
+                                                    ${vehicle.price.toLocaleString()}
+                                                  </span>
+                                                  <Badge variant="outline" className="text-xs">
+                                                    {vehicle.roi}% ROI
+                                                  </Badge>
+                                                </div>
                                               </div>
                                             </div>
-                                          </div>
-                                        </CardContent>
-                                      </Card>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="text-center py-8">
-                                    <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                    <p className="text-muted-foreground">
-                                      No vehicles available for loan at the moment
-                                    </p>
+                                          </CardContent>
+                                        </Card>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-8">
+                                      <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                      <p className="text-muted-foreground">
+                                        No vehicles available for loan at the moment
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Loan Application Form */}
+                                {selectedVehicle && (
+                                  <div className="space-y-4">
+                                    <h4 className="text-lg font-semibold">Loan Application Details</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="requestedAmount">Requested Amount ($)</Label>
+                                        <Input
+                                          id="requestedAmount"
+                                          type="number"
+                                          value={loanApplication.requestedAmount}
+                                          onChange={(e) =>
+                                            setLoanApplication((prev) => ({
+                                              ...prev,
+                                              requestedAmount: e.target.value,
+                                            }))
+                                          }
+                                          placeholder="Enter loan amount"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="loanTerm">Loan Term (months)</Label>
+                                        <Select
+                                          value={loanApplication.loanTerm}
+                                          onValueChange={(value) =>
+                                            setLoanApplication((prev) => ({
+                                              ...prev,
+                                              loanTerm: value,
+                                            }))
+                                          }
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="6">6 months</SelectItem>
+                                            <SelectItem value="12">12 months</SelectItem>
+                                            <SelectItem value="18">18 months</SelectItem>
+                                            <SelectItem value="24">24 months</SelectItem>
+                                            <SelectItem value="36">36 months</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="creditScore">Credit Score</Label>
+                                        <Input
+                                          id="creditScore"
+                                          type="number"
+                                          value={loanApplication.creditScore}
+                                          onChange={(e) =>
+                                            setLoanApplication((prev) => ({
+                                              ...prev,
+                                              creditScore: e.target.value,
+                                            }))
+                                          }
+                                          placeholder="e.g., 650"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="monthlyIncome">Monthly Income ($)</Label>
+                                        <Input
+                                          id="monthlyIncome"
+                                          type="number"
+                                          value={loanApplication.monthlyIncome}
+                                          onChange={(e) =>
+                                            setLoanApplication((prev) => ({
+                                              ...prev,
+                                              monthlyIncome: e.target.value,
+                                            }))
+                                          }
+                                          placeholder="Enter monthly income"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="purpose">Loan Purpose</Label>
+                                      <Textarea
+                                        id="purpose"
+                                        value={loanApplication.purpose}
+                                        onChange={(e) =>
+                                          setLoanApplication((prev) => ({
+                                            ...prev,
+                                            purpose: e.target.value,
+                                          }))
+                                        }
+                                        placeholder="Describe how you plan to use this vehicle..."
+                                        rows={3}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="collateral">Collateral/Security</Label>
+                                      <Input
+                                        id="collateral"
+                                        value={loanApplication.collateral}
+                                        onChange={(e) =>
+                                          setLoanApplication((prev) => ({
+                                            ...prev,
+                                            collateral: e.target.value,
+                                          }))
+                                        }
+                                        placeholder="Describe any collateral you can provide"
+                                      />
+                                    </div>
                                   </div>
                                 )}
                               </div>
-
-                              {/* Loan Application Form */}
-                              {selectedVehicle && (
-                                <div className="space-y-4">
-                                  <h4 className="text-lg font-semibold">Loan Application Details</h4>
-
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                      <Label htmlFor="requestedAmount">Requested Amount ($)</Label>
-                                      <Input
-                                        id="requestedAmount"
-                                        type="number"
-                                        value={loanApplication.requestedAmount}
-                                        onChange={(e) =>
-                                          setLoanApplication((prev) => ({
-                                            ...prev,
-                                            requestedAmount: e.target.value,
-                                          }))
-                                        }
-                                        placeholder="Enter loan amount"
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <Label htmlFor="loanTerm">Loan Term (months)</Label>
-                                      <Select
-                                        value={loanApplication.loanTerm}
-                                        onValueChange={(value) =>
-                                          setLoanApplication((prev) => ({
-                                            ...prev,
-                                            loanTerm: value,
-                                          }))
-                                        }
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="6">6 months</SelectItem>
-                                          <SelectItem value="12">12 months</SelectItem>
-                                          <SelectItem value="18">18 months</SelectItem>
-                                          <SelectItem value="24">24 months</SelectItem>
-                                          <SelectItem value="36">36 months</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-
-                                    <div>
-                                      <Label htmlFor="creditScore">Credit Score</Label>
-                                      <Input
-                                        id="creditScore"
-                                        type="number"
-                                        value={loanApplication.creditScore}
-                                        onChange={(e) =>
-                                          setLoanApplication((prev) => ({
-                                            ...prev,
-                                            creditScore: e.target.value,
-                                          }))
-                                        }
-                                        placeholder="e.g., 650"
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <Label htmlFor="monthlyIncome">Monthly Income ($)</Label>
-                                      <Input
-                                        id="monthlyIncome"
-                                        type="number"
-                                        value={loanApplication.monthlyIncome}
-                                        onChange={(e) =>
-                                          setLoanApplication((prev) => ({
-                                            ...prev,
-                                            monthlyIncome: e.target.value,
-                                          }))
-                                        }
-                                        placeholder="Enter monthly income"
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div>
-                                    <Label htmlFor="purpose">Loan Purpose</Label>
-                                    <Textarea
-                                      id="purpose"
-                                      value={loanApplication.purpose}
-                                      onChange={(e) =>
-                                        setLoanApplication((prev) => ({
-                                          ...prev,
-                                          purpose: e.target.value,
-                                        }))
-                                      }
-                                      placeholder="Describe how you plan to use this vehicle..."
-                                      rows={3}
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label htmlFor="collateral">Collateral/Security</Label>
-                                    <Input
-                                      id="collateral"
-                                      value={loanApplication.collateral}
-                                      onChange={(e) =>
-                                        setLoanApplication((prev) => ({
-                                          ...prev,
-                                          collateral: e.target.value,
-                                        }))
-                                      }
-                                      placeholder="Describe any collateral you can provide"
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
+                            )}
                             <DialogFooter>
-                              <Button variant="outline" onClick={() => setIsLoanDialogOpen(false)}>
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setIsLoanDialogOpen(false)
+                                  setShowKycPromptDialog(false)
+                                }}
+                              >
                                 Cancel
                               </Button>
-                              <Button
-                                onClick={handleLoanApplicationSubmit}
-                                disabled={!selectedVehicle || isSubmitting}
-                                className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
-                              >
-                                {isSubmitting ? (
-                                  <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Submitting...
-                                  </>
-                                ) : (
-                                  <>
-                                    <FileText className="h-4 w-4 mr-2" />
-                                    Submit Application
-                                  </>
-                                )}
-                              </Button>
+                              {!showKycPromptDialog && (
+                                <Button
+                                  onClick={handleLoanApplicationSubmit}
+                                  disabled={!selectedVehicle || isSubmitting}
+                                  className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+                                >
+                                  {isSubmitting ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Submitting...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FileText className="h-4 w-4 mr-2" />
+                                      Submit Application
+                                    </>
+                                  )}
+                                </Button>
+                              )}
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
@@ -667,7 +709,6 @@ export default function DriverDashboard() {
                   </Card>
                 )}
               </TabsContent>
-
               {/* Repayments Tab */}
               <TabsContent value="repayments" className="space-y-6">
                 <Card className="bg-card border-border">
@@ -732,7 +773,6 @@ export default function DriverDashboard() {
                   </CardContent>
                 </Card>
               </TabsContent>
-
               {/* Funding Tab */}
               <TabsContent value="funding" className="space-y-6">
                 <Card className="bg-card border-border">
@@ -819,17 +859,14 @@ export default function DriverDashboard() {
                   </CardContent>
                 </Card>
               </TabsContent>
-
               {/* Analytics Tab */}
               <TabsContent value="analytics" className="space-y-6">
                 <AdvancedAnalytics userRole="driver" userId={currentDriverId} />
               </TabsContent>
-
               {/* Chat Tab */}
               <TabsContent value="chat" className="space-y-6">
                 <RealTimeChat currentUserId={currentDriverId} currentUserRole="driver" />
               </TabsContent>
-
               {/* Notifications Tab */}
               <TabsContent value="notifications" className="space-y-6">
                 <NotificationCenter userId={currentDriverId} userRole="driver" />
