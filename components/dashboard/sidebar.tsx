@@ -42,7 +42,6 @@ interface SidebarProps {
 const navigationItems = {
   driver: [
     { name: "My Vehicle", href: "/dashboard/driver", icon: Car },
-    { name: "KYC Verification", href: "/dashboard/driver/kyc", icon: UserCheck },
     { name: "Maintenance", href: "/dashboard/driver/maintenance", icon: Wrench },
     { name: "Loan Terms", href: "/dashboard/driver/loan-terms", icon: FileText },
     { name: "Repayment", href: "/dashboard/driver/repayment", icon: Calendar },
