@@ -22,7 +22,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     await dbConnect();
     try {
         // This should be protected by admin-only middleware
-        const { id } = params;
+        const { id } = await params;
         const { role } = await request.json();
 
         if (!['admin', 'driver', 'investor'].includes(role)) {
