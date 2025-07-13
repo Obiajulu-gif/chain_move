@@ -61,7 +61,6 @@ export default function KycVerificationPage() {
         })
         await refetch() // Re-fetch user data after DB update
         router.refresh() // Re-render current route (Server Components)
-        // No need to push here, the useEffect below will handle redirection
       } else {
         toast({
           title: "Submission Failed",
