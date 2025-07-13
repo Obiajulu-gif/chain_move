@@ -105,15 +105,7 @@ export function HeroSection() {
 								height={400}
 								className="w-full h-64 object-cover rounded-xl"
 							/>
-							<div className="flex items-center justify-center mt-4">
-								<Button
-									variant="ghost"
-									className="text-white hover:bg-white/20 flex items-center"
-								>
-									<Play className="h-5 w-5 mr-2" />
-									Watch Demo
-								</Button>
-							</div>
+							
 							<p className="text-center mt-2 text-gray-200 flex items-center justify-center">
 								<Rocket className="h-4 w-4 mr-2" />
 								Empowering Shared Mobility Through Blockchain

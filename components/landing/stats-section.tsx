@@ -3,15 +3,15 @@
 import { Car, TrendingUp, Users, DollarSign } from "lucide-react"
 
 const stats = [
-  { label: "Vehicles Funded", value: "2,847", prefix: "", icon: Car },
+  { label: "Vehicles Funded", value: "20", prefix: "", icon: Car },
   { label: "Average ROI", value: "15.2", prefix: "%", icon: TrendingUp },
-  { label: "Active Investors", value: "12,450", prefix: "", icon: Users },
+  { label: "Active Investors", value: "37", prefix: "", icon: Users },
   { label: "Total Funded", value: "45", prefix: "$", suffix: "M", icon: DollarSign },
 ]
 
 export function StatsSection() {
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-16 bg-background dark:bg-gray-900">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat, index) => (

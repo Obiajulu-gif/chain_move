@@ -10,7 +10,7 @@ import {
 
 export default function AboutPage() {
 	return (
-		<div className="min-h-screen bg-white dark:bg-[#18181B]">
+		<div className="min-h-screen bg-background">
 			{/* Header */}
 			<Navigation />
 

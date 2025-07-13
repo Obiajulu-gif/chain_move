@@ -1,11 +1,10 @@
-import type React from "react";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { PlatformProvider } from "@/contexts/platform-context";
 import { Providers } from "./Providers";
+import { ClientLayout } from "@/components/client-layout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -94,27 +93,22 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-	return (
-		<html lang="en" suppressHydrationWarning>
-			<body className={inter.className}>
-				<Providers>
-					<ThemeProvider
-						attribute="class"
-						defaultTheme="light"
-						enableSystem
-						disableTransitionOnChange
-					>
-						<PlatformProvider>
-							{children}
-							<Toaster />
-						</PlatformProvider>
-					</ThemeProvider>
-				</Providers>
-			</body>
-		</html>
-	);
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <Providers>
+          <ClientLayout>
+            <PlatformProvider>
+              {children}
+              <Toaster />
+            </PlatformProvider>
+          </ClientLayout>
+        </Providers>
+      </body>
+    </html>
+  );
 }
