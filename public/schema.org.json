@@ -1,0 +1,11 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "ChainMove",
+  "url": "https://chainmove.xyz",
+  "logo": "https://chainmove.xyz/images/chainmovelogo.png",
+  "sameAs": [
+    "https://x.com/ChainMove1"
+  ],
+  "description": "Empowering drivers and investors through blockchain-powered vehicle financing in Africa. ChainMove connects vehicle owners with investors using blockchain technology."
+}

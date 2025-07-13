@@ -465,10 +465,11 @@ export default function MarketplacePage() {
                       <div className="relative">
                         <Image
                           src={vehicle.image || "/placeholder.svg"}
-                          alt={vehicle.name}
+                          alt={`${vehicle.name} - ${vehicle.type} vehicle in ${vehicle.location} with ${vehicle.roi}% ROI`}
                           width={300}
                           height={200}
                           className="w-full h-40 object-cover rounded-t-lg"
+                          priority={vehicle.id.includes("featured")}
                         />
                         <div className="absolute top-3 right-3 flex space-x-2">
                           <Badge className={`${getDemandColor(vehicle.demand)} text-white text-xs`}>
