@@ -8,7 +8,7 @@ import Image from "next/image"
 
 export function HeroSection() {
   return (
-		<section className="relative bg-gradient-to-br from-[#142841] via-[#1e3a5f] to-[#3A7CA5] dark:from-[#0a1420] dark:via-[#0f1d30] dark:to-[#1a2d45] text-white py-20 lg:py-28 overflow-hidden">
+		<section className="relative bg-gradient-to-br from-[#142841] via-[#1e3a5f] to-[#3A7CA5] dark:from-[#0a1420] dark:via-[#0f1d30] dark:to-[#1a2d45] text-white py-20 lg:py-24 overflow-hidden">
 			{/* Background Image Overlay */}
 			<div className="absolute inset-0">
 				<Image
@@ -85,7 +85,7 @@ export function HeroSection() {
 							<Button
 								size="lg"
 								variant="outline"
-								className="border-white text-[#142841] hover:bg-white hover:text-[#142841] transform hover:scale-105 transition-all duration-200 flex items-center"
+								className="border-white text-[#142841] hover:bg-white dark:text-white hover:text-[#142841] transform hover:scale-105 transition-all duration-200 flex items-center"
 								asChild
 							>
 								<Link href="/auth?role=investor">
