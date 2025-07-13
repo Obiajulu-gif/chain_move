@@ -23,8 +23,8 @@ export default function HomePage() {
             <HowItWorksSection />
             <FeaturedVehiclesSection />
             <TestimonialsSection />
-            <FAQSection />
             <PartnersSection />
+            <FAQSection />
           </main>
           <Footer />
     </div>

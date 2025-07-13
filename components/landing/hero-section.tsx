@@ -8,7 +8,7 @@ import Image from "next/image"
 
 export function HeroSection() {
   return (
-		<section className="relative bg-gradient-to-br from-[#142841] via-[#1e3a5f] to-[#3A7CA5] dark:from-[#0a1420] dark:via-[#0f1d30] dark:to-[#1a2d45] text-white py-20 lg:py-32 overflow-hidden">
+		<section className="relative bg-gradient-to-br from-[#142841] via-[#1e3a5f] to-[#3A7CA5] dark:from-[#0a1420] dark:via-[#0f1d30] dark:to-[#1a2d45] text-white py-20 lg:py-28 overflow-hidden">
 			{/* Background Image Overlay */}
 			<div className="absolute inset-0">
 				<Image
