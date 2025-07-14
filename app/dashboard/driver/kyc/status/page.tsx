@@ -76,6 +76,10 @@ export default function KycStatusPage() {
       statusTitle = "KYC Rejected"
       statusMessage =
         "Unfortunately, your KYC verification was rejected. This could be due to incomplete information, unreadable documents, or other reasons. Please review the requirements and re-submit your documents, or contact support for assistance."
+      // Display rejection reason if available
+      if ((authUser as any)?.kycRejectionReason) {
+        statusMessage += ` Reason: ${(authUser as any).kycRejectionReason}`
+      }
       actionButton = (
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button
