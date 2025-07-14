@@ -7,6 +7,7 @@ export async function updateUserKycStatus(
   userId: string,
   status: "none" | "pending" | "approved" | "rejected",
   documents: string[] = [],
+  rejectionReason: string | null = null, // Added rejectionReason parameter
 ) {
   try {
     await dbConnect() // Ensure database connection is established
@@ -21,6 +22,9 @@ export async function updateUserKycStatus(
     if (documents.length > 0) {
       user.kycDocuments = documents
     }
+    // Set rejection reason only if status is rejected
+    user.kycRejectionReason = status === "rejected" ? rejectionReason : null
+
     await user.save()
 
     return { success: true, message: `KYC status updated to ${status}.` }

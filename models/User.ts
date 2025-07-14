@@ -48,6 +48,10 @@ const UserSchema = new mongoose.Schema(
       type: [String], // Array of document URLs or paths
       default: [],
     },
+    kycRejectionReason: {
+      type: String,
+      default: null, // Can be null if not rejected or no reason provided
+    },
   },
   { timestamps: true },
 )

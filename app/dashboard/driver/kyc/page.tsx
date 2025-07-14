@@ -37,6 +37,7 @@ export default function KycVerificationPage() {
     }
   }
 
+  // Modify handleSubmitKyc function
   const handleSubmitKyc = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!idDocument || !addressDocument) {
@@ -50,9 +51,32 @@ export default function KycVerificationPage() {
 
     setIsSubmitting(true)
     try {
-      const uploadedDocumentNames = [idDocument.name, addressDocument.name]
+      const uploadedUrls: string[] = []
 
-      const updateRes = await updateUserKycStatus(authUser.id, "pending", uploadedDocumentNames)
+      // Upload ID Document
+      const idUploadRes = await fetch(`/api/upload?filename=${idDocument.name}`, {
+        method: "POST",
+        body: idDocument,
+      })
+      if (!idUploadRes.ok) {
+        throw new Error("Failed to upload ID document")
+      }
+      const idBlob = await idUploadRes.json()
+      uploadedUrls.push(idBlob.url)
+
+      // Upload Address Document
+      const addressUploadRes = await fetch(`/api/upload?filename=${addressDocument.name}`, {
+        method: "POST",
+        body: addressDocument,
+      })
+      if (!addressUploadRes.ok) {
+        throw new Error("Failed to upload address document")
+      }
+      const addressBlob = await addressUploadRes.json()
+      uploadedUrls.push(addressBlob.url)
+
+      // Update user KYC status with the Vercel Blob URLs
+      const updateRes = await updateUserKycStatus(authUser.id, "pending", uploadedUrls)
 
       if (updateRes.success) {
         toast({
@@ -68,11 +92,11 @@ export default function KycVerificationPage() {
           variant: "destructive",
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("KYC submission error:", error)
       toast({
         title: "Error",
-        description: "An unexpected error occurred during KYC submission.",
+        description: error.message || "An unexpected error occurred during KYC submission.",
         variant: "destructive",
       })
     } finally {
