@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export function CTASection() {
 	return (
-		<section className="py-16 text-center bg-white dark:bg-[#18181B]">
+		<section className="py-16 text-center bg-background">
 			<h2 className="text-3xl font-bold text-[#142841] dark:text-white mb-4">
 				Join the Revolution 🚀
 			</h2>

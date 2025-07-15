@@ -13,22 +13,25 @@ export function StatsSection() {
   return (
     <section className="py-16 bg-background dark:bg-gray-900">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat, index) => (
             <div
               key={index}
-              className="text-center animate-fade-in-up bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              className="relative text-center bg-white rounded-3xl p-8 pt-12 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 flex flex-col items-center"
               style={{ animationDelay: `${index * 200}ms` }}
             >
-              <div className="w-12 h-12 bg-[#E57700] rounded-full flex items-center justify-center mx-auto mb-3">
-                <stat.icon className="h-6 w-6 text-white" />
+              {/* Floating icon */}
+              <div className="absolute -top-7 left-1/2 -translate-x-1/2 w-14 h-14 bg-[#E57700] rounded-full flex items-center justify-center shadow-md border-4 border-white">
+                <stat.icon className="h-7 w-7 text-white" />
               </div>
-              <div className="text-3xl lg:text-4xl font-bold text-[#142841] mb-2">
+              <div className="text-4xl lg:text-5xl font-extrabold text-[#142841] mb-2 mt-2 tracking-tight">
                 {stat.prefix}
                 {stat.value}
                 {stat.suffix}
               </div>
-              <div className="text-gray-600">{stat.label}</div>
+              <div className="text-gray-500 text-base font-medium tracking-wide mt-1">
+                {stat.label}
+              </div>
             </div>
           ))}
         </div>

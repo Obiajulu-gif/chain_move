@@ -2,7 +2,7 @@ import Image from "next/image"
 
 export function MissionSection() {
   return (
-    <section className="py-16 bg-white dark:bg-[#18181B]">
+    <section className="py-16 bg-background">
       <div className="grid lg:grid-cols-2 gap-12 items-center">
         <div>
           <h2 className="text-3xl font-bold text-[#142841] dark:text-white mb-6">Our Mission 🎯</h2>
