@@ -11,11 +11,7 @@ const stats = [
 
 export function StatsSection() {
   return (
-<<<<<<< Updated upstream
     <section className="py-16 bg-background dark:bg-gray-900">
-=======
-    <section className="py-16 bg-gradient-to-b from-gray-50 via-white to-gray-100">
->>>>>>> Stashed changes
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat, index) => (

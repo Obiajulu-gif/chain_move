@@ -106,10 +106,6 @@ export function HeroSection() {
 								muted
 								playsInline
 							/>
-<<<<<<< Updated upstream
-							
-=======
->>>>>>> Stashed changes
 							<p className="text-center mt-2 text-gray-200 flex items-center justify-center">
 								<Rocket className="h-4 w-4 mr-2" />
 								Empowering Shared Mobility Through Blockchain
