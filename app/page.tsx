@@ -33,12 +33,15 @@ import { InvestmentOpportunities } from "@/components/landing/investment-opportu
 import { FAQSection } from "@/components/landing/faq-section"
 
 const partners = [
-  { name: "Lisk", logo: "/partners/lisk.webp" },
-  { name: "MetaMask", logo: "/partners/metamask.png" },
+  { name: "Lisk", logo: "/partners/lisk.png" },
+  { name: "AyaHq", logo: "/partners/ayahq.png" },
+  { name: "BlockchainUNN", logo: "/partners/BlockchainUNN.png" },
+  { name: "GIDA", logo: "/partners/GIDA.jpeg" },
+  { name: "Aave", logo: "/partners/aave.webp" },
   { name: "Chainlink", logo: "/partners/chainlink.webp" },
   { name: "Polygon", logo: "/partners/polygon.webp" },
+  { name: "MetaMask", logo: "/partners/metamask.png" },
   { name: "Uniswap", logo: "/partners/uniswap.webp" },
-  { name: "AAVE", logo: "/partners/aave.webp" },
 ]
 
 const features = [
@@ -227,14 +230,14 @@ export default function HomePage() {
             {partners.map((partner, index) => (
               <div
                 key={index}
-                className="flex items-center justify-center mx-8 bg-card rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
+                className="flex items-center justify-center mx-8 transition-all duration-300 hover:scale-105"
               >
                 <Image
                   src={partner.logo || "/placeholder.svg"}
                   alt={partner.name}
-                  width={120}
-                  height={40}
-                  className="opacity-60 hover:opacity-100 transition-opacity duration-300 grayscale hover:grayscale-0 rounded-lg object-contain"
+                  width={140}
+                  height={50}
+                  className="transition-transform duration-300 hover:scale-105 object-contain"
                 />
               </div>
             ))}

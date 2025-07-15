@@ -89,7 +89,7 @@ export function TimelineSection() {
                       <p className="text-gray-600 dark:text-gray-300 max-w-sm ml-auto">
                         {milestone.description}
                       </p>
-                    </div>
+                </div>
                   </div>
                 ) : (
                   <div className="col-span-1"></div>
