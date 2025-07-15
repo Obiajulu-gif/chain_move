@@ -149,8 +149,8 @@ export function CoOwnershipSection() {
             </div>
             
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight text-foreground">
-              Revolutionary Vehicle Co-Ownership
-            </h2>
+            Revolutionary Vehicle Co-Ownership
+          </h2>
             
             <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
               Experience the future of mobility investment through blockchain-powered fractional ownership and asset tokenization. 
@@ -176,8 +176,8 @@ export function CoOwnershipSection() {
                   <h4 className="font-semibold text-foreground mb-1">Blockchain Security</h4>
                   <p className="text-muted-foreground">Transparent, immutable ownership records and smart contracts</p>
                 </div>
-              </div>
-              
+        </div>
+
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 bg-[#E57700] rounded-full flex items-center justify-center mt-0.5">
                   <CheckCircle className="h-4 w-4 text-white" />
@@ -251,8 +251,8 @@ export function CoOwnershipSection() {
                   }
 
                   return (
-                    <Card
-                      key={index}
+            <Card
+              key={index}
                       className={`absolute inset-0 cursor-grab active:cursor-grabbing transition-all duration-500 ease-out border-2 hover:border-[#E57700]/50 ${
                         isActive ? 'shadow-2xl' : 'shadow-lg'
                       }`}
@@ -264,7 +264,7 @@ export function CoOwnershipSection() {
                       onMouseDown={isActive ? handleMouseDown : undefined}
                       onTouchStart={isActive ? handleTouchStart : undefined}
                       onClick={() => !isActive && handleCardClick(index)}
-                    >
+            >
                       <CardHeader className="pb-4">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
@@ -287,13 +287,13 @@ export function CoOwnershipSection() {
                               <div className="w-1 h-1 bg-[#E57700] rounded-full"></div>
                             </div>
                           )}
-                        </div>
-                      </CardHeader>
+                </div>
+              </CardHeader>
                       
                       <CardContent className="pt-0">
                         <CardDescription className="text-base leading-relaxed mb-6">
-                          {benefit.description}
-                        </CardDescription>
+                  {benefit.description}
+                </CardDescription>
                         
                         <div className="border-t border-border pt-4">
                           <div className="flex flex-wrap gap-2">
@@ -308,8 +308,8 @@ export function CoOwnershipSection() {
                             ))}
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+              </CardContent>
+            </Card>
                   )
                 })}
               </div>
