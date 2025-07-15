@@ -26,6 +26,8 @@ export default function KycVerificationPage() {
 
   const [idDocument, setIdDocument] = useState<File | null>(null)
   const [addressDocument, setAddressDocument] = useState<File | null>(null)
+  const [bvnNinDocument, setBvnNinDocument] = useState<File | null>(null) // New state for BVN/NIN
+  const [bankStatementDocument, setBankStatementDocument] = useState<File | null>(null) // New state for Bank Statement
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleFileChange = (
@@ -40,10 +42,10 @@ export default function KycVerificationPage() {
   // Modify handleSubmitKyc function
   const handleSubmitKyc = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!idDocument || !addressDocument) {
+    if (!idDocument || !addressDocument || !bvnNinDocument || !bankStatementDocument) {
       toast({
         title: "Missing Documents",
-        description: "Please upload both your ID and Proof of Address.",
+        description: "Please upload all required documents: ID, Proof of Address, BVN/NIN, and Bank Statement.",
         variant: "destructive",
       })
       return
@@ -74,6 +76,28 @@ export default function KycVerificationPage() {
       }
       const addressBlob = await addressUploadRes.json()
       uploadedUrls.push(addressBlob.url)
+
+      // Upload BVN/NIN Document (New)
+      const bvnNinUploadRes = await fetch(`/api/upload?filename=${bvnNinDocument.name}`, {
+        method: "POST",
+        body: bvnNinDocument,
+      })
+      if (!bvnNinUploadRes.ok) {
+        throw new Error("Failed to upload BVN/NIN document")
+      }
+      const bvnNinBlob = await bvnNinUploadRes.json()
+      uploadedUrls.push(bvnNinBlob.url)
+
+      // Upload Bank Statement Document (New)
+      const bankStatementUploadRes = await fetch(`/api/upload?filename=${bankStatementDocument.name}`, {
+        method: "POST",
+        body: bankStatementDocument,
+      })
+      if (!bankStatementUploadRes.ok) {
+        throw new Error("Failed to upload bank statement document")
+      }
+      const bankStatementBlob = await bankStatementUploadRes.json()
+      uploadedUrls.push(bankStatementBlob.url)
 
       // Update user KYC status with the Vercel Blob URLs
       const updateRes = await updateUserKycStatus(authUser.id, "pending", uploadedUrls)
@@ -210,6 +234,50 @@ export default function KycVerificationPage() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">Must be dated within the last 3 months.</p>
+                  </div>
+
+                  {/* New: BVN/NIN Document Upload */}
+                  <div className="space-y-2">
+                    <Label htmlFor="bvn-nin-document">BVN/NIN Document</Label>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        id="bvn-nin-document"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange(e, setBvnNinDocument)}
+                        className="flex-1"
+                      />
+                      {bvnNinDocument && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          Uploaded
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Accepted formats: PDF, JPG, PNG. Max size: 5MB.</p>
+                  </div>
+
+                  {/* New: Bank Statement Upload */}
+                  <div className="space-y-2">
+                    <Label htmlFor="bank-statement-document">Bank Statement</Label>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        id="bank-statement-document"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange(e, setBankStatementDocument)}
+                        className="flex-1"
+                      />
+                      {bankStatementDocument && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          Uploaded
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Must be dated within the last 3 months. Accepted formats: PDF, JPG, PNG. Max size: 5MB.
+                    </p>
                   </div>
 
                   <Button
