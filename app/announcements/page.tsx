@@ -98,19 +98,19 @@ const categoryIcons = {
 
 export default function AnnouncementsPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <Navigation />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <Link href="/" className="inline-flex items-center text-gray-600 hover:text-[#E57700] mb-4">
+          <Link href="/" className="inline-flex items-center text-muted-foreground hover:text-[#E57700] mb-4">
             <ArrowLeft className="h-5 w-5 mr-2" />
             Back to Home
           </Link>
-          <h1 className="text-4xl font-bold text-[#142841] mb-4">📢 Announcements</h1>
-          <p className="text-xl text-gray-600">
+          <h1 className="text-4xl font-bold text-foreground mb-4">📢 Announcements</h1>
+          <p className="text-xl text-muted-foreground">
             Stay updated with the latest news, product updates, and milestones from ChainMove
           </p>
         </div>
@@ -133,12 +133,12 @@ export default function AnnouncementsPage() {
 
         {/* Featured Announcements */}
         <section className="mb-12">
-          <h2 className="text-2xl font-bold text-[#142841] mb-6">⭐ Featured Announcements</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-6">⭐ Featured Announcements</h2>
           <div className="grid lg:grid-cols-2 gap-8">
             {announcements
               .filter((announcement) => announcement.featured)
               .map((announcement) => (
-                <Card key={announcement.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <Card key={announcement.id} className="overflow-hidden hover:shadow-lg transition-shadow bg-card">
                   <div className="relative">
                     <Image
                       src={announcement.image || "/placeholder.svg"}
@@ -152,7 +152,7 @@ export default function AnnouncementsPage() {
                     </div>
                   </div>
                   <CardHeader>
-                    <div className="flex items-center text-sm text-gray-500 mb-2">
+                    <div className="flex items-center text-sm text-muted-foreground mb-2">
                       <Calendar className="h-4 w-4 mr-2" />
                       {new Date(announcement.date).toLocaleDateString("en-US", {
                         year: "numeric",
@@ -160,13 +160,13 @@ export default function AnnouncementsPage() {
                         day: "numeric",
                       })}
                     </div>
-                    <CardTitle className="text-xl text-[#142841] hover:text-[#E57700] transition-colors">
+                    <CardTitle className="text-xl text-card-foreground hover:text-[#E57700] transition-colors">
                       {announcement.title}
                     </CardTitle>
                     <CardDescription className="text-base">{announcement.excerpt}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-600 mb-4 line-clamp-3">{announcement.content}</p>
+                    <p className="text-muted-foreground mb-4 line-clamp-3">{announcement.content}</p>
                     <Button variant="outline" className="hover:bg-[#E57700] hover:text-white">
                       Read More
                     </Button>
@@ -178,10 +178,10 @@ export default function AnnouncementsPage() {
 
         {/* All Announcements */}
         <section>
-          <h2 className="text-2xl font-bold text-[#142841] mb-6">📰 All Announcements</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-6">📰 All Announcements</h2>
           <div className="space-y-6">
             {announcements.map((announcement) => (
-              <Card key={announcement.id} className="hover:shadow-md transition-shadow">
+              <Card key={announcement.id} className="hover:shadow-md transition-shadow bg-card">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
@@ -196,7 +196,7 @@ export default function AnnouncementsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
                         <Badge variant="secondary">{announcement.category}</Badge>
-                        <div className="flex items-center text-sm text-gray-500">
+                        <div className="flex items-center text-sm text-muted-foreground">
                           <Calendar className="h-4 w-4 mr-1" />
                           {new Date(announcement.date).toLocaleDateString("en-US", {
                             year: "numeric",
@@ -205,10 +205,10 @@ export default function AnnouncementsPage() {
                           })}
                         </div>
                       </div>
-                      <h3 className="text-lg font-semibold text-[#142841] mb-2 hover:text-[#E57700] transition-colors cursor-pointer">
+                      <h3 className="text-lg font-semibold text-card-foreground mb-2 hover:text-[#E57700] transition-colors cursor-pointer">
                         {announcement.title}
                       </h3>
-                      <p className="text-gray-600 mb-3">{announcement.excerpt}</p>
+                      <p className="text-muted-foreground mb-3">{announcement.excerpt}</p>
                       <Button variant="ghost" size="sm" className="text-[#E57700] hover:bg-[#E57700]/10 p-0">
                         Read full announcement →
                       </Button>
@@ -221,9 +221,9 @@ export default function AnnouncementsPage() {
         </section>
 
         {/* Newsletter Signup */}
-        <section className="mt-16 bg-[#142841] text-white rounded-2xl p-8 text-center">
+        <section className="mt-16 bg-[#142841] dark:bg-card text-white dark:text-card-foreground rounded-2xl p-8 text-center">
           <h2 className="text-2xl font-bold mb-4">📧 Stay Updated</h2>
-          <p className="text-gray-200 mb-6 max-w-2xl mx-auto">
+          <p className="text-gray-200 dark:text-muted-foreground mb-6 max-w-2xl mx-auto">
             Subscribe to our newsletter to get the latest announcements, product updates, and insights delivered
             directly to your inbox.
           </p>
@@ -231,7 +231,7 @@ export default function AnnouncementsPage() {
             <input
               type="email"
               placeholder="Enter your email"
-              className="flex-1 px-4 py-2 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#E57700]"
+              className="flex-1 px-4 py-2 rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#E57700]"
             />
             <Button className="bg-[#E57700] hover:bg-[#E57700]/90">Subscribe</Button>
           </div>
