@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react"
+import Link from "next/link"
 
 const coOwnershipBenefits = [
   {
@@ -193,12 +194,16 @@ export function CoOwnershipSection() {
               <Button 
                 size="lg" 
                 className="bg-[#E57700] hover:bg-[#E57700]/90 transform hover:scale-105 transition-all duration-200 flex items-center"
+                asChild
               >
-                <Coins className="h-5 w-5 mr-2" />
-                Start Co-Investing
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <Link href="/auth?role=investor">
+                  <Coins className="h-5 w-5 mr-2" />
+                  Start Co-Investing
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
               </Button>
-              
+
+              {/*
               <Button 
                 variant="outline" 
                 size="lg" 
@@ -207,6 +212,7 @@ export function CoOwnershipSection() {
                 <BarChart3 className="h-5 w-5 mr-2" />
                 View Analytics
               </Button>
+              */}
             </div>
           </div>
 
