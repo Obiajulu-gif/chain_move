@@ -58,6 +58,7 @@ const footerConfig = {
 				{ name: "Marketplace", icon: Search, href: "/marketplace" },
 				{ name: "About Us", icon: UserCheck, href: "/about" },
 				{ name: "Announcements", icon: Rocket, href: "/announcements" },
+				{ name: "Book a Demo", icon: Zap, href: "https://calendly.com/amaobiokeoma/30min" },
 			],
 		},
 		{

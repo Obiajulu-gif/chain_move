@@ -4,7 +4,7 @@ import { Car, TrendingUp, Users, DollarSign } from "lucide-react"
 
 const stats = [
   { label: "Vehicles Funded", value: "20", prefix: "", icon: Car },
-  { label: "Average ROI", value: "15.2", prefix: "%", icon: TrendingUp },
+  { label: "Average ROI", value: "15.2", prefix: "", suffix: "%", icon: TrendingUp },
   { label: "Active Investors", value: "37", prefix: "", icon: Users },
   { label: "Total Funded", value: "45", prefix: "$", suffix: "M", icon: DollarSign },
 ]

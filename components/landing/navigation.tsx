@@ -70,6 +70,15 @@ export function Navigation() {
           <div className="flex items-center space-x-4">
             <ThemeToggle />
             <div className="hidden md:flex items-center space-x-4">
+              {/* <Button
+                variant="outline"
+                className="border-border hover:border-[#E57700] hover:text-[#E57700] flex items-center"
+                asChild
+              >
+                <Link href="https://calendly.com/amaobiokeoma/30min" target="_blank" rel="noopener noreferrer">
+                  Book a Demo
+                </Link>
+              </Button> */}
               <Button
                 variant="outline"
                 className="border-border hover:border-[#E57700] hover:text-[#E57700] flex items-center"
@@ -131,6 +140,11 @@ export function Navigation() {
                 Announcements
               </Link>
               <div className="pt-4 border-t">
+                {/* <Button variant="outline" className="w-full mb-2 flex items-center justify-center" asChild>
+                  <Link href="https://calendly.com/amaobiokeoma/30min" target="_blank" rel="noopener noreferrer">
+                    Book a Demo
+                  </Link>
+                </Button> */}
                 <Button variant="outline" className="w-full mb-2 flex items-center justify-center" asChild>
                   <Link href="/signin">
                     <UserCheck className="h-4 w-4 mr-2" />
