@@ -6,7 +6,7 @@ import User from "@/models/User"
 
 export async function GET() {
   try {
-    const cookieStore = await cookies()
+    const cookieStore = cookies()
     const tokenCookie = cookieStore.get("token")?.value
 
     if (!tokenCookie) {
@@ -18,28 +18,28 @@ export async function GET() {
 
     await dbConnect()
 
-    // --- IMPORTANT CHANGE HERE ---
-    // Include kycStatus and kycDocuments in the select statement
+    // Include kycStatus, kycDocuments, physicalMeetingDate, and physicalMeetingStatus in the select statement
     const user = await User.findById(payload.userId).select(
-      "name email role availableBalance totalInvested totalReturns kycStatus kycDocuments",
+      "name email role availableBalance totalInvested totalReturns kycStatus kycDocuments physicalMeetingDate physicalMeetingStatus",
     )
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // --- IMPORTANT CHANGE HERE ---
-    // Ensure the returned JSON includes kycStatus and kycDocuments
+    // Ensure the returned JSON includes all relevant fields
     return NextResponse.json({
       id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
       availableBalance: user.availableBalance,
-      totalInvested: user.totalInvested, // Assuming these fields exist on your User model
-      totalReturns: user.totalReturns, // Assuming these fields exist on your User model
-      kycStatus: user.kycStatus, // Include kycStatus
-      kycDocuments: user.kycDocuments, // Include kycDocuments
+      totalInvested: user.totalInvested,
+      totalReturns: user.totalReturns,
+      kycStatus: user.kycStatus,
+      kycDocuments: user.kycDocuments,
+      physicalMeetingDate: user.physicalMeetingDate, // Include physicalMeetingDate
+      physicalMeetingStatus: user.physicalMeetingStatus, // Include physicalMeetingStatus
     })
   } catch (error) {
     console.error("Auth error:", error)

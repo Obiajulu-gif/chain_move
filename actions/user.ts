@@ -5,8 +5,11 @@ import dbConnect from "@/lib/dbConnect" // Assuming you have a utility to connec
 
 export async function updateUserKycStatus(
   userId: string,
-  status: "none" | "pending" | "approved" | "rejected",
+  status: "none" | "pending" | "approved_stage1" | "pending_stage2" | "approved_stage2" | "rejected", // Updated status enum
   documents: string[] = [],
+  rejectionReason: string | null = null,
+  physicalMeetingDate: Date | null = null, // New parameter
+  physicalMeetingStatus: "none" | "scheduled" | "completed" | "rejected_stage2" | null = null, // New parameter
 ) {
   try {
     await dbConnect() // Ensure database connection is established
@@ -21,6 +24,17 @@ export async function updateUserKycStatus(
     if (documents.length > 0) {
       user.kycDocuments = documents
     }
+    // Set rejection reason only if status is rejected
+    user.kycRejectionReason = status === "rejected" ? rejectionReason : null
+
+    // Update physical meeting details if provided
+    if (physicalMeetingDate !== null) {
+      user.physicalMeetingDate = physicalMeetingDate
+    }
+    if (physicalMeetingStatus !== null) {
+      user.physicalMeetingStatus = physicalMeetingStatus
+    }
+
     await user.save()
 
     return { success: true, message: `KYC status updated to ${status}.` }

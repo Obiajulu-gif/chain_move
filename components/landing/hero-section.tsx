@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, TrendingUp, Car, DollarSign, Rocket, Play, Users, Coins, Shield } from "lucide-react"
+import { ArrowRight, TrendingUp, Car, DollarSign, Rocket, Users, Coins, Shield } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -84,8 +84,8 @@ export function HeroSection() {
 							</Button>
 							<Button
 								size="lg"
-								variant="outline"
-								className="border-white text-[#142841] hover:bg-white dark:text-white hover:text-[#142841] transform hover:scale-105 transition-all duration-200 flex items-center"
+								variant="secondary"
+								className="transform hover:scale-105 transition-all duration-200 flex items-center"
 								asChild
 							>
 								<Link href="/auth?role=investor">
@@ -97,19 +97,32 @@ export function HeroSection() {
 						</div>
 					</div>
 					<div className="relative animate-fade-in-right delay-500">
-						<div className="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20 transform hover:scale-105 transition-all duration-300">
-							<Image
-								src="/images/car.png"
-								alt="ChainMove Platform"
-								width={600}
-								height={400}
-								className="w-full h-64 object-cover rounded-xl"
+						<div className="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/20 transform hover:scale-105 transition-all duration-300">
+							<video
+								src="/images/Generated%20File%20June%2002,%202025%20-%201_59PM.mp4"
+								className="w-full h-96 object-cover rounded-xl"
+								autoPlay
+								loop
+								muted
+								playsInline
 							/>
-							
 							<p className="text-center mt-2 text-gray-200 flex items-center justify-center">
 								<Rocket className="h-4 w-4 mr-2" />
 								Empowering Shared Mobility Through Blockchain
 							</p>
+							{/* Book a Demo Button */}
+							<div className="mt-4 flex justify-center">
+								<Button
+									variant="secondary"
+									className="flex items-center"
+									asChild
+								>
+									<Link href="https://calendly.com/amaobiokeoma/30min" target="_blank" rel="noopener noreferrer">
+										Book a Demo
+										<ArrowRight className="h-4 w-4 ml-2" />
+									</Link>
+								</Button>
+							</div>
 						</div>
 					</div>
 				</div>

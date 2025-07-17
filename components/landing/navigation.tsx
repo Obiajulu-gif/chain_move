@@ -15,56 +15,70 @@ export function Navigation() {
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <Link href="/" className="flex-shrink-0 flex items-center" onClick={() => setActiveNav("home")}>
+          {/* Left - Logo */}
+          <div className="flex-shrink-0 flex items-center">
+            <Link href="/" className="flex items-center" onClick={() => setActiveNav("home")}> 
               <Image src="/images/chainmovelogo.png" alt="ChainMove Logo" width={40} height={40} className="mr-3" />
               <span className="text-2xl font-bold text-[#E57700]">ChainMove</span>
             </Link>
-            <div className="hidden md:block ml-10">
-              <div className="flex items-baseline space-x-8">
-                <Link
-                  href="/marketplace"
-                  className={`px-3 py-2 text-sm font-medium transition-colors relative flex items-center ${
-                    activeNav === "marketplace"
-                      ? "text-[#E57700] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#E57700]"
-                      : "text-foreground hover:text-[#E57700]"
-                  }`}
-                  onClick={() => setActiveNav("marketplace")}
-                >
-                  <Search className="h-4 w-4 mr-2" />
-                  Marketplace
-                </Link>
-                <Link
-                  href="/about"
-                  className={`px-3 py-2 text-sm font-medium transition-colors relative flex items-center ${
-                    activeNav === "about"
-                      ? "text-[#E57700] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#E57700]"
-                      : "text-foreground hover:text-[#E57700]"
-                  }`}
-                  onClick={() => setActiveNav("about")}
-                >
-                  <UserCheck className="h-4 w-4 mr-2" />
-                  About Us
-                </Link>
-                <Link
-                  href="/announcements"
-                  className={`px-3 py-2 text-sm font-medium transition-colors relative flex items-center ${
-                    activeNav === "announcements"
-                      ? "text-[#E57700] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#E57700]"
-                      : "text-foreground hover:text-[#E57700]"
-                  }`}
-                  onClick={() => setActiveNav("announcements")}
-                >
-                  <Rocket className="h-4 w-4 mr-2" />
-                  Announcements
-                </Link>
-              </div>
+          </div>
+
+          {/* Center - Nav Links */}
+          <div className="hidden md:block flex-1">
+            <div className="flex justify-center space-x-8">
+              {/* nav links (same as before) */}
+              <Link
+                href="/marketplace"
+                className={`px-3 py-2 text-sm font-medium transition-colors relative flex items-center ${
+                  activeNav === "marketplace"
+                    ? "text-[#E57700] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#E57700]"
+                    : "text-foreground hover:text-[#E57700]"
+                }`}
+                onClick={() => setActiveNav("marketplace")}
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Marketplace
+              </Link>
+              <Link
+                href="/about"
+                className={`px-3 py-2 text-sm font-medium transition-colors relative flex items-center ${
+                  activeNav === "about"
+                    ? "text-[#E57700] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#E57700]"
+                    : "text-foreground hover:text-[#E57700]"
+                }`}
+                onClick={() => setActiveNav("about")}
+              >
+                <UserCheck className="h-4 w-4 mr-2" />
+                About Us
+              </Link>
+              <Link
+                href="/announcements"
+                className={`px-3 py-2 text-sm font-medium transition-colors relative flex items-center ${
+                  activeNav === "announcements"
+                    ? "text-[#E57700] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#E57700]"
+                    : "text-foreground hover:text-[#E57700]"
+                }`}
+                onClick={() => setActiveNav("announcements")}
+              >
+                <Rocket className="h-4 w-4 mr-2" />
+                Announcements
+              </Link>
             </div>
           </div>
 
+          {/* Right - Actions */}
           <div className="flex items-center space-x-4">
             <ThemeToggle />
             <div className="hidden md:flex items-center space-x-4">
+              {/* <Button
+                variant="outline"
+                className="border-border hover:border-[#E57700] hover:text-[#E57700] flex items-center"
+                asChild
+              >
+                <Link href="https://calendly.com/amaobiokeoma/30min" target="_blank" rel="noopener noreferrer">
+                  Book a Demo
+                </Link>
+              </Button> */}
               <Button
                 variant="outline"
                 className="border-border hover:border-[#E57700] hover:text-[#E57700] flex items-center"
@@ -126,6 +140,11 @@ export function Navigation() {
                 Announcements
               </Link>
               <div className="pt-4 border-t">
+                {/* <Button variant="outline" className="w-full mb-2 flex items-center justify-center" asChild>
+                  <Link href="https://calendly.com/amaobiokeoma/30min" target="_blank" rel="noopener noreferrer">
+                    Book a Demo
+                  </Link>
+                </Button> */}
                 <Button variant="outline" className="w-full mb-2 flex items-center justify-center" asChild>
                   <Link href="/signin">
                     <UserCheck className="h-4 w-4 mr-2" />

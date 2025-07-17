@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -53,7 +53,7 @@ export default function MarketplacePage() {
       name: "Bajaj Okada 2024",
       type: "Motorcycle",
       price: 1800,
-      image: "/images/okada-motorcycle.jpg",
+      image: "/images/tricycle-keke.jpg",
       roi: 25.0,
       location: "Abuja, Nigeria",
       rating: 4.9,
@@ -120,7 +120,7 @@ export default function MarketplacePage() {
       id: "motorcycle",
       name: "Motorcycle (Okada)",
       description: "Fast delivery & mobility",
-      image: "/images/okada-motorcycle.jpg",
+      image: "/images/tricycle-keke.jpg",
       count: 38,
       avgROI: 24.8,
       priceRange: "$1,800 - $2,500",
@@ -179,6 +179,64 @@ export default function MarketplacePage() {
     return matchesSearch && matchesLocation && matchesCategory
   })
 
+  // Animated Stat Card component with fade-in and count-up
+  function StatCard({ value, label, color = "text-foreground" }: { value: number | string; label: string; color?: string }) {
+    const ref = useRef<HTMLDivElement>(null)
+    const [visible, setVisible] = useState(false)
+    const [display, setDisplay] = useState<typeof value>(typeof value === "number" ? 0 : value)
+
+    // Observe when the card enters the viewport
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setVisible(true)
+              observer.disconnect()
+            }
+          })
+        },
+        { threshold: 0.3 }
+      )
+      if (ref.current) observer.observe(ref.current)
+      return () => observer.disconnect()
+    }, [])
+
+    // Animate number counting up once visible (only for numeric values)
+    useEffect(() => {
+      if (!visible || typeof value !== "number") return
+      let current = 0
+      const end = value
+      const duration = 1000 // ms
+      const stepTime = 16
+      const steps = duration / stepTime
+      const increment = end / steps
+
+      const id = setInterval(() => {
+        current += increment
+        if (current >= end) {
+          setDisplay(end)
+          clearInterval(id)
+        } else {
+          setDisplay(Math.round(current))
+        }
+      }, stepTime)
+      return () => clearInterval(id)
+    }, [visible, value])
+
+    return (
+      <div
+        ref={ref}
+        className={`bg-card rounded-2xl p-6 border border-border hover:border-[#E57700]/50 transition-all duration-500 transform ${
+          visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+        }`}
+      >
+        <div className={`text-3xl md:text-4xl font-bold ${color} mb-2`}>{display}</div>
+        <div className="text-sm text-gray-400 uppercase tracking-wider font-medium">{label}</div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* <Header userName="Guest" userStatus="Browse Marketplace" /> */}
@@ -186,41 +244,27 @@ export default function MarketplacePage() {
 
       <div className="p-6">
         {/* Hero Section */}
-        <div className="mb-8">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-4">African Vehicle Marketplace</h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Discover financing opportunities for African market vehicles. From tricycles (keke) to pickup trucks
-              (carter), find the perfect vehicle investment that matches your goals.
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">
+            African Vehicle Marketplace
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+            Discover financing opportunities for African market vehicles. From tricycles 
+            (keke) to pickup trucks (carter), find the perfect vehicle investment that matches 
+            your goals.
             </p>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <Card className="bg-card border-border text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-foreground">148</div>
-                <div className="text-sm text-muted-foreground">Available Vehicles</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-500">21.2%</div>
-                <div className="text-sm text-muted-foreground">Average ROI</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-foreground">5</div>
-                <div className="text-sm text-muted-foreground">Vehicle Types</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-foreground">12</div>
-                <div className="text-sm text-muted-foreground">Countries</div>
-              </CardContent>
-            </Card>
+        {/* Stats Section with animation */}
+        <div className="mb-16">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+            <StatCard value={148} label="Available Vehicles" />
+            <StatCard value="21.2%" label="Average ROI" color="text-[#22C55E]" />
+            <StatCard value={5} label="Vehicle Types" />
+            <StatCard value={12} label="Countries" />
+          </div>
+          <div className="text-center mt-8">
+            <p className="text-gray-400 text-sm">Empowering African transportation through decentralized vehicle financing</p>
           </div>
         </div>
 
@@ -261,88 +305,71 @@ export default function MarketplacePage() {
               <CardContent>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {featuredVehicles.map((vehicle) => (
-                    <Card key={vehicle.id} className="bg-muted border-border hover:border-[#E57700] transition-colors">
+                    <Card key={vehicle.id} className="bg-card border-border hover:border-[#E57700] hover:border-2 transition-all duration-300 transform hover:scale-105 rounded-3xl overflow-hidden shadow-lg">
                       <div className="relative">
                         <Image
                           src={vehicle.image || "/placeholder.svg"}
                           alt={vehicle.name}
                           width={300}
                           height={200}
-                          className="w-full h-48 object-cover rounded-t-lg"
+                          className="w-full h-48 object-cover"
                         />
-                        <div className="absolute top-3 right-3 flex flex-col space-y-1">
-                          <Badge className={`${getDemandColor(vehicle.demand)} text-white text-xs`}>
-                            {vehicle.demand}
+                        {/* Demand & ROI badges */}
+                        <div className="absolute top-4 right-4 space-y-1 text-right">
+                          <Badge className={`${getDemandColor(vehicle.demand)} text-white text-[10px] px-2.5 py-0.5 rounded-full font-semibold`}>{vehicle.demand}</Badge>
+                          <Badge className="bg-[#E57700] text-white text-[10px] px-2.5 py-0.5 rounded-full font-semibold">
+                            {vehicle.roi}% ROI
                           </Badge>
-                          <Badge className="bg-[#E57700] text-white text-xs">{vehicle.roi}% ROI</Badge>
                         </div>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="absolute top-3 left-3 text-white hover:bg-black/20"
+                          className="absolute top-4 left-4 text-white hover:bg-black/20 w-8 h-8 rounded-full p-0"
                         >
                           <Heart className="h-4 w-4" />
                         </Button>
                       </div>
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
+                      <CardContent className="p-6">
+                        <div className="space-y-4">
+                          {/* Title & Type */}
                           <div>
-                            <h3 className="font-semibold text-foreground">{vehicle.name}</h3>
-                            <p className="text-sm text-muted-foreground">{vehicle.type}</p>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <span className="text-2xl font-bold text-foreground">
-                              ${vehicle.price.toLocaleString()}
-                            </span>
-                            <div className="flex items-center space-x-1">
-                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                              <span className="text-sm text-foreground">{vehicle.rating}</span>
+                            <h3 className="font-bold text-foreground text-lg">{vehicle.name}</h3>
+                            <div className="flex justify-between items-center mt-1 text-sm text-gray-400">
+                              <span>{vehicle.type}</span>
+                              <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{vehicle.location}</span>
                             </div>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{vehicle.location}</span>
+                          {/* Price & Rating */}
+                          <div className="flex justify-between items-center">
+                            <span className="text-2xl font-semibold text-foreground">${vehicle.price.toLocaleString()}</span>
+                            <div className="flex items-center text-[#FACC15] text-sm font-medium">
+                              <Star className="h-4 w-4 mr-1 fill-current" /> {vehicle.rating}
+                            </div>
                           </div>
 
                           {/* Funding Progress */}
                           <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-sm text-muted-foreground">Funding Progress</span>
-                              <span className="text-sm text-foreground">{vehicle.fundingProgress}%</span>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs text-gray-400">{vehicle.fundingProgress}% tokenized</span>
+                              <span className="text-xs text-gray-400">{100 - vehicle.fundingProgress}% available</span>
                             </div>
-                            <div className="w-full bg-gray-600 rounded-full h-2">
+                            <div className="w-full bg-gray-700 rounded-full h-2">
                               <div
-                                className="bg-[#E57700] h-2 rounded-full transition-all duration-300"
+                                className="bg-[#E57700] h-2 rounded-full"
                                 style={{ width: `${vehicle.fundingProgress}%` }}
                               />
                             </div>
                           </div>
 
-                          <p className="text-sm text-muted-foreground line-clamp-2">{vehicle.description}</p>
+                          {/* Description */}
+                          <p className="text-xs text-gray-300 line-clamp-2 mt-2">{vehicle.description}</p>
 
-                          <div className="flex flex-wrap gap-1">
-                            {vehicle.features.slice(0, 2).map((feature) => (
-                              <Badge key={feature} variant="secondary" className="text-xs">
-                                {feature}
-                              </Badge>
-                            ))}
-                          </div>
-
-                          <div className="flex space-x-2">
-                            <Button className="flex-1 bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                          {/* Action Button */}
+                          <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white rounded-xl py-3 font-semibold mt-4">
                               <DollarSign className="h-4 w-4 mr-2" />
-                              Invest Now
+                            Buy Tokens
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-border text-foreground hover:bg-muted"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -365,7 +392,7 @@ export default function MarketplacePage() {
                   {vehicleCategories.map((category) => (
                     <Card
                       key={category.id}
-                      className="bg-muted border-border hover:border-[#E57700] transition-colors cursor-pointer"
+                      className="bg-card border-border hover:border-[#E57700] hover:border-2 transition-all duration-300 transform hover:scale-105 rounded-3xl overflow-hidden shadow-lg cursor-pointer"
                     >
                       <div className="relative">
                         <Image
@@ -373,30 +400,30 @@ export default function MarketplacePage() {
                           alt={category.name}
                           width={300}
                           height={150}
-                          className="w-full h-32 object-cover rounded-t-lg"
+                          className="w-full h-40 object-cover"
                         />
-                        <div className="absolute top-3 right-3">
-                          <Badge className="bg-[#E57700] text-white">{category.avgROI}% Avg ROI</Badge>
+                        <div className="absolute top-4 right-4">
+                          <Badge className="bg-[#E57700] text-white text-xs px-3 py-1 rounded-full font-semibold">{category.avgROI}% Avg ROI</Badge>
                         </div>
                       </div>
-                      <CardContent className="p-4">
+                      <CardContent className="p-6">
                         <div className="space-y-3">
                           <div>
-                            <h3 className="font-semibold text-foreground">{category.name}</h3>
-                            <p className="text-sm text-muted-foreground">{category.description}</p>
+                            <h3 className="font-bold text-foreground text-lg">{category.name}</h3>
+                            <p className="text-sm text-gray-400">{category.description}</p>
                           </div>
 
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Available:</span>
+                            <span className="text-gray-400">Available:</span>
                             <span className="font-medium text-foreground">{category.count} vehicles</span>
                           </div>
 
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Price Range:</span>
-                            <span className="font-medium text-foreground">{category.priceRange}</span>
+                            <span className="text-gray-400">Price Range:</span>
+                            <span className="font-medium text-white">{category.priceRange}</span>
                           </div>
 
-                          <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                          <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white rounded-xl py-3 font-semibold mt-4">
                             Browse {category.name}
                           </Button>
                         </div>
@@ -461,56 +488,67 @@ export default function MarketplacePage() {
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredVehicles.map((vehicle) => (
-                    <Card key={vehicle.id} className="bg-muted border-border hover:border-[#E57700] transition-colors">
+                    <Card key={vehicle.id} className="bg-card border-border hover:border-[#E57700] hover:border-2 transition-all duration-300 transform hover:scale-105 rounded-3xl overflow-hidden shadow-lg">
                       <div className="relative">
                         <Image
                           src={vehicle.image || "/placeholder.svg"}
                           alt={`${vehicle.name} - ${vehicle.type} vehicle in ${vehicle.location} with ${vehicle.roi}% ROI`}
                           width={300}
                           height={200}
-                          className="w-full h-40 object-cover rounded-t-lg"
+                          className="w-full h-48 object-cover"
                           priority={vehicle.id.includes("featured")}
                         />
-                        <div className="absolute top-3 right-3 flex space-x-2">
-                          <Badge className={`${getDemandColor(vehicle.demand)} text-white text-xs`}>
-                            {vehicle.demand}
+                        <div className="absolute top-4 right-4">
+                          <Badge className="bg-[#E57700] text-white text-xs px-3 py-1 rounded-full font-semibold">
+                            {vehicle.roi}% ROI
                           </Badge>
-                          <Badge className="bg-[#E57700] text-white text-xs">{vehicle.roi}% ROI</Badge>
                         </div>
                       </div>
-                      <CardContent className="p-4">
+                      <CardContent className="p-6">
                         <div className="space-y-3">
                           <div>
-                            <h3 className="font-semibold text-foreground">{vehicle.name}</h3>
-                            <p className="text-sm text-muted-foreground">{vehicle.type}</p>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <span className="text-xl font-bold text-foreground">${vehicle.price.toLocaleString()}</span>
-                            <div className="flex items-center space-x-1">
-                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                              <span className="text-sm text-foreground">{vehicle.rating}</span>
+                            <h3 className="font-bold text-foreground text-lg">{vehicle.name}</h3>
+                            <div className="flex justify-between items-center mt-1 text-sm text-gray-400">
+                              <span>{vehicle.type}</span>
+                              <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{vehicle.location}</span>
                             </div>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{vehicle.location}</span>
+                          {/* Price, Location, Stats */}
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-400">Total Value</span>
+                              <span className="text-sm text-foreground font-semibold">${vehicle.price.toLocaleString()}</span>
+                            </div>
+
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-400">Token Price</span>
+                              <span className="text-sm text-foreground font-semibold">${Math.round(vehicle.price / 100)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-400">Co-Owners</span>
+                              <span className="text-sm text-foreground font-semibold">{Math.floor(Math.random() * 20) + 5}</span>
+                            </div>
                           </div>
 
-                          <div className="flex space-x-2">
-                            <Button className="flex-1 bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                          {/* Funding Progress */}
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs text-gray-400">{vehicle.fundingProgress}% tokenized</span>
+                              <span className="text-xs text-gray-400">{100 - vehicle.fundingProgress}% available</span>
+                            </div>
+                            <div className="w-full bg-gray-700 rounded-full h-2">
+                              <div
+                                className="bg-[#E57700] h-2 rounded-full"
+                                style={{ width: `${vehicle.fundingProgress}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white rounded-xl py-3 font-semibold mt-4">
                               <DollarSign className="h-4 w-4 mr-2" />
                               Invest
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-border text-foreground hover:bg-muted"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
                         </div>
                       </CardContent>
                     </Card>
