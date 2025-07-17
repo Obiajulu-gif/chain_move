@@ -27,26 +27,37 @@ const values = [
 
 export function ValuesSection() {
   return (
-    <section className="py-16 bg-gray-50 dark:bg-[#18181B] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold text-[#142841] dark:text-white mb-4">Our Values 💎</h2>
-        <p className="text-lg text-gray-600 dark:text-gray-300">The principles that guide everything we do</p>
-      </div>
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-        {values.map((value, index) => (
-          <Card key={index} className="text-center border-2 border-gray-200 dark:border-gray-700 hover:border-[#E57700] dark:hover:border-[#FFD580] transition-colors bg-white dark:bg-[#23232A]">
-            <CardHeader>
-              <div className="w-16 h-16 bg-[#E57700] dark:bg-[#FFD580] rounded-full flex items-center justify-center mx-auto mb-4">
-                <value.icon className="h-8 w-8 text-white dark:text-[#142841]" />
-              </div>
-              <CardTitle className="text-[#142841] dark:text-white">{value.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base text-gray-600 dark:text-gray-300">{value.description}</CardDescription>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </section>
-  )
+		<section className="py-16 bg-background -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+			<div className="text-center mb-12">
+				<h2 className="text-3xl font-bold text-[#142841] dark:text-white mb-4">
+					Our Values 💎
+				</h2>
+				<p className="text-lg text-gray-600 dark:text-gray-300">
+					The principles that guide everything we do
+				</p>
+			</div>
+			<div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+				{values.map((value, index) => (
+					<Card
+						key={index}
+						className="text-center border-2 border-gray-200 dark:border-gray-700 hover:border-[#E57700] dark:hover:border-[#FFD580] transition-colors bg-white dark:bg-[#23232A]"
+					>
+						<CardHeader>
+							<div className="w-16 h-16 bg-[#E57700] dark:bg-[#FFD580] rounded-full flex items-center justify-center mx-auto mb-4">
+								<value.icon className="h-8 w-8 text-white dark:text-[#142841]" />
+							</div>
+							<CardTitle className="text-[#142841] dark:text-white">
+								{value.title}
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<CardDescription className="text-base text-gray-600 dark:text-gray-300">
+								{value.description}
+							</CardDescription>
+						</CardContent>
+					</Card>
+				))}
+			</div>
+		</section>
+	);
 }
