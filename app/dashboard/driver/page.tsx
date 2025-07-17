@@ -1,8 +1,9 @@
 "use client"
 import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
@@ -192,17 +193,31 @@ export default function DriverDashboard() {
   }
 
   const handleApplyForLoanClick = () => {
-    const kycStatus = (authUser as any)?.kycStatus || "none" // Assuming kycStatus is on authUser
-    if (kycStatus === "approved") {
+    const kycStatus = (authUser as any)?.kycStatus || "none"
+    const physicalMeetingStatus = (authUser as any)?.physicalMeetingStatus || "none"
+
+    if (kycStatus === "approved_stage2") {
+      // Fully approved, proceed to loan application
       setIsLoanDialogOpen(true)
     } else {
+      // Not fully approved, show KYC prompt
       setShowKycPromptDialog(true)
       if (kycStatus === "none") {
         setKycPromptMessage("Please complete your KYC verification first to apply for a loan.")
         setKycPromptAction({ label: "Go to KYC Page", href: "/dashboard/driver/kyc" })
       } else if (kycStatus === "pending") {
         setKycPromptMessage(
-          "Your KYC verification is currently under review. Please wait for approval before applying for a loan.",
+          "Your first stage KYC verification is currently under review. Please wait for approval before proceeding.",
+        )
+        setKycPromptAction(null) // No action button for pending
+      } else if (kycStatus === "approved_stage1") {
+        setKycPromptMessage(
+          "Your first stage KYC is approved. Please proceed with the second stage of verification (physical meeting) to apply for a loan.",
+        )
+        setKycPromptAction({ label: "Proceed with Second KYC", href: "/dashboard/driver/kyc" })
+      } else if (kycStatus === "pending_stage2") {
+        setKycPromptMessage(
+          "Your second stage KYC (physical meeting) is currently under review. Please wait for approval before applying for a loan.",
         )
         setKycPromptAction(null) // No action button for pending
       } else if (kycStatus === "rejected") {
@@ -210,6 +225,11 @@ export default function DriverDashboard() {
           "Your KYC verification was rejected. Please review the requirements and re-submit or contact support.",
         )
         setKycPromptAction({ label: "Re-submit KYC", href: "/dashboard/driver/kyc" })
+      } else if (physicalMeetingStatus === "rejected_stage2") {
+        setKycPromptMessage(
+          "Your second stage KYC (physical meeting) was rejected. Please contact support for assistance.",
+        )
+        setKycPromptAction({ label: "Contact Support", href: "/dashboard/driver/support" })
       }
     }
   }
@@ -218,13 +238,18 @@ export default function DriverDashboard() {
     switch (status) {
       case "Active":
       case "Approved":
+      case "approved_stage2": // New status
         return "bg-green-600"
       case "Under Review":
+      case "pending_stage2": // New status
         return "bg-blue-600"
-      case "Pending":
+      case "pending":
         return "bg-yellow-600"
-      case "Rejected":
+      case "rejected":
+      case "rejected_stage2": // New status
         return "bg-red-600"
+      case "approved_stage1": // New status
+        return "bg-purple-600" // Or any other distinct color
       default:
         return "bg-gray-600"
     }

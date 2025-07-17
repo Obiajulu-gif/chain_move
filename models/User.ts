@@ -38,10 +38,10 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // New fields for KYC
+    // Updated fields for KYC stages
     kycStatus: {
       type: String,
-      enum: ["none", "pending", "approved", "rejected"],
+      enum: ["none", "pending", "approved_stage1", "pending_stage2", "approved_stage2", "rejected"], // Updated enum
       default: "none",
     },
     kycDocuments: {
@@ -51,6 +51,16 @@ const UserSchema = new mongoose.Schema(
     kycRejectionReason: {
       type: String,
       default: null, // Can be null if not rejected or no reason provided
+    },
+    // New fields for second stage KYC (physical meeting)
+    physicalMeetingDate: {
+      type: Date,
+      default: null,
+    },
+    physicalMeetingStatus: {
+      type: String,
+      enum: ["none", "scheduled", "completed", "rejected_stage2"],
+      default: "none",
     },
   },
   { timestamps: true },
