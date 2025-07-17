@@ -18,7 +18,6 @@ export default function KycStatusPage() {
       router.replace("/signin") // Redirect if not logged in or not a driver
     }
     // If KYC status is 'none', redirect to the KYC submission page
-    // This ensures they don't see a status page if they haven't submitted anything
     if (!authLoading && authUser && (authUser as any).kycStatus === "none") {
       router.replace("/dashboard/driver/kyc")
     }
@@ -44,6 +43,10 @@ export default function KycStatusPage() {
   }
 
   const kycStatus = (authUser as any)?.kycStatus || "none"
+  const physicalMeetingStatus = (authUser as any)?.physicalMeetingStatus || "none"
+  const physicalMeetingDate = (authUser as any)?.physicalMeetingDate
+    ? new Date((authUser as any).physicalMeetingDate).toLocaleDateString()
+    : "N/A"
 
   let statusIcon
   let statusTitle
@@ -53,13 +56,32 @@ export default function KycStatusPage() {
   switch (kycStatus) {
     case "pending":
       statusIcon = <Clock className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-      statusTitle = "KYC Under Review"
+      statusTitle = "KYC Under Review (Stage 1)"
       statusMessage =
-        "Your Know Your Customer (KYC) documents have been received and are currently being reviewed. We will notify you once the verification process is complete."
+        "Your first stage Know Your Customer (KYC) documents have been received and are currently being reviewed. We will notify you once the verification process is complete."
       break
-    case "approved":
+    case "approved_stage1":
       statusIcon = <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-      statusTitle = "KYC Approved!"
+      statusTitle = "KYC Stage 1 Approved!"
+      statusMessage =
+        "Congratulations! Your first stage KYC verification has been successfully approved. Please proceed to schedule your physical meeting for the second stage of verification."
+      actionButton = (
+        <Button
+          onClick={() => router.push("/dashboard/driver/kyc")}
+          className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+        >
+          Proceed with Second KYC
+        </Button>
+      )
+      break
+    case "pending_stage2":
+      statusIcon = <Clock className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+      statusTitle = "KYC Under Review (Stage 2)"
+      statusMessage = `Your physical meeting for second stage KYC is scheduled for ${physicalMeetingDate}. It is currently under review. We will notify you once the verification is complete.`
+      break
+    case "approved_stage2":
+      statusIcon = <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+      statusTitle = "KYC Fully Approved!"
       statusMessage =
         "Congratulations! Your KYC verification has been successfully approved. You can now fully access all features, including applying for vehicle loans."
       actionButton = (
@@ -97,6 +119,25 @@ export default function KycStatusPage() {
             Contact Support
           </Button>
         </div>
+      )
+      break
+    case "rejected_stage2":
+      statusIcon = <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+      statusTitle = "KYC Stage 2 Rejected"
+      statusMessage =
+        "Unfortunately, your second stage KYC (physical meeting) was rejected. Please contact support for assistance to understand the reason and next steps."
+      if ((authUser as any)?.kycRejectionReason) {
+        statusMessage += ` Reason: ${(authUser as any).kycRejectionReason}`
+      }
+      actionButton = (
+        <Button
+          variant="outline"
+          onClick={() => router.push("/dashboard/driver/support")}
+          className="border-border text-foreground hover:bg-muted bg-transparent"
+        >
+          <Mail className="mr-2 h-4 w-4" />
+          Contact Support
+        </Button>
       )
       break
     default:

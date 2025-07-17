@@ -6,7 +6,7 @@ import User from "@/models/User"
 
 export async function GET() {
   try {
-    const cookieStore = await cookies()
+    const cookieStore = cookies()
     const tokenCookie = cookieStore.get("token")?.value
 
     if (!tokenCookie) {
@@ -24,9 +24,9 @@ export async function GET() {
       return NextResponse.json({ error: "Access Denied: Not an admin" }, { status: 403 })
     }
 
-    // Fetch all users with role 'driver' and their KYC related fields
+    // Fetch all users with role 'driver' and their KYC related fields, including new physical meeting fields
     const kycRequests = await User.find({ role: "driver" }).select(
-      "name email kycStatus kycDocuments createdAt updatedAt",
+      "name email kycStatus kycDocuments createdAt updatedAt physicalMeetingDate physicalMeetingStatus",
     )
 
     return NextResponse.json(kycRequests, { status: 200 })
