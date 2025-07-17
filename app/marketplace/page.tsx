@@ -18,14 +18,15 @@ export default function MarketplacePage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [locationFilter, setLocationFilter] = useState("all")
   const [categoryFilter, setCategoryFilter] = useState("all")
+  const [randomVehicles, setRandomVehicles] = useState<any[]>([])
 
-  const featuredVehicles = [
+  const allVehicles = [
     {
       id: "featured1",
       name: "Tricycle (Keke NAPEP) 2024",
       type: "Tricycle",
       price: 2500,
-      image: "/images/tricycle-keke.jpg",
+      image: "/assets/keke-nigeria.png",
       roi: 22.5,
       location: "Lagos, Nigeria",
       rating: 4.9,
@@ -36,24 +37,24 @@ export default function MarketplacePage() {
     },
     {
       id: "featured2",
-      name: "Toyota Hilux Carter 2023",
-      type: "Pickup Truck",
+      name: "Suzuki Every Mini Bus",
+      type: "Shuttle Bus",
       price: 28000,
-      image: "/images/toyota-carter.jpg",
+      image: "/assets/mOlcqsJ5-Suzuki-Every-Mini-Bus-Price-In-Nigeria-Korope-For-Business.jpg",
       roi: 17.8,
       location: "Accra, Ghana",
       rating: 4.8,
       demand: "High",
       fundingProgress: 78,
-      description: "Heavy-duty pickup truck for construction and cargo transport with excellent reliability.",
-      features: ["Heavy Duty", "Cargo Transport", "Construction", "Reliable"],
+      description: "Versatile mini bus suitable for shuttle services and small group transport.",
+      features: ["Compact", "Reliable", "Commercial Use"],
     },
     {
       id: "featured3",
-      name: "Bajaj Okada 2024",
+      name: "Daylong Motorcycle 2024",
       type: "Motorcycle",
       price: 1800,
-      image: "/images/tricycle-keke.jpg",
+      image: "/assets/daylong-motorcycle-price-in-nigeria.jpg",
       roi: 25.0,
       location: "Abuja, Nigeria",
       rating: 4.9,
@@ -64,54 +65,87 @@ export default function MarketplacePage() {
     },
     {
       id: "featured4",
-      name: "Toyota Hiace Mini Bus 2023",
-      type: "Mini Bus",
+      name: "Commuter Bus",
+      type: "Bus",
       price: 35000,
-      image: "/images/mini-bus.jpg",
+      image: "/assets/commuter bus.webp",
       roi: 18.5,
       location: "Nairobi, Kenya",
       rating: 4.7,
       demand: "Medium",
       fundingProgress: 65,
-      description: "Reliable mini bus perfect for passenger transport and commercial operations.",
+      description: "Reliable commuter bus perfect for passenger transport and commercial operations.",
       features: ["High Capacity", "Durable", "Commercial Use", "Inter-city Transport"],
     },
     {
       id: "featured5",
-      name: "Coaster 18-Seater Bus 2022",
-      type: "18-Seater Bus",
-      price: 45000,
-      image: "/images/18-seater-bus.jpg",
-      roi: 19.2,
-      location: "Cape Town, South Africa",
-      rating: 4.6,
-      demand: "Medium",
-      fundingProgress: 45,
-      description: "High-capacity bus ideal for school transport and group travel services.",
-      features: ["High Passenger Capacity", "Long Distance", "Comfortable", "School/Church Transport"],
+      name: "Another Tricycle",
+      type: "Tricycle",
+      price: 2600,
+      image: "/assets/keke-nigeria.png",
+      roi: 23.5,
+      location: "Kano, Nigeria",
+      rating: 4.8,
+      demand: "High",
+      fundingProgress: 70,
+      description: "A very reliable tricycle for your transportation business.",
+      features: ["Fuel Efficient", "Durable", "Urban Transport"],
     },
     {
       id: "featured6",
-      name: "Mazda BT-50 Carter 2023",
-      type: "Pickup Truck",
-      price: 26000,
-      image: "/images/mazda-carter.jpg",
-      roi: 17.5,
+      name: "Second Shuttle Bus",
+      type: "Shuttle Bus",
+      price: 30000,
+      image: "/assets/mOlcqsJ5-Suzuki-Every-Mini-Bus-Price-In-Nigeria-Korope-For-Business.jpg",
+      roi: 18.2,
       location: "Kumasi, Ghana",
       rating: 4.7,
+      demand: "High",
+      fundingProgress: 60,
+      description: "A comfortable shuttle bus for your passengers.",
+      features: ["Compact", "Comfortable", "Commercial Use"],
+    },
+    {
+      id: "featured7",
+      name: "Speedy Motorcycle",
+      type: "Motorcycle",
+      price: 1900,
+      image: "/assets/daylong-motorcycle-price-in-nigeria.jpg",
+      roi: 25.5,
+      location: "Ibadan, Nigeria",
+      rating: 4.9,
+      demand: "High",
+      fundingProgress: 95,
+      description: "A fast and reliable motorcycle for your delivery needs.",
+      features: ["High Speed", "Low Maintenance", "Quick Delivery"],
+    },
+    {
+      id: "featured8",
+      name: "Large Commuter Bus",
+      type: "Bus",
+      price: 40000,
+      image: "/assets/commuter bus.webp",
+      roi: 19.0,
+      location: "Mombasa, Kenya",
+      rating: 4.6,
       demand: "Medium",
-      fundingProgress: 55,
-      description: "Fuel-efficient pickup truck with excellent cargo capacity for commercial operations.",
-      features: ["Fuel Efficient", "Cargo Capacity", "Durable", "Commercial Use"],
+      fundingProgress: 50,
+      description: "A spacious commuter bus for long routes.",
+      features: ["Very High Capacity", "Durable", "Long Distance"],
     },
   ]
+
+  useEffect(() => {
+    const shuffled = [...allVehicles].sort(() => 0.5 - Math.random())
+    setRandomVehicles(shuffled.slice(0, 6))
+  }, [])
 
   const vehicleCategories = [
     {
       id: "tricycle",
       name: "Tricycle (Keke)",
       description: "Urban transport solution",
-      image: "/images/tricycle-keke.jpg",
+      image: "/assets/keke-nigeria.png",
       count: 45,
       avgROI: 23.2,
       priceRange: "$2,500 - $3,000",
@@ -120,37 +154,28 @@ export default function MarketplacePage() {
       id: "motorcycle",
       name: "Motorcycle (Okada)",
       description: "Fast delivery & mobility",
-      image: "/images/tricycle-keke.jpg",
+      image: "/assets/daylong-motorcycle-price-in-nigeria.jpg",
       count: 38,
       avgROI: 24.8,
       priceRange: "$1,800 - $2,500",
     },
     {
-      id: "minibus",
-      name: "Mini Bus",
+      id: "shuttle-bus",
+      name: "Shuttle Bus (Korope)",
       description: "Passenger transport",
-      image: "/images/mini-bus.jpg",
+      image: "/assets/mOlcqsJ5-Suzuki-Every-Mini-Bus-Price-In-Nigeria-Korope-For-Business.jpg",
       count: 22,
       avgROI: 18.5,
-      priceRange: "$30,000 - $40,000",
+      priceRange: "$28,000 - $40,000",
     },
     {
       id: "bus",
-      name: "18-Seater Bus",
+      name: "Commuter Bus",
       description: "Group & school transport",
-      image: "/images/18-seater-bus.jpg",
+      image: "/assets/commuter bus.webp",
       count: 15,
       avgROI: 19.2,
-      priceRange: "$40,000 - $50,000",
-    },
-    {
-      id: "pickup",
-      name: "Pickup Truck (Carter)",
-      description: "Cargo & construction",
-      image: "/images/toyota-carter.jpg",
-      count: 28,
-      avgROI: 17.6,
-      priceRange: "$24,000 - $30,000",
+      priceRange: "$35,000 - $50,000",
     },
   ]
 
@@ -167,7 +192,7 @@ export default function MarketplacePage() {
     }
   }
 
-  const filteredVehicles = featuredVehicles.filter((vehicle) => {
+  const filteredVehicles = randomVehicles.filter((vehicle) => {
     const matchesSearch =
       vehicle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vehicle.type.toLowerCase().includes(searchTerm.toLowerCase())
@@ -304,7 +329,7 @@ export default function MarketplacePage() {
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {featuredVehicles.map((vehicle) => (
+                  {randomVehicles.map((vehicle) => (
                     <Card key={vehicle.id} className="bg-card border-border hover:border-[#E57700] hover:border-2 transition-all duration-300 transform hover:scale-105 rounded-3xl overflow-hidden shadow-lg">
                       <div className="relative">
                         <Image
