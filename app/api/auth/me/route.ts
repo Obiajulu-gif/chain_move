@@ -6,7 +6,8 @@ import User from "@/models/User"
 
 export async function GET() {
   try {
-    const cookieStore = cookies()
+    // Await cookies() here
+    const cookieStore = await cookies()
     const tokenCookie = cookieStore.get("token")?.value
 
     if (!tokenCookie) {
@@ -18,9 +19,9 @@ export async function GET() {
 
     await dbConnect()
 
-    // Include kycStatus, kycDocuments, physicalMeetingDate, and physicalMeetingStatus in the select statement
+    // Include kycStatus, kycDocuments, physicalMeetingDate, physicalMeetingStatus, and notifications
     const user = await User.findById(payload.userId).select(
-      "name email role availableBalance totalInvested totalReturns kycStatus kycDocuments physicalMeetingDate physicalMeetingStatus",
+      "name email role availableBalance totalInvested totalReturns kycStatus kycDocuments physicalMeetingDate physicalMeetingStatus notifications",
     )
 
     if (!user) {
@@ -38,8 +39,9 @@ export async function GET() {
       totalReturns: user.totalReturns,
       kycStatus: user.kycStatus,
       kycDocuments: user.kycDocuments,
-      physicalMeetingDate: user.physicalMeetingDate, // Include physicalMeetingDate
-      physicalMeetingStatus: user.physicalMeetingStatus, // Include physicalMeetingStatus
+      physicalMeetingDate: user.physicalMeetingDate,
+      physicalMeetingStatus: user.physicalMeetingStatus,
+      notifications: user.notifications, // Include notifications
     })
   } catch (error) {
     console.error("Auth error:", error)

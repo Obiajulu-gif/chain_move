@@ -59,9 +59,20 @@ const UserSchema = new mongoose.Schema(
     },
     physicalMeetingStatus: {
       type: String,
-      enum: ["none", "scheduled", "completed", "rejected_stage2"],
+      enum: ["none", "scheduled", "approved", "rescheduled", "completed", "rejected_stage2"], // Added 'approved' and 'rescheduled'
       default: "none",
     },
+    // New field for in-app notifications
+    notifications: [
+      {
+        id: { type: String, required: true },
+        title: { type: String, required: true },
+        message: { type: String, required: true },
+        read: { type: Boolean, default: false },
+        timestamp: { type: Date, default: Date.now },
+        link: { type: String }, // Optional link for the notification
+      },
+    ],
   },
   { timestamps: true },
 )
