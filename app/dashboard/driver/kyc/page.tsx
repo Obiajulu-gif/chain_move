@@ -145,7 +145,8 @@ export default function KycVerificationPage() {
       // Call the server action to update physical meeting details
       const updateRes = await updateUserKycStatus(
         authUser.id,
-        "pending_stage2", // Set main KYC status to pending_stage2
+        // Keep kycStatus as approved_stage1 when scheduling the meeting
+        "approved_stage1", // This is the change: keep kycStatus as approved_stage1
         authUser.kycDocuments, // Pass existing documents
         null, // No rejection reason
         new Date(physicalMeetingDate), // Pass the selected date
@@ -188,6 +189,7 @@ export default function KycVerificationPage() {
       console.log("Current authUser kycStatus in useEffect:", kycStatus) // For debugging
 
       // Redirect if first stage is pending or second stage is pending/approved/rejected
+      // Note: approved_stage1 with scheduled physicalMeetingStatus should NOT redirect from here
       if (
         kycStatus === "pending" ||
         kycStatus === "pending_stage2" ||
@@ -230,20 +232,29 @@ export default function KycVerificationPage() {
   const kycStatus = (authUser as any)?.kycStatus || "none"
   const physicalMeetingStatus = (authUser as any)?.physicalMeetingStatus || "none"
 
+  // Only redirect if the status is one that should be handled by the status page
+  // and not by this KYC submission/scheduling page.
   if (
     kycStatus === "pending" ||
     kycStatus === "pending_stage2" ||
     kycStatus === "approved_stage2" ||
-    physicalMeetingStatus === "rejected_stage2"
+    physicalMeetingStatus === "rejected_stage2" ||
+    (kycStatus === "approved_stage1" && physicalMeetingStatus === "scheduled") || // If meeting is scheduled, show status page
+    (kycStatus === "approved_stage1" && physicalMeetingStatus === "approved") || // If meeting is approved, show status page
+    (kycStatus === "approved_stage1" && physicalMeetingStatus === "rescheduled") // If meeting is rescheduled, show status page
   ) {
+    // This ensures that if the user is in a state where they should see the status page,
+    // they are redirected there, preventing this page from rendering incorrectly.
+    // The useEffect above handles the actual router.replace.
     return null
   }
 
   // Render first stage form if kycStatus is 'none' or 'rejected'
   const renderFirstStageForm = kycStatus === "none" || kycStatus === "rejected"
 
-  // Render second stage prompt if kycStatus is 'approved_stage1'
-  const renderSecondStagePrompt = kycStatus === "approved_stage1"
+  // Render second stage prompt if kycStatus is 'approved_stage1' and no meeting is scheduled/approved/rescheduled
+  const renderSecondStagePrompt =
+    kycStatus === "approved_stage1" && (physicalMeetingStatus === "none" || physicalMeetingStatus === "rescheduled")
 
   return (
     <>

@@ -6,7 +6,8 @@ import User from "@/models/User"
 
 export async function GET() {
   try {
-    const cookieStore = cookies()
+    // Await cookies() here
+    const cookieStore = await cookies()
     const tokenCookie = cookieStore.get("token")?.value
 
     if (!tokenCookie) {
