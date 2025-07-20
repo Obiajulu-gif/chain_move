@@ -2,11 +2,14 @@
 
 import User from "@/models/User" // Adjust path as necessary to your User model
 import dbConnect from "@/lib/dbConnect" // Assuming you have a utility to connect to DB
+import { revalidatePath } from "next/cache" // Import revalidatePath
 
 // Helper function to send email (calls the new API route)
 async function sendEmailNotification(to: string, subject: string, body: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/send-email`, {
+    // Use NEXT_PUBLIC_APP_URL for the base URL, with a fallback for local development
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const res = await fetch(`${appUrl}/api/send-email`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -88,8 +91,17 @@ export async function updateUserKycStatus(
     let emailSubject = ""
     let emailBody = ""
     let sendNotification = false
+    const notificationLink = "/dashboard/driver/notifications" // Link to the new dedicated notifications page
 
-    if (oldKycStatus === "pending" && user.kycStatus === "approved_stage1") {
+    // Notification for initial KYC submission (Stage 1)
+    if (oldKycStatus === "none" && user.kycStatus === "pending") {
+      notificationTitle = "KYC Documents Submitted!"
+      notificationMessage =
+        "Your KYC documents have been successfully submitted for review. We will notify you once Stage 1 verification is complete."
+      emailSubject = "ChainMove: KYC Documents Received"
+      emailBody = `Dear ${user.name},\n\nThank you for submitting your KYC documents. Your Stage 1 verification is now under review. We will send you another notification once it's processed.\n\nThank you,\nChainMove Team`
+      sendNotification = true
+    } else if (oldKycStatus === "pending" && user.kycStatus === "approved_stage1") {
       notificationTitle = "KYC Stage 1 Approved!"
       notificationMessage =
         "Your first stage KYC verification has been successfully approved. Please proceed to schedule your physical meeting for the second stage."
@@ -135,12 +147,17 @@ export async function updateUserKycStatus(
         message: notificationMessage,
         read: false,
         timestamp: new Date(),
-        link: "/dashboard/driver/kyc/status", // Link to KYC status page
+        link: notificationLink, // Link to the new dedicated notifications page
       })
       await user.save() // Save user with new notification
 
       // Send email
       await sendEmailNotification(user.email, emailSubject, emailBody)
+
+      // Revalidate paths for the driver's dashboard and notifications page
+      revalidatePath(`/dashboard/driver`)
+      revalidatePath(`/dashboard/driver/notifications`)
+      revalidatePath(`/dashboard/driver/kyc/status`) // Also revalidate KYC status page
     }
 
     return { success: true, message: `KYC status updated to ${user.kycStatus}.` }

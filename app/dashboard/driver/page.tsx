@@ -28,6 +28,7 @@ import { usePlatform, useDriverData } from "@/contexts/platform-context"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import Link from "next/link" // Import Link
 import {
   Car,
   Calendar,
@@ -388,9 +389,10 @@ export default function DriverDashboard() {
                       .filter((n) => !n.read)
                       .slice(0, 3)
                       .map((notification) => (
-                        <div
+                        <Link
                           key={notification.id}
-                          className="flex items-center justify-between p-3 bg-white dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-800"
+                          href={notification.link || "/dashboard/driver/notifications"} // Link to the notification's specific link or general notifications page
+                          className="flex items-center justify-between p-3 bg-white dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-800 hover:bg-blue-100/50 dark:hover:bg-blue-900/50 transition-colors"
                         >
                           <div>
                             <p className="font-medium text-blue-900 dark:text-blue-100 text-sm">{notification.title}</p>
@@ -399,14 +401,8 @@ export default function DriverDashboard() {
                               {new Date(notification.timestamp).toLocaleString()}
                             </p>
                           </div>
-                          <Button
-                            size="sm"
-                            onClick={() => dispatch({ type: "MARK_NOTIFICATION_READ", payload: notification.id })}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8"
-                          >
-                            Mark Read
-                          </Button>
-                        </div>
+                          {/* Removed "Mark Read" button from here, as it will be handled on the dedicated page */}
+                        </Link>
                       ))}
                   </div>
                 </CardContent>
@@ -894,7 +890,12 @@ export default function DriverDashboard() {
               </TabsContent>
               {/* Notifications Tab */}
               <TabsContent value="notifications" className="space-y-6">
-                <NotificationCenter userId={currentDriverId} userRole="driver" />
+                {/* This tab will now render the full NotificationCenter */}
+                <NotificationCenter
+                  userId={currentDriverId}
+                  userRole="driver"
+                  notifications={authUser.notifications || []}
+                />
               </TabsContent>
             </Tabs>
           </div>
