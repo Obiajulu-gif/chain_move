@@ -1,120 +1,261 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { CheckCircle, XCircle, Loader2, FileText, CreditCard } from "lucide-react"
+import { usePlatform, useCurrentUser } from "@/contexts/platform-context"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useToast } from "@/hooks/use-toast"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
-import { Separator } from "@/components/ui/separator"
-import { CheckCircle, Calendar, FileText, AlertCircle, DollarSign, Clock, AlertTriangle } from "lucide-react"
 
 export default function LoanTermsPage() {
-  const loanTerms = {
-    vehicleName: "Toyota Corolla 2024",
-    loanAmount: 20000,
-    interestRate: 8.5,
-    loanTerm: 36,
-    monthlyPayment: 650,
-    totalPayment: 23400,
-    totalInterest: 3400,
-    processingFee: 200,
-    insuranceRequired: true,
-    collateralRequired: "Vehicle + Insurance Policy",
+  const { state, dispatch } = usePlatform()
+  const currentUser = useCurrentUser()
+  const router = useRouter()
+  const { toast } = useToast()
+  const [loanApplication, setLoanApplication] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isMakingPayment, setIsMakingPayment] = useState(false)
+
+  useEffect(() => {
+    if (!state.isLoading && currentUser) {
+      // Find the most recent loan application for the current user that is either 'Approved' or 'Pending'
+      const driverLoan = state.loanApplications.find(
+        (loan) =>
+          loan.driverId === currentUser.id &&
+          (loan.status === "Approved" || loan.status === "Pending") &&
+          !loan.downPaymentMade, // Only show if down payment hasn't been made
+      )
+
+      if (driverLoan) {
+        setLoanApplication(driverLoan)
+      } else {
+        setLoanApplication(null) // No relevant loan found, keep the page blank
+      }
+      setIsLoading(false)
+    } else if (!state.isLoading && !currentUser) {
+      setIsLoading(false) // If no current user, stop loading and show blank
+    }
+  }, [state.isLoading, state.loanApplications, currentUser])
+
+  const handleMakeDownPayment = async () => {
+    if (!loanApplication) return
+    setIsMakingPayment(true)
+    try {
+      // Simulate payment processing
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      // Extract the down payment amount from the collateral string
+      const collateralMatch = loanApplication.collateral.match(/\$([\d,]+)/)
+      const downPaymentAmount = collateralMatch ? Number.parseFloat(collateralMatch[1].replace(/,/g, "")) : 0
+
+      if (downPaymentAmount > 0) {
+        // Dispatch action to mark loan as active and down payment made
+        dispatch({
+          type: "MARK_LOAN_AS_ACTIVE",
+          payload: { loanId: loanApplication.id },
+        })
+        // Add a transaction for the down payment
+        dispatch({
+          type: "ADD_TRANSACTION",
+          payload: {
+            id: `trans_dp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            type: "deposit", // Or a specific 'down_payment' type if added
+            userId: currentUser.id,
+            userType: "driver",
+            amount: downPaymentAmount,
+            status: "completed",
+            timestamp: new Date().toISOString(),
+            description: `Down payment for Loan #${loanApplication.id}`,
+            relatedId: loanApplication.id,
+          },
+        })
+        toast({
+          title: "Down Payment Successful",
+          description: `Your down payment of $${downPaymentAmount.toLocaleString()} has been processed. Your loan is now active!`,
+        })
+        router.push("/dashboard/driver") // Redirect to dashboard after payment
+      } else {
+        toast({
+          title: "Payment Error",
+          description: "Could not determine down payment amount.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Payment Failed",
+        description: "There was an error processing your down payment. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsMakingPayment(false)
+    }
   }
 
-  const paymentSchedule = [
-    { month: 1, payment: 650, principal: 550, interest: 100, balance: 19450 },
-    { month: 2, payment: 650, principal: 555, interest: 95, balance: 18895 },
-    { month: 3, payment: 650, principal: 560, interest: 90, balance: 18335 },
-  ]
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Loading Loan Terms...</h2>
+          <p className="text-muted-foreground">Please wait while we fetch your loan details.</p>
+        </div>
+      </div>
+    )
+  }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Sidebar role="driver" />
-
-      <div className="md:ml-64">
-        <Header userName="Driver" userStatus="Active" />
-
-        <div className="p-3 md:p-6 space-y-4 md:space-y-8 max-w-full overflow-x-hidden">
-          {/* Page Header */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Loan Terms & Conditions</h1>
-                <p className="text-muted-foreground">Review your loan agreement details</p>
-              </div>
-              <Badge className="bg-green-600 text-white">
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Approved
-              </Badge>
+  if (!loanApplication) {
+    return (
+      <>
+        <div className="min-h-screen bg-background">
+          <Sidebar role="driver" />
+          <div className="md:ml-64 lg:ml-72">
+            <Header
+              userName={currentUser?.name || "Driver"}
+              userStatus="Driver"
+              notificationCount={currentUser?.notifications?.filter((n) => !n.read).length || 0}
+              className="md:pl-6 lg:pl-8"
+            />
+            <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
+              <Card className="bg-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-foreground flex items-center">
+                    <FileText className="h-5 w-5 mr-2" />
+                    Loan Terms & Conditions
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    No pending loan application found requiring a down payment.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-center py-12">
+                  <p className="text-muted-foreground mb-4">
+                    You do not have any loan applications currently awaiting a down payment.
+                  </p>
+                  <Button onClick={() => router.push("/dashboard/driver")}>Go to Dashboard</Button>
+                </CardContent>
+              </Card>
             </div>
           </div>
+        </div>
+      </>
+    )
+  }
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Loan Summary */}
-            <Card className="bg-card border-border">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Loan Summary</h3>
+  const downPaymentAmount = (loanApplication.requestedAmount * 0.15).toLocaleString()
+
+  return (
+    <>
+      <div className="min-h-screen bg-background">
+        <Sidebar role="driver" />
+        <div className="md:ml-64 lg:ml-72">
+          <Header
+            userName={currentUser?.name || "Driver"}
+            userStatus="Driver"
+            notificationCount={currentUser?.notifications?.filter((n) => !n.read).length || 0}
+            className="md:pl-6 lg:pl-8"
+          />
+          <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
+            <Card className="w-full max-w-3xl shadow-lg mx-auto">
+              <CardHeader className="bg-primary text-primary-foreground p-6 rounded-t-lg">
+                <CardTitle className="text-2xl font-bold">Loan Terms & Conditions</CardTitle>
+                <CardDescription className="text-primary-foreground/80">
+                  Review your loan details before making the down payment.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Loan Amount</p>
+                    <p className="text-xl font-semibold text-foreground">
+                      ${loanApplication.requestedAmount.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Loan Term</p>
+                    <p className="text-xl font-semibold text-foreground">{loanApplication.loanTerm} months</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Monthly Payment</p>
+                    <p className="text-xl font-semibold text-foreground">
+                      ${loanApplication.monthlyPayment.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Interest Rate</p>
+                    <p className="text-xl font-semibold text-foreground">{loanApplication.interestRate}%</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Collateral</p>
+                    <p className="text-xl font-semibold text-foreground">{loanApplication.collateral}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Purpose</p>
+                    <p className="text-xl font-semibold text-foreground">{loanApplication.purpose}</p>
+                  </div>
+                </div>
+
+                <Separator />
+
                 <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Vehicle</span>
-                    <span className="font-medium text-foreground">{loanTerms.vehicleName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Loan Amount</span>
-                    <span className="font-medium text-foreground">${loanTerms.loanAmount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Interest Rate</span>
-                    <span className="font-medium text-foreground">{loanTerms.interestRate}% APR</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Loan Term</span>
-                    <span className="font-medium text-foreground">{loanTerms.loanTerm} months</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Monthly Payment</span>
-                    <span className="text-xl font-bold text-foreground">${loanTerms.monthlyPayment}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Payment Schedule Preview */}
-            <Card className="bg-card border-border">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Payment Schedule (First 3 Months)</h3>
-                <div className="space-y-3">
-                  {paymentSchedule.map((payment) => (
-                    <div key={payment.month} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                      <div>
-                        <span className="font-medium text-foreground">Month {payment.month}</span>
-                        <div className="text-sm text-muted-foreground">
-                          Principal: ${payment.principal} | Interest: ${payment.interest}
-                        </div>
-                      </div>
-                      <span className="font-medium text-foreground">${payment.payment}</span>
-                    </div>
-                  ))}
+                  <h3 className="text-lg font-semibold text-foreground">Key Conditions</h3>
+                  <ul className="space-y-2 text-muted-foreground">
+                    <li className="flex items-start">
+                      <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-1 shrink-0" />
+                      <span>
+                        A down payment of <span className="font-semibold text-foreground">${downPaymentAmount}</span> is
+                        required to activate the loan.
+                      </span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-1 shrink-0" />
+                      <span>Monthly payments are due on the 1st of each month.</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-1 shrink-0" />
+                      <span>Late payment fees may apply as per the full loan agreement.</span>
+                    </li>
+                    <li className="flex items-start">
+                      <XCircle className="h-5 w-5 text-red-500 mr-2 mt-1 shrink-0" />
+                      <span>Early repayment penalties may apply.</span>
+                    </li>
+                  </ul>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex space-x-4 mt-6">
-                  <Button className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Download Agreement
-                  </Button>
-                  <Button variant="outline">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Set Payment Reminders
-                  </Button>
+                <Separator />
+
+                <div className="text-sm text-muted-foreground">
+                  <p>
+                    By proceeding with the down payment, you agree to the full terms and conditions of the loan
+                    agreement. A comprehensive contract will be provided upon loan activation.
+                  </p>
                 </div>
               </CardContent>
+              <CardFooter className="flex justify-end p-6 bg-secondary/20 rounded-b-lg">
+                <Button
+                  onClick={handleMakeDownPayment}
+                  disabled={isMakingPayment}
+                  className="bg-[#E57700] hover:bg-[#E57700]/90 text-white text-lg px-8 py-3"
+                >
+                  {isMakingPayment ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing Payment...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Make Down Payment
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
             </Card>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
