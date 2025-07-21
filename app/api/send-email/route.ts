@@ -1,24 +1,31 @@
 import { NextResponse } from "next/server"
+import { Resend } from "resend"
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: Request) {
   try {
-    const { to, subject, body } = await request.json()
+    const { to, subject, html } = await request.json()
 
-    // In a real application, you would integrate with an email service here.
-    // For example, using Nodemailer, SendGrid, Mailgun, etc.
-    // This is a placeholder for demonstration purposes.
-    console.log(`
---- Sending Email ---
-To: ${to}
-Subject: ${subject}
-Body: ${body}
----------------------
-`)
+    if (!to || !subject || !html) {
+      return NextResponse.json({ error: "Missing required email fields" }, { status: 400 })
+    }
 
-    // Simulate email sending success
-    return NextResponse.json({ success: true, message: "Email sent successfully (simulated)." }, { status: 200 })
+    const { data, error } = await resend.emails.send({
+      from: "onboarding@rchainmove.xyz", 
+      to: to,
+      subject: subject,
+      html: html,
+    })
+
+    if (error) {
+      console.error("Resend email error:", error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, data: data }, { status: 200 })
   } catch (error) {
-    console.error("Error sending email (simulated):", error)
-    return NextResponse.json({ success: false, message: "Failed to send email." }, { status: 500 })
+    console.error("API error sending email:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

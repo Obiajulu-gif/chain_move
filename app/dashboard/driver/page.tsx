@@ -57,14 +57,8 @@ export default function DriverDashboard() {
   const [isApplyLoanDialogOpen, setIsApplyLoanDialogOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [loanApplication, setLoanApplication] = useState({
-    requestedAmount: "",
-    loanTerm: "12",
+    loanTerm: "12", // Only loanTerm and purpose are editable
     purpose: "",
-    creditScore: "",
-    collateral: "",
-    monthlyIncome: "",
-    employmentStatus: "",
-    documents: [],
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -85,6 +79,8 @@ export default function DriverDashboard() {
           email: authUser.email,
           // Assuming kycStatus is part of authUser or driverData
           kycStatus: (authUser as any).kycStatus || "none", // Add kycStatus to the user object
+          physicalMeetingStatus: (authUser as any).physicalMeetingStatus || "none", // Add physicalMeetingStatus
+          notifications: (authUser as any).notifications || [], // Add notifications
         },
       })
     }
@@ -92,16 +88,26 @@ export default function DriverDashboard() {
 
   const handleMakePayment = (loanId: string, amount: number) => {
     // Find next pending payment
-    const nextPayment = driverData.repayments.find((r) => r.loanId === loanId && r.status === "Pending")
+    const nextPayment = driverData.repayments.find((r) => r.relatedId === loanId && r.status === "pending")
     if (nextPayment) {
+      // In a real app, you'd integrate with a payment gateway here
+      // For simulation, we'll directly update the state
       dispatch({
-        type: "MAKE_PAYMENT",
+        type: "ADD_TRANSACTION", // Assuming a generic ADD_TRANSACTION action exists
         payload: {
-          loanId,
-          amount,
-          paymentId: nextPayment.id,
+          id: `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: "repayment",
+          userId: currentDriverId,
+          userType: "driver",
+          amount: amount,
+          status: "completed",
+          timestamp: new Date().toISOString(),
+          description: `Monthly repayment for Loan #${loanId}`,
+          relatedId: loanId,
         },
       })
+      // Update the repayment status (if you have a specific action for it)
+      // For now, we'll just rely on the transaction being added.
       toast({
         title: "Payment Successful",
         description: `Payment of $${amount.toLocaleString()} has been processed`,
@@ -111,46 +117,48 @@ export default function DriverDashboard() {
 
   const handleVehicleSelect = (vehicle) => {
     setSelectedVehicle(vehicle)
-    setLoanApplication((prev) => ({
-      ...prev,
-      requestedAmount: vehicle.price.toString(),
-    }))
+    // No need to set requestedAmount in state as it's now derived and non-editable
   }
 
   const handleLoanApplicationSubmit = async () => {
-    if (!selectedVehicle || !loanApplication.requestedAmount) {
+    if (!selectedVehicle) {
+      // Only check for selectedVehicle
       toast({
         title: "Incomplete Application",
-        description: "Please select a vehicle and fill in all required fields.",
+        description: "Please select a vehicle.",
         variant: "destructive",
       })
       return
     }
     setIsSubmitting(true)
     try {
-      // Calculate monthly payment (simple calculation)
-      const principal = Number.parseFloat(loanApplication.requestedAmount)
+      const principal = selectedVehicle.price // Use selected vehicle price directly
       const rate = 0.15 / 12 // 15% annual rate
       const term = Number.parseInt(loanApplication.loanTerm)
       const monthlyPayment = (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1)
+
+      const downPaymentAmount = (selectedVehicle.price * 0.15).toLocaleString()
+      const collateralString = `You will have to pay 15% down payment of the vehicle amount for you to be approved for the loan: $${downPaymentAmount}`
+
       const newLoanApplication = {
         id: `loan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         driverId: currentDriverId,
         vehicleId: selectedVehicle._id,
-        requestedAmount: principal,
+        requestedAmount: principal, // Use the vehicle's price
         loanTerm: term,
         monthlyPayment: Math.round(monthlyPayment),
         interestRate: 15,
         status: "Pending" as const,
         submittedDate: new Date().toISOString(),
-        documents: loanApplication.documents,
-        creditScore: Number.parseInt(loanApplication.creditScore) || 650,
-        collateral: loanApplication.collateral,
+        documents: [], // Documents are not part of this form currently
+        creditScore: 0, // Default value, assuming it's not collected here
+        collateral: collateralString, // Use the calculated string
         purpose: loanApplication.purpose,
-        riskAssessment: "Medium" as const,
+        riskAssessment: "Medium" as const, // Default value
         fundingProgress: 0,
         totalFunded: 0,
         remainingAmount: principal,
+        downPaymentMade: false, // Initialize downPaymentMade to false
       }
       // Add to platform state
       dispatch({
@@ -173,15 +181,11 @@ export default function DriverDashboard() {
       setIsApplyLoanDialogOpen(false)
       setSelectedVehicle(null)
       setLoanApplication({
-        requestedAmount: "",
         loanTerm: "12",
         purpose: "",
-        creditScore: "",
-        collateral: "",
-        monthlyIncome: "",
-        employmentStatus: "",
-        documents: [],
       })
+      // Redirect to loan terms page after successful submission
+      router.push("/dashboard/driver/loan-terms")
     } catch (error) {
       toast({
         title: "Submission Failed",
@@ -303,8 +307,13 @@ export default function DriverDashboard() {
   const nextPaymentAmount = activeLoan ? activeLoan.monthlyPayment || 0 : 0
   const unreadNotifications = driverData.notifications.filter((n) => !n.read).length
   // Get available vehicles for loan application
-  // Reverted filter back to "Financed" as these are the vehicles investors have funded and are available for drivers to apply for loans.
   const availableVehicles = state.vehicles.filter((v) => v.status === "Financed")
+
+  // Calculate down payment for display
+  const downPaymentAmount = selectedVehicle ? (selectedVehicle.price * 0.15).toLocaleString() : "0"
+  const collateralDisplayText = selectedVehicle
+    ? `You will have to pay 15% down payment of the vehicle amount for you to be approved for the loan: $${downPaymentAmount}`
+    : ""
 
   return (
     <>
@@ -392,7 +401,7 @@ export default function DriverDashboard() {
                       .map((notification) => (
                         <Link
                           key={notification.id}
-                          href={notification.link || "/dashboard/driver/notifications"} // Link to the notification's specific link or general notifications page
+                          href={notification.actionUrl || "/dashboard/driver/notifications"} // Link to the notification's specific link or general notifications page
                           className="flex items-center justify-between p-3 bg-white dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-800 hover:bg-blue-100/50 dark:hover:bg-blue-900/50 transition-colors"
                         >
                           <div>
@@ -504,14 +513,8 @@ export default function DriverDashboard() {
                               setSelectedVehicle(null) // Clear selected vehicle
                               setLoanApplication({
                                 // Reset loan application form
-                                requestedAmount: "",
                                 loanTerm: "12",
                                 purpose: "",
-                                creditScore: "",
-                                collateral: "",
-                                monthlyIncome: "",
-                                employmentStatus: "",
-                                documents: [],
                               })
                             }
                           }}
@@ -611,15 +614,11 @@ export default function DriverDashboard() {
                                         <Label htmlFor="requestedAmount">Requested Amount ($)</Label>
                                         <Input
                                           id="requestedAmount"
-                                          type="number"
-                                          value={loanApplication.requestedAmount}
-                                          onChange={(e) =>
-                                            setLoanApplication((prev) => ({
-                                              ...prev,
-                                              requestedAmount: e.target.value,
-                                            }))
-                                          }
-                                          placeholder="Enter loan amount"
+                                          type="text" // Changed to text as it's non-editable
+                                          value={selectedVehicle.price.toLocaleString()} // Display selected vehicle price
+                                          readOnly // Make it non-editable
+                                          disabled // Make it non-editable
+                                          className="bg-muted cursor-not-allowed" // Style as non-editable
                                         />
                                       </div>
                                       <div>
@@ -640,41 +639,10 @@ export default function DriverDashboard() {
                                             <SelectItem value="6">6 months</SelectItem>
                                             <SelectItem value="12">12 months</SelectItem>
                                             <SelectItem value="18">18 months</SelectItem>
-                                            <SelectItem value="24">24 months</SelectItem>
-                                            <SelectItem value="36">36 months</SelectItem>
                                           </SelectContent>
                                         </Select>
                                       </div>
-                                      <div>
-                                        <Label htmlFor="creditScore">Credit Score</Label>
-                                        <Input
-                                          id="creditScore"
-                                          type="number"
-                                          value={loanApplication.creditScore}
-                                          onChange={(e) =>
-                                            setLoanApplication((prev) => ({
-                                              ...prev,
-                                              creditScore: e.target.value,
-                                            }))
-                                          }
-                                          placeholder="e.g., 650"
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="monthlyIncome">Monthly Income ($)</Label>
-                                        <Input
-                                          id="monthlyIncome"
-                                          type="number"
-                                          value={loanApplication.monthlyIncome}
-                                          onChange={(e) =>
-                                            setLoanApplication((prev) => ({
-                                              ...prev,
-                                              monthlyIncome: e.target.value,
-                                            }))
-                                          }
-                                          placeholder="Enter monthly income"
-                                        />
-                                      </div>
+                                      {/* Removed Credit Score and Monthly Income fields */}
                                     </div>
                                     <div>
                                       <Label htmlFor="purpose">Loan Purpose</Label>
@@ -695,14 +663,10 @@ export default function DriverDashboard() {
                                       <Label htmlFor="collateral">Collateral/Security</Label>
                                       <Input
                                         id="collateral"
-                                        value={loanApplication.collateral}
-                                        onChange={(e) =>
-                                          setLoanApplication((prev) => ({
-                                            ...prev,
-                                            collateral: e.target.value,
-                                          }))
-                                        }
-                                        placeholder="Describe any collateral you can provide"
+                                        value={collateralDisplayText} // Display calculated collateral text
+                                        readOnly // Make it non-editable
+                                        disabled // Make it non-editable
+                                        className="bg-muted cursor-not-allowed" // Style as non-editable
                                       />
                                     </div>
                                   </div>
@@ -767,26 +731,26 @@ export default function DriverDashboard() {
                             className="flex items-center justify-between p-4 bg-muted/30 dark:bg-muted/10 rounded-lg"
                           >
                             <div className="flex items-center space-x-3">
-                              {payment.status === "Paid" ? (
+                              {payment.status === "completed" ? (
                                 <CheckCircle className="h-5 w-5 text-green-500" />
-                              ) : payment.status === "Overdue" ? (
+                              ) : payment.status === "failed" ? (
                                 <AlertTriangle className="h-5 w-5 text-red-500" />
                               ) : (
                                 <Clock className="h-5 w-5 text-yellow-500" />
                               )}
                               <div>
                                 <p className="font-medium text-foreground">
-                                  {new Date(payment.dueDate).toLocaleDateString()}
+                                  {new Date(payment.timestamp).toLocaleDateString()}
                                 </p>
                                 <p className="text-sm text-muted-foreground">{payment.status}</p>
                               </div>
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-foreground">${payment.amount.toLocaleString()}</p>
-                              {payment.status === "Pending" && (
+                              {payment.status === "pending" && (
                                 <Button
                                   size="sm"
-                                  onClick={() => handleMakePayment(payment.loanId, payment.amount)}
+                                  onClick={() => handleMakePayment(payment.relatedId, payment.amount)}
                                   className="mt-1 bg-[#E57700] hover:bg-[#E57700]/90 text-white"
                                 >
                                   Pay Now
