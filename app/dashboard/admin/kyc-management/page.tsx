@@ -39,6 +39,17 @@ interface KycRequest {
   physicalMeetingStatus?: "none" | "scheduled" | "approved" | "rescheduled" | "completed" | "rejected_stage2" // Updated enum
 }
 
+// Add this helper function at the top of the component, before the `export default function AdminKycManagementPage()`
+// It checks if the given date string is today or in the past.
+const isMeetingDatePassedOrToday = (dateString: string | null | undefined) => {
+  if (!dateString) return false
+  const meetingDate = new Date(dateString)
+  meetingDate.setHours(0, 0, 0, 0) // Normalize to start of day
+  const today = new Date()
+  today.setHours(0, 0, 0, 0) // Normalize to start of day
+  return meetingDate <= today
+}
+
 export default function AdminKycManagementPage() {
   const { user: authUser, loading: authLoading } = useAuth()
   const { toast } = useToast()
@@ -471,6 +482,7 @@ export default function AdminKycManagementPage() {
                               size="sm"
                               onClick={() => handleAction(request, "complete_stage2")}
                               className="bg-green-600 hover:bg-green-700 text-white"
+                              disabled={!isMeetingDatePassedOrToday(request.physicalMeetingDate)} // Disable until meeting date
                             >
                               <CheckCircle className="h-4 w-4 mr-1" /> Complete Stage 2
                             </Button>
@@ -478,6 +490,7 @@ export default function AdminKycManagementPage() {
                               size="sm"
                               variant="destructive"
                               onClick={() => handleAction(request, "reject_stage2")}
+                              disabled={!isMeetingDatePassedOrToday(request.physicalMeetingDate)} // Disable until meeting date
                             >
                               <XCircle className="h-4 w-4 mr-1" /> Reject Stage 2
                             </Button>
@@ -488,7 +501,9 @@ export default function AdminKycManagementPage() {
                           request.kycStatus === "pending" ||
                           ((request.kycStatus === "approved_stage1" || request.kycStatus === "pending_stage2") &&
                             request.physicalMeetingStatus === "scheduled") ||
-                          (request.kycStatus === "pending_stage2" && request.physicalMeetingStatus === "approved")
+                          (request.kycStatus === "pending_stage2" &&
+                            request.physicalMeetingStatus === "approved" &&
+                            isMeetingDatePassedOrToday(request.physicalMeetingDate))
                         ) && <span className="text-muted-foreground text-sm">No action needed</span>}
                       </TableCell>
                     </TableRow>

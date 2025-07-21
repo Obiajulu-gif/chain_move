@@ -194,7 +194,8 @@ export default function KycVerificationPage() {
         kycStatus === "pending" ||
         kycStatus === "pending_stage2" ||
         kycStatus === "approved_stage2" ||
-        physicalMeetingStatus === "rejected_stage2" // If stage 2 was rejected, show status page
+        physicalMeetingStatus === "rejected_stage2" ||
+        (kycStatus === "approved_stage1" && physicalMeetingStatus === "scheduled") // <-- ADDED THIS CONDITION
       ) {
         router.replace("/dashboard/driver/kyc/status")
       }
@@ -234,20 +235,7 @@ export default function KycVerificationPage() {
 
   // Only redirect if the status is one that should be handled by the status page
   // and not by this KYC submission/scheduling page.
-  if (
-    kycStatus === "pending" ||
-    kycStatus === "pending_stage2" ||
-    kycStatus === "approved_stage2" ||
-    physicalMeetingStatus === "rejected_stage2" ||
-    (kycStatus === "approved_stage1" && physicalMeetingStatus === "scheduled") || // If meeting is scheduled, show status page
-    (kycStatus === "approved_stage1" && physicalMeetingStatus === "approved") || // If meeting is approved, show status page
-    (kycStatus === "approved_stage1" && physicalMeetingStatus === "rescheduled") // If meeting is rescheduled, show status page
-  ) {
-    // This ensures that if the user is in a state where they should see the status page,
-    // they are redirected there, preventing this page from rendering incorrectly.
-    // The useEffect above handles the actual router.replace.
-    return null
-  }
+  // and not by this KYC submission/scheduling page.
 
   // Render first stage form if kycStatus is 'none' or 'rejected'
   const renderFirstStageForm = kycStatus === "none" || kycStatus === "rejected"
