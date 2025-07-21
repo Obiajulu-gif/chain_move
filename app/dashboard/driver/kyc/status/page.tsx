@@ -66,14 +66,14 @@ export default function KycStatusPage() {
         statusIcon = <Clock className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
         statusTitle = "Physical Meeting Scheduled"
         statusMessage = `Your physical meeting for KYC Stage 2 is scheduled for ${physicalMeetingDate}. It is currently awaiting admin approval.`
-        actionButton = (
-          <Button
-            onClick={() => router.push("/dashboard/driver/kyc")}
-            className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
-          >
-            View Meeting Details
-          </Button>
-        )
+        // actionButton = (
+        //   <Button
+        //     onClick={() => router.push("/dashboard/driver/kyc")}
+        //     className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+        //   >
+        //     View Meeting Details
+        //   </Button>
+        // )
       } else if (physicalMeetingStatus === "approved") {
         statusIcon = <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
         statusTitle = "Physical Meeting Date Approved!"

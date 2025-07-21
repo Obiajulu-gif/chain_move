@@ -54,7 +54,7 @@ export default function DriverDashboard() {
   const driverData = useDriverData(currentDriverId)
 
   // Loan application state
-  const [isLoanDialogOpen, setIsLoanDialogOpen] = useState(false)
+  const [isApplyLoanDialogOpen, setIsApplyLoanDialogOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [loanApplication, setLoanApplication] = useState({
     requestedAmount: "",
@@ -170,7 +170,7 @@ export default function DriverDashboard() {
         description: `Your loan application for ${selectedVehicle.name} has been submitted for review.`,
       })
       // Reset form and close dialog
-      setIsLoanDialogOpen(false)
+      setIsApplyLoanDialogOpen(false)
       setSelectedVehicle(null)
       setLoanApplication({
         requestedAmount: "",
@@ -199,7 +199,7 @@ export default function DriverDashboard() {
 
     if (kycStatus === "approved_stage2") {
       // Fully approved, proceed to loan application
-      setIsLoanDialogOpen(true)
+      setIsApplyLoanDialogOpen(true)
     } else {
       // Not fully approved, show KYC prompt
       setShowKycPromptDialog(true)
@@ -303,6 +303,7 @@ export default function DriverDashboard() {
   const nextPaymentAmount = activeLoan ? activeLoan.monthlyPayment || 0 : 0
   const unreadNotifications = driverData.notifications.filter((n) => !n.read).length
   // Get available vehicles for loan application
+  // Reverted filter back to "Financed" as these are the vehicles investors have funded and are available for drivers to apply for loans.
   const availableVehicles = state.vehicles.filter((v) => v.status === "Financed")
 
   return (
@@ -494,10 +495,25 @@ export default function DriverDashboard() {
                       </p>
                       {pendingLoans.length === 0 && (
                         <Dialog
-                          open={isLoanDialogOpen || showKycPromptDialog}
+                          open={isApplyLoanDialogOpen} // Use the new state for overall dialog control
                           onOpenChange={(open) => {
-                            setIsLoanDialogOpen(open)
-                            setShowKycPromptDialog(open)
+                            setIsApplyLoanDialogOpen(open)
+                            if (!open) {
+                              // Reset states when dialog closes
+                              setShowKycPromptDialog(false) // Ensure KYC prompt is hidden when dialog closes
+                              setSelectedVehicle(null) // Clear selected vehicle
+                              setLoanApplication({
+                                // Reset loan application form
+                                requestedAmount: "",
+                                loanTerm: "12",
+                                purpose: "",
+                                creditScore: "",
+                                collateral: "",
+                                monthlyIncome: "",
+                                employmentStatus: "",
+                                documents: [],
+                              })
+                            }
                           }}
                         >
                           <DialogTrigger asChild>
@@ -697,7 +713,7 @@ export default function DriverDashboard() {
                               <Button
                                 variant="outline"
                                 onClick={() => {
-                                  setIsLoanDialogOpen(false)
+                                  setIsApplyLoanDialogOpen(false)
                                   setShowKycPromptDialog(false)
                                 }}
                               >
