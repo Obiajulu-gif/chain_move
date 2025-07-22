@@ -12,6 +12,8 @@ import Image from "next/image"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+
+
 export default function AuthPage() {
   const searchParams = useSearchParams()
   const router = useRouter();
@@ -214,12 +216,13 @@ export default function AuthPage() {
             Change Role
           </Button>
         </div>
-        <Card className="bg-white/95 backdrop-blur border-0 shadow-2xl">
+
+        <Card className="bg-background backdrop-blur border-0 shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-[#142841]">
+            <CardTitle className="text-2xl text-foreground">
               {selectedRole === "driver" ? "Join as Driver" : "Join as Investor"}
             </CardTitle>
-            <CardDescription className="text-gray-600">
+            <CardDescription className="text-foreground/50">
               {selectedRole === "driver"
                 ? "Get started with vehicle financing on the blockchain"
                 : "Start investing in mobility assets and earn returns"}
@@ -227,13 +230,7 @@ export default function AuthPage() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="email" className="w-full">
-              <TabsList className="grid w-full grid-cols-1 mb-6">
-                <TabsTrigger value="email" className="flex items-center justify-center">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="email" className="space-y-4">
+              <TabsContent value="email" className="">
                 <form onSubmit={handleEmailSignup} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
@@ -251,6 +248,7 @@ export default function AuthPage() {
                     <Label htmlFor="confirmPassword">Confirm Password</Label>
                     <Input id="confirmPassword" type="password" placeholder="Confirm your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                   </div>
+
                   {/* --- NEW: INLINE ERROR MESSAGE --- */}
                   {error && (
                     <Alert variant="destructive">
