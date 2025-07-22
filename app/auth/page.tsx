@@ -7,13 +7,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Wallet, Mail, Car, TrendingUp, ArrowLeft, Shield, Zap, AlertCircle } from "lucide-react"
+import { Mail, Car, TrendingUp, ArrowLeft, Shield, Zap, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CustomConnectWallet } from "../CustomConnectWallet"
 
 
 export default function AuthPage() {
@@ -232,12 +231,12 @@ export default function AuthPage() {
           </Button>
         </div>
 
-        <Card className="bg-white/95 backdrop-blur border-0 shadow-2xl">
+        <Card className="bg-background backdrop-blur border-0 shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-[#142841]">
+            <CardTitle className="text-2xl text-foreground">
               {selectedRole === "driver" ? "Join as Driver" : "Join as Investor"}
             </CardTitle>
-            <CardDescription className="text-gray-600">
+            <CardDescription className="text-foreground/50">
               {selectedRole === "driver"
                 ? "Get started with vehicle financing on the blockchain"
                 : "Start investing in mobility assets and earn returns"}
@@ -245,48 +244,9 @@ export default function AuthPage() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="email" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                 <TabsTrigger value="wallet" className="flex items-center">
-                  <Wallet className="h-4 w-4 mr-2" />
-                  Wallet
-                </TabsTrigger>
-                <TabsTrigger value="email" className="flex items-center">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email
-                </TabsTrigger>
-              </TabsList>
-                 <TabsContent value="wallet" className="space-y-4">
-                <div className="space-y-4">
-                  {/* <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3 flex items-center justify-center">
-                    <Wallet className="h-5 w-5 mr-2" />
-                    Connect MetaMask
-                  </Button> */}
-                  <CustomConnectWallet/>
-                  <Button
-                    variant="outline"
-                    className="w-full border-gray-300 hover:bg-gray-50 py-3 flex items-center justify-center"
-                  >
-                    <Wallet className="h-5 w-5 mr-2" />
-                    Connect WalletConnect
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full border-gray-300 hover:bg-gray-50 py-3 flex items-center justify-center"
-                  >
-                    <Wallet className="h-5 w-5 mr-2" />
-                    Connect Coinbase Wallet
-                  </Button>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">
-                    By connecting your wallet, you agree to our Terms of Service and Privacy Policy
-                  </p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="email" className="space-y-4">
+              <TabsContent value="email" className="">
                 <form onSubmit={handleEmailSignup} className="space-y-4">
-                   <div className="space-y-2">
+                  <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
                     <Input id="name" type="text" placeholder="Enter your full name" value={name} onChange={(e) => setName(e.target.value)} required />
                   </div>
@@ -302,7 +262,7 @@ export default function AuthPage() {
                     <Label htmlFor="confirmPassword">Confirm Password</Label>
                     <Input id="confirmPassword" type="password" placeholder="Confirm your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                   </div>
-                  
+
                   {/* --- NEW: INLINE ERROR MESSAGE --- */}
                   {error && (
                     <Alert variant="destructive">
