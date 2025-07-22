@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,12 +18,10 @@ export default function AuthPage() {
   const searchParams = useSearchParams()
   const router = useRouter();
   const { toast } = useToast();
-
   const roleParam = searchParams.get("role")
   const [selectedRole, setSelectedRole] = useState<"driver" | "investor" | null>(
     (roleParam as "driver" | "investor") || null,
   )
-
   // State for the email signup form
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,28 +30,23 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   // State for inline error messages
   const [error, setError] = useState<string | null>(null);
-
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null); // Clear previous errors
-
     // --- FIX FOR PASSWORD MISMATCH ---
     if (password !== confirmPassword) {
       setError("Passwords do not match. Please try again.");
       setIsLoading(false);
       return;
     }
-
     try {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role: selectedRole }),
       });
-
       const data = await res.json();
-
       if (res.ok) {
         toast({
           title: "Success",
@@ -71,8 +63,6 @@ export default function AuthPage() {
       setIsLoading(false);
     }
   };
-
-
   if (!selectedRole) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#142841] via-[#1e3a5f] to-[#3A7CA5] flex items-center justify-center p-4">
@@ -90,7 +80,6 @@ export default function AuthPage() {
               Choose your path to revolutionize mobility financing through blockchain technology
             </p>
           </div>
-
           <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
             <Card
               className="cursor-pointer hover:shadow-2xl transition-all duration-500 border-2 hover:border-[#E57700] transform hover:scale-105 bg-white/95 backdrop-blur"
@@ -133,7 +122,6 @@ export default function AuthPage() {
                 </CardContent>
               </div>
             </Card>
-
             <Card
               className="cursor-pointer hover:shadow-2xl transition-all duration-500 border-2 hover:border-[#E57700] transform hover:scale-105 bg-white/95 backdrop-blur"
               onClick={() => setSelectedRole("investor")}
@@ -176,7 +164,6 @@ export default function AuthPage() {
               </div>
             </Card>
           </div>
-
           <div className="text-center mt-16">
             <p className="text-gray-200 text-lg mb-6">
               Powered by blockchain technology for maximum transparency and security
@@ -196,7 +183,6 @@ export default function AuthPage() {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#142841] via-[#1e3a5f] to-[#3A7CA5] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -272,7 +258,6 @@ export default function AuthPage() {
                       </AlertDescription>
                     </Alert>
                   )}
-
                   <Button type="submit" disabled={isLoading} className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3">
                     {isLoading ? "Creating Account..." : "Create Account"}
                   </Button>
