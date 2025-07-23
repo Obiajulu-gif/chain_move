@@ -8,24 +8,22 @@ const UserSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: function (this: any) {
-        return !this.walletaddress
-      },
+      required: [true, "Please provide your email."],
       unique: true,
       match: [/.+@.+\..+/, "Please fill a valid email address"],
     },
     password: {
       type: String,
-      required: function (this: any) {
-        return !this.walletaddress
-      },
+      required: [true, "Please provide a password."],
       minlength: 8,
     },
     walletaddress: {
       type: String,
-      required: function (this: any) {
-        return !this.email && !this.password
-      },
+      unique: true,
+      sparse: true,
+    },
+    privateKey: {
+      type: String,
       unique: true,
       sparse: true,
     },
