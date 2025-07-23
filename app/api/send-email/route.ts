@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: "onboarding@rchainmove.xyz", 
+      from: "onboarding@chainmove.xyz", 
       to: to,
       subject: subject,
       html: html,

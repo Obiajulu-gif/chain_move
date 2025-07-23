@@ -161,10 +161,40 @@ export default function DriverDashboard() {
         remainingAmount: principal,
         downPaymentMade: false, // Initialize downPaymentMade to false
       }
-      // Add to platform state
+      // Save to database via API
+      const loanResponse = await fetch('/api/loans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          driverId: currentDriverId,
+          vehicleId: selectedVehicle._id,
+          requestedAmount: principal,
+          loanTerm: term,
+          monthlyPayment: Math.round(monthlyPayment),
+          interestRate: selectedVehicle.roi,
+          purpose: loanApplication.purpose,
+          creditScore: 0,
+          collateral: collateralString,
+          riskAssessment: "Medium"
+        }),
+      })
+
+      if (!loanResponse.ok) {
+        const errorData = await loanResponse.json()
+        throw new Error(errorData.error || 'Failed to submit loan application')
+      }
+
+      const { loan: savedLoan } = await loanResponse.json()
+
+      // Add to platform state for immediate UI update
       dispatch({
         type: "ADD_LOAN_APPLICATION",
-        payload: newLoanApplication,
+        payload: {
+          ...newLoanApplication,
+          id: savedLoan._id, // Use the database ID
+        },
       })
       // Update vehicle status to Reserved
       dispatch({
@@ -174,10 +204,59 @@ export default function DriverDashboard() {
           updates: { status: "Reserved", driverId: currentDriverId },
         },
       })
+      
+      // Send email notification
+      try {
+        const emailSubject = "Loan Application Submitted"
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+            <h2 style="color: #E57700; margin-bottom: 20px;">Loan Application Submitted</h2>
+            <p style="margin-bottom: 15px;">Your loan application for ${selectedVehicle.name} has been submitted for review.</p>
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+              <h3 style="margin-top: 0; color: #333;">Loan Details:</h3>
+              <p><strong>Vehicle:</strong> ${selectedVehicle.name} (${selectedVehicle.year})</p>
+              <p><strong>Loan Amount:</strong> $${principal.toLocaleString()}</p>
+              <p><strong>Term:</strong> ${term} months</p>
+              <p><strong>Monthly Payment:</strong> $${Math.round(monthlyPayment).toLocaleString()}</p>
+              <p><strong>Interest Rate:</strong> ${selectedVehicle.roi}%</p>
+              <p><strong>Total Payback:</strong> $${Math.round(totalPayback).toLocaleString()}</p>
+              <p><strong>Down Payment Required:</strong> $${downPaymentAmount}</p>
+            </div>
+            <p style="margin-bottom: 15px;">Our team will review your application and you will be notified once a decision has been made.</p>
+            <p style="margin-bottom: 15px;">Please log in to your dashboard to check the status of your application.</p>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://chainmove.xyz'}/dashboard/driver/loan-terms" style="display: inline-block; background-color: #E57700; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 15px;">View Application Status</a>
+            <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+              <p style="font-size: 12px; color: #666;">This is an automated message from Chain Move. Please do not reply to this email.</p>
+            </div>
+          </div>
+        `
+        
+        const response = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: authUser.email,
+            subject: emailSubject,
+            html: emailHtml,
+          }),
+        })
+        
+        if (!response.ok) {
+          console.error('Failed to send email notification')
+        }
+      } catch (emailError) {
+        console.error('Error sending email notification:', emailError)
+        // Continue with the process even if email fails
+      }
+      
       toast({
-        title: "Application Submitted",
-        description: `Your loan application for ${selectedVehicle.name} has been submitted for review.`,
+        title: "✅ Application Submitted Successfully!",
+        description: `Your loan application for ${selectedVehicle.name} has been submitted for review. You will receive an email confirmation shortly.`,
+        duration: 5000,
       })
+      
       // Reset form and close dialog
       setIsApplyLoanDialogOpen(false)
       setSelectedVehicle(null)
@@ -185,8 +264,11 @@ export default function DriverDashboard() {
         loanTerm: "12",
         purpose: "",
       })
-      // Redirect to loan terms page after successful submission
-      router.push("/dashboard/driver/loan-terms")
+      
+      // Redirect to loan-terms page after a brief delay to show the success message
+      setTimeout(() => {
+        router.push('/dashboard/driver/loan-terms')
+      }, 2000)
     } catch (error) {
       toast({
         title: "Submission Failed",

@@ -58,8 +58,9 @@ const navigationItems = {
     { name: "Overview", href: "/dashboard/admin", icon: UserCheck },
     { name: "KYC Management", href: "/dashboard/admin/kyc-management", icon: UserCheck }, // Changed href for clarity
     { name: "User Management", href: "/dashboard/admin/users", icon: Users },
-    { name: "Driver Onboarding Review", href: "/dashboard/admin/drivers", icon: Users },
+    // { name: "Driver Onboarding Review", href: "/dashboard/admin/drivers", icon: Users },
     { name: "Vehicle Approval", href: "/dashboard/admin/vehicles", icon: Car },
+    { name: "Loan Management", href: "/dashboard/admin/loans", icon: FileText },
     { name: "Issue Resolution", href: "/dashboard/admin/issues", icon: AlertTriangle },
     { name: "Governance Moderation", href: "/dashboard/admin/governance", icon: Vote },
     { name: "Reports & Analytics", href: "/dashboard/admin/reports", icon: BarChart3 },
