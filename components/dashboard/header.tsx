@@ -78,10 +78,9 @@ export function Header({ userName, userStatus }: HeaderProps) {
           </div>
 
           {/*  wallet connect for all screens */}
-          <div className="">
-            {/* <WalletConnect variant="outline" size="sm" /> */}
+          {/* <div className="">
             <ConnectButtonWidget />
-          </div>
+          </div> */}
         </div>
       </div>
     </header>
