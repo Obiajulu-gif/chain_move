@@ -133,12 +133,13 @@ export default function DriverDashboard() {
     setIsSubmitting(true)
     try {
       const principal = selectedVehicle.price // Use selected vehicle price directly
-      const rate = 0.15 / 12 // 15% annual rate
+      const rate = (selectedVehicle.roi / 100) / 12 // Use vehicle's ROI instead of hardcoded rate
       const term = Number.parseInt(loanApplication.loanTerm)
       const monthlyPayment = (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1)
+      const totalPayback = monthlyPayment * term
 
-      const downPaymentAmount = (selectedVehicle.price * 0.15).toLocaleString()
-      const collateralString = `You will have to pay 15% down payment of the vehicle amount for you to be approved for the loan: $${downPaymentAmount}`
+      const downPaymentAmount = (totalPayback * 0.15).toLocaleString(undefined, { maximumFractionDigits: 2 })
+      const collateralString = `You will have to pay 15% down payment of the total payback amount for you to be approved for the loan: $${downPaymentAmount}`
 
       const newLoanApplication = {
         id: `loan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -147,7 +148,7 @@ export default function DriverDashboard() {
         requestedAmount: principal, // Use the vehicle's price
         loanTerm: term,
         monthlyPayment: Math.round(monthlyPayment),
-        interestRate: 15,
+        interestRate: selectedVehicle.roi, // Use vehicle's ROI instead of hardcoded rate
         status: "Pending" as const,
         submittedDate: new Date().toISOString(),
         documents: [], // Documents are not part of this form currently
@@ -309,10 +310,17 @@ export default function DriverDashboard() {
   // Get available vehicles for loan application
   const availableVehicles = state.vehicles.filter((v) => v.status === "Financed")
 
-  // Calculate down payment for display
-  const downPaymentAmount = selectedVehicle ? (selectedVehicle.price * 0.15).toLocaleString() : "0"
+  // Calculate down payment for display based on total payback amount
+  const downPaymentAmount = selectedVehicle ? (() => {
+    const principal = selectedVehicle.price;
+    const rate = (selectedVehicle.roi / 100) / 12; // Use vehicle's ROI instead of hardcoded rate
+    const term = Number.parseInt(loanApplication.loanTerm || "12"); // Default to 12 if not set
+    const monthlyPayment = (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1);
+    const totalPayback = monthlyPayment * term;
+    return (totalPayback * 0.15).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  })() : "0"
   const collateralDisplayText = selectedVehicle
-    ? `You will have to pay 15% down payment of the vehicle amount for you to be approved for the loan: $${downPaymentAmount}`
+    ? `You will have to pay 15% down payment of the total payback amount for you to be approved for the loan: $${downPaymentAmount}`
     : ""
 
   return (
@@ -643,6 +651,50 @@ export default function DriverDashboard() {
                                         </Select>
                                       </div>
                                       {/* Removed Credit Score and Monthly Income fields */}
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="paybackAmount">Total Amount to Pay Back ($)</Label>
+                                        <Input
+                                          id="paybackAmount"
+                                          type="text"
+                                          value={
+                                            (() => {
+                                              const principal = selectedVehicle.price;
+                                              const rate = (selectedVehicle.roi / 100) / 12;
+                                              const term = Number.parseInt(loanApplication.loanTerm);
+                                              // Calculate monthly payment using the same formula as in handleLoanApplicationSubmit
+                                              const monthlyPayment = (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1);
+                                              // Total payback is monthly payment * term
+                                              const totalPayback = monthlyPayment * term;
+                                              return totalPayback.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                            })()
+                                          }
+                                          readOnly
+                                          disabled
+                                          className="bg-muted cursor-not-allowed"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="monthlyPayment">Monthly Payment ($)</Label>
+                                        <Input
+                                          id="monthlyPayment"
+                                          type="text"
+                                          value={
+                                            (() => {
+                                              const principal = selectedVehicle.price;
+                                              const rate = (selectedVehicle.roi / 100) / 12;
+                                              const term = Number.parseInt(loanApplication.loanTerm);
+                                              // Calculate monthly payment using the same formula as in handleLoanApplicationSubmit
+                                              const monthlyPayment = (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1);
+                                              return monthlyPayment.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                            })()
+                                          }
+                                          readOnly
+                                          disabled
+                                          className="bg-muted cursor-not-allowed"
+                                        />
+                                      </div>
                                     </div>
                                     <div>
                                       <Label htmlFor="purpose">Loan Purpose</Label>
