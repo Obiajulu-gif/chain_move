@@ -38,6 +38,7 @@ export interface Vehicle {
   addedDate: string
   popularity: number
   driverId?: string
+  fundingStatus?: "Open" | "Funded" | "Active"
 }
 
 export interface LoanApplication {
@@ -45,6 +46,7 @@ export interface LoanApplication {
   driverId: string
   vehicleId: string
   requestedAmount: number
+  totalAmountToPayBack: number
   loanTerm: number
   monthlyPayment: number
   interestRate: number
@@ -62,6 +64,7 @@ export interface LoanApplication {
   fundingProgress?: number
   totalFunded?: number
   remainingAmount?: number
+  downPaymentMade: boolean
 }
 
 export interface InvestorApproval {
@@ -76,6 +79,7 @@ export interface Investment {
   id: string
   investorId: string
   loanId: string
+  vehicleId?: string
   amount: number
   expectedROI: number
   monthlyReturn: number
@@ -458,18 +462,20 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   const fetchInitialData = async () => {
     dispatch({ type: "SET_LOADING", payload: true })
     try {
-      // Fetch users and vehicles
-      const [vehiclesRes, usersRes] = await Promise.all([
+      // Fetch users, vehicles, and loans
+      const [vehiclesRes, usersRes, loansRes] = await Promise.all([
         fetch("/api/vehicles"),
-        fetch("/api/users"), // Add the fetch call for users
+        fetch("/api/users"),
+        fetch("/api/loans"),
       ])
 
-      if (!vehiclesRes.ok || !usersRes.ok) {
+      if (!vehiclesRes.ok || !usersRes.ok || !loansRes.ok) {
         throw new Error("Failed to fetch initial platform data")
       }
 
       const vehiclesData = await vehiclesRes.json()
       const usersData = await usersRes.json()
+      const loansData = await loansRes.json()
 
       // Dispatch both sets of data to the global state
       dispatch({
@@ -478,6 +484,12 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
           users: usersData.users || [],
           vehicles: vehiclesData.data || [],
         },
+      })
+
+      // Dispatch loan applications
+      dispatch({
+        type: "SET_LOAN_APPLICATIONS",
+        payload: loansData.loans || [],
       })
     } catch (err) {
       const message = err instanceof Error ? err.message : "An unknown error occurred"
@@ -555,7 +567,7 @@ export const useDriverData = (driverId: string) => {
     vehicles: state.vehicles.filter((v: Vehicle) => v.driverId === driverId),
     transactions: state.transactions.filter((t: Transaction) => t.userId === driverId),
     notifications: state.notifications.filter((n: Notification) => n.userId === driverId),
-    availableVehicles: state.vehicles.filter((v: Vehicle) => v.status === "Available"),
+    availableVehicles: state.vehicles.filter((v: Vehicle) => v.fundingStatus === "Open"),
     repayments: [], // Remove mock data, use empty array for now
   }
 }
@@ -569,7 +581,7 @@ export const useInvestorData = (investorId: string) => {
     availableLoans: state.loanApplications.filter(
       (l: LoanApplication) => l.status === "Under Review" || l.status === "Pending",
     ),
-    availableVehicles: state.vehicles.filter((v: Vehicle) => v.status === "Available"),
+    availableVehicles: state.vehicles.filter((v: Vehicle) => v.fundingStatus === "Open"),
     transactions: state.transactions.filter((t: Transaction) => t.userId === investorId),
     notifications: state.notifications.filter((n: Notification) => n.userId === investorId),
     pendingReleases: state.loanApplications.filter((loan: LoanApplication) =>

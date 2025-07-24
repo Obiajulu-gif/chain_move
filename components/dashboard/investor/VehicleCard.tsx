@@ -18,6 +18,7 @@ interface Vehicle {
   image?: string;
   features: string[];
   totalFundedAmount?: number; // Add this field
+  fundingStatus?: "Open" | "Funded" | "Active";
 }
 
 interface VehicleCardProps {

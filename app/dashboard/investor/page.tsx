@@ -362,8 +362,8 @@ export default function InvestorDashboard() {
     .filter((inv) => inv.status === "Active")
     .reduce((sum, inv) => sum + inv.monthlyReturn, 0)
 
-  // Get investments from the platform state
-  const investments = state.investments?.filter((inv) => inv.investorId === currentInvestorId) || []
+  // Get investments from the investorData hook for consistency
+  const investments = investorData.investments || []
   const calculatedTotalInvested = investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
   const displayTotalInvested = totalInvested > 0 ? totalInvested : calculatedTotalInvested
 
@@ -547,7 +547,13 @@ export default function InvestorDashboard() {
                     {investments.length > 0 ? (
                       <div className="space-y-4">
                         {investments.map((investment) => {
-                          const vehicle = state.vehicles.find((v) => v._id === investment.vehicleId)
+                          // Try to get vehicle directly from vehicleId, fallback to loan lookup
+                          const vehicle = investment.vehicleId 
+                            ? state.vehicles.find((v) => v._id === investment.vehicleId)
+                            : (() => {
+                                const loan = state.loanApplications.find((l) => l.id === investment.loanId)
+                                return loan ? state.vehicles.find((v) => v._id === loan.vehicleId) : null
+                              })()
                           return (
                             <Card key={investment.id || investment._id} className="bg-muted border-border">
                               <CardContent className="p-4">
