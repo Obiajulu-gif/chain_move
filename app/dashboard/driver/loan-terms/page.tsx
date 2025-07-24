@@ -24,12 +24,21 @@ export default function LoanTermsPage() {
     if (!state.isLoading && currentUser) {
       // Find the most recent loan application for the current user that is either 'Approved' or 'Pending'
       const driverLoan = state.loanApplications.find(
-        (loan) =>
-          loan.driverId === currentUser.id &&
-          (loan.status === "Approved" || loan.status === "Pending") &&
-          !loan.downPaymentMade, // Only show if down payment hasn't been made
+        (loan) => {
+          // Handle both string and ObjectId formats for driverId comparison
+          const loanDriverId = typeof loan.driverId === 'object' && loan.driverId._id 
+            ? loan.driverId._id.toString() 
+            : loan.driverId.toString()
+          const currentUserId = currentUser.id.toString()
+          
+          const driverIdMatch = loanDriverId === currentUserId
+          const statusMatch = loan.status === "Approved" || loan.status === "Pending"
+          const paymentNotMade = !loan.downPaymentMade
+          
+          return driverIdMatch && statusMatch && paymentNotMade
+        }
       )
-
+      
       if (driverLoan) {
         setLoanApplication(driverLoan)
       } else {
@@ -55,7 +64,7 @@ export default function LoanTermsPage() {
         // Dispatch action to mark loan as active and down payment made
         dispatch({
           type: "MARK_LOAN_AS_ACTIVE",
-          payload: { loanId: loanApplication.id },
+          payload: { loanId: loanApplication.id || loanApplication._id },
         })
         // Add a transaction for the down payment
         dispatch({
