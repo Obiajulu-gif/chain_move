@@ -205,7 +205,7 @@ export async function PUT(request: NextRequest) {
       })
     } else if (status === "Rejected") {
       await Vehicle.findByIdAndUpdate(updatedLoan.vehicleId, {
-        status: "Available",
+        status: "Financed",
         $unset: { driverId: 1 }
       })
     }
