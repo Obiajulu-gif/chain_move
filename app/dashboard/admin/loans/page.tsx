@@ -274,9 +274,11 @@ export default function AdminLoanManagementPage() {
                         <TableHead>Driver</TableHead>
                         <TableHead>Vehicle</TableHead>
                         <TableHead>Amount</TableHead>
+                        <TableHead>Total Payback</TableHead>
                         <TableHead>Term</TableHead>
                         <TableHead>Submitted</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Paid Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -298,6 +300,7 @@ export default function AdminLoanManagementPage() {
                               <div className="text-sm text-muted-foreground">{vehicleYear} {vehicleType}</div>
                             </TableCell>
                             <TableCell>${loan.requestedAmount.toLocaleString()}</TableCell>
+                            <TableCell>${loan.totalAmountToPayBack?.toLocaleString() || 'N/A'}</TableCell>
                             <TableCell>{loan.loanTerm} months</TableCell>
                             <TableCell>
                               {new Date(loan.submittedDate).toLocaleDateString()}
@@ -313,6 +316,16 @@ export default function AdminLoanManagementPage() {
                                 `}
                               >
                                 {loan.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={`
+                                  ${loan.downPaymentMade ? "bg-green-100 text-green-800 border-green-300" : "bg-yellow-100 text-yellow-800 border-yellow-300"}
+                                `}
+                              >
+                                {loan.downPaymentMade ? "Paid" : "Pending"}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">
@@ -331,6 +344,7 @@ export default function AdminLoanManagementPage() {
                                       size="sm"
                                       className="bg-green-100 text-green-800 border-green-300 hover:bg-green-200"
                                       onClick={() => handleAction(loan, "approve")}
+                                      disabled={!loan.downPaymentMade}
                                     >
                                       <CheckCircle className="h-4 w-4" />
                                     </Button>
@@ -468,6 +482,10 @@ export default function AdminLoanManagementPage() {
                       <p className="font-medium">${selectedLoan.requestedAmount.toLocaleString()}</p>
                     </div>
                     <div>
+                      <span className="text-sm text-muted-foreground">Total Amount to Pay Back:</span>
+                      <p className="font-medium">${selectedLoan.totalAmountToPayBack?.toLocaleString() || 'N/A'}</p>
+                    </div>
+                    <div>
                       <span className="text-sm text-muted-foreground">Loan Term:</span>
                       <p className="font-medium">{selectedLoan.loanTerm} months</p>
                     </div>
@@ -523,6 +541,25 @@ export default function AdminLoanManagementPage() {
                     <p className="mt-1 p-2 bg-muted rounded-md">{selectedLoan.collateral || "No collateral specified"}</p>
                   </div>
 
+                  <div className="mt-4">
+                    <span className="text-sm text-muted-foreground">Down Payment Status:</span>
+                    <div className="mt-1 p-2 bg-muted rounded-md flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={`
+                          ${selectedLoan.downPaymentMade ? "bg-green-100 text-green-800 border-green-300" : "bg-yellow-100 text-yellow-800 border-yellow-300"}
+                        `}
+                      >
+                        {selectedLoan.downPaymentMade ? "Paid" : "Pending"}
+                      </Badge>
+                      <span className="text-sm">
+                        {selectedLoan.downPaymentMade 
+                          ? "Driver has completed the down payment" 
+                          : "Waiting for driver to make down payment"}
+                      </span>
+                    </div>
+                  </div>
+
                   {selectedLoan.adminNotes && (
                     <div className="mt-4">
                       <span className="text-sm text-muted-foreground">Admin Notes:</span>
@@ -540,14 +577,15 @@ export default function AdminLoanManagementPage() {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    className="bg-green-100 text-green-800 border-green-300 hover:bg-green-200"
+                    className="bg-green-100 text-green-800 border-green-300 hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => {
                       setIsDetailsDialogOpen(false)
                       handleAction(selectedLoan, "approve")
                     }}
+                    disabled={!selectedLoan.downPaymentMade}
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Approve
+                    {selectedLoan.downPaymentMade ? "Approve" : "Approve (Awaiting Payment)"}
                   </Button>
                   <Button
                     variant="outline"

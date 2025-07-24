@@ -86,6 +86,32 @@ export default function DriverDashboard() {
     }
   }, [dispatch, authUser])
 
+  // Fetch driver's specific loans when they log in
+  useEffect(() => {
+    const fetchDriverLoans = async () => {
+      if (authUser?.id && authUser.role === "driver") {
+        try {
+          const response = await fetch(`/api/loans?userId=${authUser.id}`)
+          if (response.ok) {
+            const data = await response.json()
+            const loans = data.loans || []
+            // Update the platform context with the driver's loans
+            loans.forEach((loan) => {
+              dispatch({
+                type: "ADD_LOAN_APPLICATION",
+                payload: loan,
+              })
+            })
+          }
+        } catch (error) {
+          console.error("Error fetching driver loans:", error)
+        }
+      }
+    }
+
+    fetchDriverLoans()
+  }, [authUser?.id, authUser?.role, dispatch])
+
   const handleMakePayment = (loanId: string, amount: number) => {
     // Find next pending payment
     const nextPayment = driverData.repayments.find((r) => r.relatedId === loanId && r.status === "pending")
@@ -146,6 +172,7 @@ export default function DriverDashboard() {
         driverId: currentDriverId,
         vehicleId: selectedVehicle._id,
         requestedAmount: principal, // Use the vehicle's price
+        totalAmountToPayBack: Math.round(totalPayback),
         loanTerm: term,
         monthlyPayment: Math.round(monthlyPayment),
         interestRate: selectedVehicle.roi, // Use vehicle's ROI instead of hardcoded rate
@@ -171,13 +198,15 @@ export default function DriverDashboard() {
           driverId: currentDriverId,
           vehicleId: selectedVehicle._id,
           requestedAmount: principal,
+          totalAmountToPayBack: Math.round(totalPayback),
           loanTerm: term,
           monthlyPayment: Math.round(monthlyPayment),
           interestRate: selectedVehicle.roi,
           purpose: loanApplication.purpose,
           creditScore: 0,
           collateral: collateralString,
-          riskAssessment: "Medium"
+          riskAssessment: "Medium",
+          downPaymentMade: false
         }),
       })
 
@@ -390,7 +419,7 @@ export default function DriverDashboard() {
   const nextPaymentAmount = activeLoan ? activeLoan.monthlyPayment || 0 : 0
   const unreadNotifications = driverData.notifications.filter((n) => !n.read).length
   // Get available vehicles for loan application
-  const availableVehicles = state.vehicles.filter((v) => v.status === "Financed")
+  const availableVehicles = state.vehicles.filter((v) => v.fundingStatus === "Funded")
 
   // Calculate down payment for display based on total payback amount
   const downPaymentAmount = selectedVehicle ? (() => {

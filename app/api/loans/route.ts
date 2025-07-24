@@ -103,11 +103,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Vehicle not found" }, { status: 404 })
     }
 
+    // Calculate total amount to pay back (principal + interest)
+    const totalAmountToPayBack = monthlyPayment * loanTerm
+
     // Create new loan application
     const newLoan = new Loan({
       driverId,
       vehicleId,
       requestedAmount,
+      totalAmountToPayBack,
       loanTerm,
       monthlyPayment,
       interestRate,
