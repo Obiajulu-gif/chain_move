@@ -3,6 +3,7 @@ import crypto from "crypto"
 import dbConnect from "@/lib/dbConnect"
 import User from "@/models/User"
 import Transaction from "@/models/Transaction"
+import Loan from "@/models/Loan"
 
 // Function to get USD/NGN exchange rate
 async function getExchangeRate(): Promise<number> {
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
   if (event.event === "charge.success") {
     await dbConnect()
 
-    const { amount, customer, reference } = event.data
+    const { amount, customer, reference, metadata } = event.data
 
     try {
       // ★★★ CRITICAL IDEMPOTENCY CHECK ★★★
@@ -69,12 +70,8 @@ export async function POST(request: Request) {
 
       console.log(`Converting ₦${amountInNaira.toLocaleString()} to $${amountInUSD.toFixed(2)} at rate ${exchangeRate}`)
 
-      // 4. Find user and update balance with USD amount
-      const user = await User.findOneAndUpdate(
-        { email: email },
-        { $inc: { availableBalance: amountInUSD } },
-        { new: true }, // This ensures the updated document is returned
-      )
+      // 4. Find user
+      const user = await User.findOne({ email: email })
 
       // Handle case where user is not found
       if (!user) {
@@ -83,21 +80,61 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: "User not found" }, { status: 200 })
       }
 
-      // 5. Create a new transaction record for bookkeeping
-      await Transaction.create({
-        userId: user._id,
-        userType: "investor", // Or determine dynamically if needed
-        amount: amountInUSD, // Store USD amount
-        amountOriginal: amountInNaira, // Store original Naira amount for reference
-        currency: "USD",
-        originalCurrency: "NGN",
-        exchangeRate: exchangeRate,
-        status: "Completed",
-        type: "deposit",
-        method: "gateway",
-        gatewayReference: reference,
-        description: `Wallet funded via Paystack - ₦${amountInNaira.toLocaleString()} converted to $${amountInUSD.toFixed(2)}`,
-      })
+      // Check if this is a down payment transaction
+      if (metadata && metadata.paymentType === 'down_payment' && metadata.loanId) {
+        // Handle down payment
+        const loan = await Loan.findById(metadata.loanId)
+        if (loan && !loan.downPaymentMade) {
+          // Mark loan as down payment made
+          await Loan.findByIdAndUpdate(metadata.loanId, {
+            downPaymentMade: true,
+            downPaymentAmount: amountInUSD,
+            downPaymentDate: new Date()
+          })
+
+          // Create transaction record for down payment
+          await Transaction.create({
+            userId: user._id,
+            userType: "driver",
+            amount: amountInUSD,
+            amountOriginal: amountInNaira,
+            currency: "USD",
+            originalCurrency: "NGN",
+            exchangeRate: exchangeRate,
+            status: "Completed",
+            type: "down_payment",
+            method: "gateway",
+            gatewayReference: reference,
+            description: `Down payment for Loan #${metadata.loanId} - ₦${amountInNaira.toLocaleString()} converted to $${amountInUSD.toFixed(2)}`,
+            relatedId: metadata.loanId
+          })
+
+          console.log(`Down payment processed: Loan ${metadata.loanId} marked as paid with $${amountInUSD.toFixed(2)}`)
+        }
+      } else {
+        // Handle regular wallet funding
+        await User.findOneAndUpdate(
+          { email: email },
+          { $inc: { availableBalance: amountInUSD } },
+          { new: true }
+        )
+
+        // 5. Create a new transaction record for bookkeeping
+        await Transaction.create({
+          userId: user._id,
+          userType: "investor", // Or determine dynamically if needed
+          amount: amountInUSD, // Store USD amount
+          amountOriginal: amountInNaira, // Store original Naira amount for reference
+          currency: "USD",
+          originalCurrency: "NGN",
+          exchangeRate: exchangeRate,
+          status: "Completed",
+          type: "deposit",
+          method: "gateway",
+          gatewayReference: reference,
+          description: `Wallet funded via Paystack - ₦${amountInNaira.toLocaleString()} converted to $${amountInUSD.toFixed(2)}`,
+        })
+      }
 
       console.log(
         `Successfully processed payment: User ${user.email} funded with $${amountInUSD.toFixed(2)} (₦${amountInNaira.toLocaleString()})`,

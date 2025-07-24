@@ -10,12 +10,14 @@ import { useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
+import { useSearchParams } from "next/navigation"
 
 export default function LoanTermsPage() {
   const { state, dispatch } = usePlatform()
   const currentUser = useCurrentUser()
   const router = useRouter()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   const [loanApplication, setLoanApplication] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isMakingPayment, setIsMakingPayment] = useState(false)
@@ -50,56 +52,102 @@ export default function LoanTermsPage() {
     }
   }, [state.isLoading, state.loanApplications, currentUser])
 
-  const handleMakeDownPayment = async () => {
-    if (!loanApplication) return
-    setIsMakingPayment(true)
-    try {
-      // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      // Extract the down payment amount from the collateral string
-      const collateralMatch = loanApplication.collateral.match(/\$([\d,]+)/)
-      const downPaymentAmount = collateralMatch ? Number.parseFloat(collateralMatch[1].replace(/,/g, "")) : 0
+  // Handle payment return
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment')
+    const reference = searchParams.get('reference')
+    const trxref = searchParams.get('trxref')
+    
+    if (paymentStatus === 'success' || reference || trxref) {
+      toast({
+        title: "Payment Processing",
+        description: "Your payment is being verified. Please wait a moment...",
+      })
+      
+      // Refresh the page data after a short delay to allow webhook processing
+      setTimeout(() => {
+        window.location.reload()
+      }, 3000)
+    }
+  }, [searchParams, toast])
 
-      if (downPaymentAmount > 0) {
-        // Dispatch action to mark loan as active and down payment made
-        dispatch({
-          type: "MARK_LOAN_AS_ACTIVE",
-          payload: { loanId: loanApplication.id || loanApplication._id },
+  const handleMakeDownPayment = async () => {
+    console.log('handleMakeDownPayment called');
+    console.log('loanApplication:', loanApplication);
+    console.log('currentUser:', currentUser);
+    console.log('currentUser?.email:', currentUser?.email);
+    
+    if (!loanApplication || !currentUser?.email) {
+      console.log('Early return: missing loanApplication or currentUser.email');
+      return;
+    }
+    
+    console.log('Proceeding with payment...');
+    setIsMakingPayment(true)
+    
+    try {
+      // Calculate down payment amount (15% of loan amount)
+      const downPaymentAmount = loanApplication.requestedAmount * 0.15
+      const loanId = loanApplication.id || loanApplication._id
+      
+      console.log('Sending payment request:', { loanId, amount: downPaymentAmount })
+      console.log('Loan application object:', loanApplication)
+      
+      // Initialize payment with Paystack
+      const response = await fetch('/api/payments/down-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          loanId: loanId,
+          amount: downPaymentAmount
         })
-        // Add a transaction for the down payment
-        dispatch({
-          type: "ADD_TRANSACTION",
-          payload: {
-            id: `trans_dp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            type: "deposit", // Or a specific 'down_payment' type if added
-            userId: currentUser.id,
-            userType: "driver",
-            amount: downPaymentAmount,
-            status: "completed",
-            timestamp: new Date().toISOString(),
-            description: `Down payment for Loan #${loanApplication.id}`,
-            relatedId: loanApplication.id,
-          },
-        })
-        toast({
-          title: "Down Payment Successful",
-          description: `Your down payment of $${downPaymentAmount.toLocaleString()} has been processed. Your loan is now active!`,
-        })
-        router.push("/dashboard/driver") // Redirect to dashboard after payment
-      } else {
-        toast({
-          title: "Payment Error",
-          description: "Could not determine down payment amount.",
-          variant: "destructive",
-        })
+      })
+      
+      const data = await response.json()
+      console.log('Payment API response:', data)
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+      
+      if (!response.ok) {
+        console.log('Response not ok, throwing error')
+        throw new Error(data.message || 'Failed to initialize payment')
       }
+      
+      console.log('Checking response structure:')
+      console.log('data.success:', data.success)
+      console.log('data.data:', data.data)
+      console.log('data.data?.authorization_url:', data.data?.authorization_url)
+      
+      // Temporary: Try to extract authorization_url from any possible location
+      let authUrl = null;
+      if (data.data?.authorization_url) {
+        authUrl = data.data.authorization_url;
+      } else if (data.authorization_url) {
+        authUrl = data.authorization_url;
+      } else if (data.data?.data?.authorization_url) {
+        authUrl = data.data.data.authorization_url;
+      }
+      
+      console.log('Found authorization URL:', authUrl);
+      
+      if (authUrl) {
+        console.log('Redirecting to:', authUrl)
+        // Redirect to Paystack payment page
+        window.location.href = authUrl
+      } else {
+        console.error('No authorization URL found in response:', JSON.stringify(data, null, 2))
+        throw new Error('Invalid payment response - no authorization URL found')
+      }
+      
     } catch (error) {
+      console.error('Payment initialization error:', error)
       toast({
         title: "Payment Failed",
-        description: "There was an error processing your down payment. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error processing your down payment. Please try again.",
         variant: "destructive",
       })
-    } finally {
       setIsMakingPayment(false)
     }
   }
