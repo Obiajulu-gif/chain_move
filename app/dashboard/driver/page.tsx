@@ -96,11 +96,9 @@ export default function DriverDashboard() {
             const data = await response.json()
             const loans = data.loans || []
             // Update the platform context with the driver's loans
-            loans.forEach((loan) => {
-              dispatch({
-                type: "ADD_LOAN_APPLICATION",
-                payload: loan,
-              })
+            dispatch({
+              type: "SET_LOAN_APPLICATIONS",
+              payload: loans,
             })
           }
         } catch (error) {
@@ -473,7 +471,7 @@ export default function DriverDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-foreground">${totalFundsReceived.toLocaleString()}</div>
-                  <p className="text-xs text-green-500 dark:text-green-400">Available for withdrawal</p>
+                  <p className="text-xs text-green-500 dark:text-green-400">Assigned</p>
                 </CardContent>
               </Card>
               <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">

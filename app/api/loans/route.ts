@@ -45,7 +45,15 @@ export async function GET(request: NextRequest) {
       .populate('vehicleId', 'name type year price image')
       .sort({ submittedDate: -1 })
 
-    return NextResponse.json({ loans }, { status: 200 })
+    // Convert ObjectIds to strings for frontend compatibility
+    const formattedLoans = loans.map(loan => ({
+      ...loan.toObject(),
+      id: loan._id.toString(),
+      driverId: loan.driverId._id ? loan.driverId._id.toString() : loan.driverId.toString(),
+      vehicleId: loan.vehicleId._id ? loan.vehicleId._id.toString() : loan.vehicleId.toString()
+    }))
+
+    return NextResponse.json({ loans: formattedLoans }, { status: 200 })
   } catch (error) {
     console.error("Error fetching loans:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -138,9 +146,17 @@ export async function POST(request: NextRequest) {
       .populate('driverId', 'name email')
       .populate('vehicleId', 'name type year price image')
 
+    // Format the loan data with string IDs for frontend compatibility
+    const formattedLoan = {
+      ...populatedLoan.toObject(),
+      id: populatedLoan._id.toString(),
+      driverId: populatedLoan.driverId._id ? populatedLoan.driverId._id.toString() : populatedLoan.driverId.toString(),
+      vehicleId: populatedLoan.vehicleId._id ? populatedLoan.vehicleId._id.toString() : populatedLoan.vehicleId.toString()
+    }
+
     return NextResponse.json({ 
       message: "Loan application submitted successfully",
-      loan: populatedLoan 
+      loan: formattedLoan 
     }, { status: 201 })
 
   } catch (error) {
@@ -210,9 +226,17 @@ export async function PUT(request: NextRequest) {
       })
     }
 
+    // Format the loan data with string IDs for frontend compatibility
+    const formattedLoan = {
+      ...updatedLoan.toObject(),
+      id: updatedLoan._id.toString(),
+      driverId: updatedLoan.driverId._id ? updatedLoan.driverId._id.toString() : updatedLoan.driverId.toString(),
+      vehicleId: updatedLoan.vehicleId._id ? updatedLoan.vehicleId._id.toString() : updatedLoan.vehicleId.toString()
+    }
+
     return NextResponse.json({ 
       message: "Loan status updated successfully",
-      loan: updatedLoan 
+      loan: formattedLoan 
     }, { status: 200 })
 
   } catch (error) {
