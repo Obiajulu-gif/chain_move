@@ -20,6 +20,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Name and role are required", success: false }, { status: 400 });
     }
 
+    // Validate role - only allow driver or investor
+    if (!['driver', 'investor'].includes(role)) {
+      return NextResponse.json({ 
+        message: "Invalid role. Only 'driver' and 'investor' roles are allowed for signup.", 
+        success: false 
+      }, { status: 400 });
+    }
+
     // If registering with email/password
     if (!email || !password) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
@@ -48,7 +56,7 @@ export async function POST(request: Request) {
       name,
       email,
       password: hashedPassword,
-      role,
+      role, // This will now only be 'driver' or 'investor'
       walletAddress: generateWallet[0].address,
       privateKey: hashedPrivateKey,
     });
