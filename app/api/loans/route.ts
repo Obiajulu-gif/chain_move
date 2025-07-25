@@ -49,8 +49,12 @@ export async function GET(request: NextRequest) {
     const formattedLoans = loans.map(loan => ({
       ...loan.toObject(),
       id: loan._id.toString(),
-      driverId: loan.driverId._id ? loan.driverId._id.toString() : loan.driverId.toString(),
-      vehicleId: loan.vehicleId._id ? loan.vehicleId._id.toString() : loan.vehicleId.toString()
+      // REMOVE these lines that convert populated objects back to IDs:
+      // driverId: loan.driverId._id ? loan.driverId._id.toString() : loan.driverId.toString(),
+      // vehicleId: loan.vehicleId._id ? loan.vehicleId._id.toString() : loan.vehicleId.toString()
+      // Keep the populated objects intact:
+      driverId: loan.driverId,
+      vehicleId: loan.vehicleId
     }))
 
     return NextResponse.json({ loans: formattedLoans }, { status: 200 })
@@ -150,8 +154,9 @@ export async function POST(request: NextRequest) {
     const formattedLoan = {
       ...populatedLoan.toObject(),
       id: populatedLoan._id.toString(),
-      driverId: populatedLoan.driverId._id ? populatedLoan.driverId._id.toString() : populatedLoan.driverId.toString(),
-      vehicleId: populatedLoan.vehicleId._id ? populatedLoan.vehicleId._id.toString() : populatedLoan.vehicleId.toString()
+      // Keep populated objects intact:
+      driverId: populatedLoan.driverId,
+      vehicleId: populatedLoan.vehicleId
     }
 
     return NextResponse.json({ 
@@ -230,8 +235,9 @@ export async function PUT(request: NextRequest) {
     const formattedLoan = {
       ...updatedLoan.toObject(),
       id: updatedLoan._id.toString(),
-      driverId: updatedLoan.driverId._id ? updatedLoan.driverId._id.toString() : updatedLoan.driverId.toString(),
-      vehicleId: updatedLoan.vehicleId._id ? updatedLoan.vehicleId._id.toString() : updatedLoan.vehicleId.toString()
+      // Keep populated objects intact:
+      driverId: updatedLoan.driverId,
+      vehicleId: updatedLoan.vehicleId
     }
 
     return NextResponse.json({ 

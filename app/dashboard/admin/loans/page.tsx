@@ -36,14 +36,15 @@ export default function AdminLoanManagementPage() {
       if (response.ok) {
         const { loans: fetchedLoans } = await response.json()
         setLoans(fetchedLoans)
-        // Also update the platform context for consistency
+        // Update the platform context for consistency - keep populated objects
         dispatch({
           type: "SET_LOAN_APPLICATIONS",
           payload: fetchedLoans.map((loan) => ({
             ...loan,
             id: loan._id,
-            driverId: loan.driverId._id || loan.driverId,
-            vehicleId: loan.vehicleId._id || loan.vehicleId
+            // Keep the populated objects intact:
+            driverId: loan.driverId,
+            vehicleId: loan.vehicleId
           }))
         })
       }
