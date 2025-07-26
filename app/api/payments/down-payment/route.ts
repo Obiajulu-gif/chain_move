@@ -45,8 +45,8 @@ export async function POST(request: Request) {
     const userId = payload.userId as string;
     console.log('User ID from token:', userId);
 
-    const { loanId, amount } = await request.json();
-    console.log('Request data (USD):', { loanId, amount });
+    const { loanId, amount, currency = 'USD' } = await request.json();
+    console.log('Request data:', { loanId, amount, currency });
     
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
 
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     }
     console.log('Loan validation passed, proceeding with currency conversion');
 
-    // Convert USD amount to NGN
+    // Convert USD amount to NGN (always convert since Paystack uses NGN)
     const exchangeRate = await getUSDToNGNRate();
     const amountInNaira = amount * exchangeRate;
     console.log(`Converting $${amount} to ₦${amountInNaira.toLocaleString()} at rate ${exchangeRate}`);
@@ -116,9 +116,10 @@ export async function POST(request: Request) {
         callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/driver/loan-terms?payment=success`,
         metadata: {
           loanId: loanId,
-          paymentType: 'down_payment', // Updated to match webhook expectation
+          paymentType: 'down_payment',
           userId: userId,
           originalAmountUSD: amount,
+          selectedCurrency: currency,
           exchangeRate: exchangeRate,
           amountNGN: amountInNaira
         }
@@ -140,7 +141,8 @@ export async function POST(request: Request) {
       conversionInfo: {
         originalAmountUSD: amount,
         convertedAmountNGN: amountInNaira,
-        exchangeRate: exchangeRate
+        exchangeRate: exchangeRate,
+        selectedCurrency: currency
       }
     });
 
