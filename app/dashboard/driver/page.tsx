@@ -62,10 +62,55 @@ export default function DriverDashboard() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Currency selector state
+  const [selectedCurrency, setSelectedCurrency] = useState<'USD' | 'NGN'>('USD')
+  const [exchangeRate, setExchangeRate] = useState<number>(1)
+  const [isLoadingRate, setIsLoadingRate] = useState(false)
+
+  // Currency formatting function
+  const formatCurrency = (amount: number, currency: 'USD' | 'NGN' = selectedCurrency) => {
+    if (currency === 'NGN') {
+      return `₦${(amount * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+    }
+    return `$${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+  }
+
+  // Get display amount for dual currency display
+  const getDisplayAmount = (usdAmount: number) => {
+    if (selectedCurrency === 'NGN') {
+      return `${formatCurrency(usdAmount, 'NGN')} (${formatCurrency(usdAmount, 'USD')})`
+    }
+    return formatCurrency(usdAmount, 'USD')
+  }
+
   // KYC state for the dialog
   const [showKycPromptDialog, setShowKycPromptDialog] = useState(false)
   const [kycPromptMessage, setKycPromptMessage] = useState("")
   const [kycPromptAction, setKycPromptAction] = useState<{ label: string; href: string } | null>(null)
+
+  // Fetch exchange rate when currency changes
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      if (selectedCurrency === 'NGN') {
+        setIsLoadingRate(true)
+        try {
+          const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
+          const data = await response.json()
+          setExchangeRate(data.rates.NGN || 1600) // Fallback to 1600 if API fails
+        } catch (error) {
+          console.error('Failed to fetch exchange rate:', error)
+          setExchangeRate(1600) // Fallback rate
+        } finally {
+          setIsLoadingRate(false)
+        }
+      } else {
+        setExchangeRate(1)
+        setIsLoadingRate(false)
+      }
+    }
+
+    fetchExchangeRate()
+  }, [selectedCurrency])
 
   // Set current user on mount
   useEffect(() => {
@@ -628,6 +673,8 @@ export default function DriverDashboard() {
                               // Reset states when dialog closes
                               setShowKycPromptDialog(false) // Ensure KYC prompt is hidden when dialog closes
                               setSelectedVehicle(null) // Clear selected vehicle
+                              setSelectedCurrency('USD')
+                              setExchangeRate(1)
                               setLoanApplication({
                                 // Reset loan application form
                                 loanTerm: "12",
@@ -656,6 +703,48 @@ export default function DriverDashboard() {
                                   : "Select a vehicle and complete your loan application"}
                               </DialogDescription>
                             </DialogHeader>
+                    {/* Currency Selection Card */}
+                    <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-800">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center text-orange-800 dark:text-orange-200">
+                          <CreditCard className="h-5 w-5 mr-2" />
+                          Currency Selection
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center space-x-4">
+                          <Label htmlFor="currency" className="text-sm font-medium min-w-[80px]">
+                            Currency:
+                          </Label>
+                          <Select
+                            value={selectedCurrency}
+                            onValueChange={(value: 'USD' | 'NGN') => setSelectedCurrency(value)}
+                            disabled={isLoadingRate}
+                          >
+                            <SelectTrigger className="w-[200px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USD">🇺🇸 USD (US Dollar)</SelectItem>
+                              <SelectItem value="NGN">🇳🇬 NGN (Nigerian Naira)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {isLoadingRate && (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          )}
+                        </div>
+                        {selectedCurrency === 'NGN' && (
+                          <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg border">
+                            {/* <p className="text-sm text-muted-foreground">
+                              <strong>Live Exchange Rate:</strong> 1 USD = ₦{exchangeRate.toLocaleString()}
+                            </p> */}
+                            {/* <p className="text-xs text-muted-foreground mt-1">
+                              All calculations are done in USD and converted to NGN for display
+                            </p> */}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                             {showKycPromptDialog ? (
                               <div className="py-6 text-center">
                                 <p className="text-lg text-foreground mb-4">{kycPromptMessage}</p>
@@ -701,8 +790,8 @@ export default function DriverDashboard() {
                                                 </p>
                                                 <div className="flex items-center justify-between mt-2">
                                                   <span className="text-lg font-bold text-[#E57700]">
-                                                    ${vehicle.price.toLocaleString()}
-                                                  </span>
+                                                    {getDisplayAmount(vehicle.price)}
+                                                </span>
                                                   <Badge variant="outline" className="text-xs">
                                                     {vehicle.roi}% ROI
                                                   </Badge>
@@ -732,7 +821,7 @@ export default function DriverDashboard() {
                                         <Input
                                           id="requestedAmount"
                                           type="text" // Changed to text as it's non-editable
-                                          value={selectedVehicle.price.toLocaleString()} // Display selected vehicle price
+                                          value={getDisplayAmount(selectedVehicle.price)} // Display selected vehicle price
                                           readOnly // Make it non-editable
                                           disabled // Make it non-editable
                                           className="bg-muted cursor-not-allowed" // Style as non-editable
@@ -767,7 +856,7 @@ export default function DriverDashboard() {
                                         <Input
                                           id="paybackAmount"
                                           type="text"
-                                          value={
+                                          value={getDisplayAmount(
                                             (() => {
                                               const principal = selectedVehicle.price;
                                               const rate = (selectedVehicle.roi / 100) / 12;
@@ -775,10 +864,9 @@ export default function DriverDashboard() {
                                               // Calculate monthly payment using the same formula as in handleLoanApplicationSubmit
                                               const monthlyPayment = (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1);
                                               // Total payback is monthly payment * term
-                                              const totalPayback = monthlyPayment * term;
-                                              return totalPayback.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                              return monthlyPayment * term;
                                             })()
-                                          }
+                                          )}
                                           readOnly
                                           disabled
                                           className="bg-muted cursor-not-allowed"
@@ -789,16 +877,15 @@ export default function DriverDashboard() {
                                         <Input
                                           id="monthlyPayment"
                                           type="text"
-                                          value={
+                                          value={getDisplayAmount(
                                             (() => {
                                               const principal = selectedVehicle.price;
                                               const rate = (selectedVehicle.roi / 100) / 12;
                                               const term = Number.parseInt(loanApplication.loanTerm);
                                               // Calculate monthly payment using the same formula as in handleLoanApplicationSubmit
-                                              const monthlyPayment = (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1);
-                                              return monthlyPayment.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                              return (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1);
                                             })()
-                                          }
+                                          )}
                                           readOnly
                                           disabled
                                           className="bg-muted cursor-not-allowed"
@@ -847,7 +934,7 @@ export default function DriverDashboard() {
                               {!showKycPromptDialog && (
                                 <Button
                                   onClick={handleLoanApplicationSubmit}
-                                  disabled={!selectedVehicle || isSubmitting}
+                                  disabled={!selectedVehicle || isSubmitting || isLoadingRate}
                                   className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
                                 >
                                   {isSubmitting ? (
