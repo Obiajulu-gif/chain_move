@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
+import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -47,7 +47,7 @@ export function InvestmentModalEnhanced({
   availableBalance,
   onInvestmentComplete,
 }: InvestmentModalEnhancedProps) {
-  const [investmentAmount, setInvestmentAmount] = useState<number[]>([1000])
+  const [investmentAmount, setInvestmentAmount] = useState<number>(1000)
   const [selectedTerm, setSelectedTerm] = useState<string>("12")
   const [isProcessing, setIsProcessing] = useState(false)
   const [step, setStep] = useState(1)
@@ -65,12 +65,17 @@ export function InvestmentModalEnhanced({
   const currentROI = vehicle.isTermSet ? vehicle.roi : selectedTermOption?.roi
   const currentTerm = vehicle.isTermSet ? vehicle.investmentTerm : selectedTermOption?.months
 
-  const projectedTotalReturn = investmentAmount[0] * (1 + (currentROI || 0) / 100)
-  const projectedProfit = projectedTotalReturn - investmentAmount[0]
+  const projectedTotalReturn = investmentAmount * (1 + (currentROI || 0) / 100)
+  const projectedProfit = projectedTotalReturn - investmentAmount
   const projectedMonthlyReturn = projectedProfit / (currentTerm || 12)
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value) || 0
+    setInvestmentAmount(value)
+  }
+
   const handleInvest = async () => {
-    if (investmentAmount[0] > availableBalance) {
+    if (investmentAmount > availableBalance) {
       toast({
         title: "Insufficient Funds",
         description: "You don't have enough balance for this investment",
@@ -79,15 +84,33 @@ export function InvestmentModalEnhanced({
       return
     }
 
+    if (investmentAmount < minInvestment) {
+      toast({
+        title: "Invalid Amount",
+        description: `Minimum investment amount is $${minInvestment}`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (investmentAmount > maxInvestment) {
+      toast({
+        title: "Invalid Amount",
+        description: `Maximum investment amount is $${maxInvestment.toLocaleString()}`,
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsProcessing(true)
     try {
       const termToUse = vehicle.isTermSet ? vehicle.investmentTerm : parseInt(selectedTerm)
-      await onInvestmentComplete(investmentAmount[0], termToUse || 12)
+      await onInvestmentComplete(investmentAmount, termToUse || 12)
       setStep(3)
 
       toast({
         title: "Investment Successful",
-        description: `Successfully invested $${investmentAmount[0].toLocaleString()} in ${vehicle.name}`,
+        description: `Successfully invested $${investmentAmount.toLocaleString()} in ${vehicle.name}`,
       })
     } catch (error) {
       toast({
@@ -102,14 +125,14 @@ export function InvestmentModalEnhanced({
 
   const handleClose = () => {
     setStep(1)
-    setInvestmentAmount([1000])
+    setInvestmentAmount(1000)
     setSelectedTerm("12")
     onClose()
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-card border-border text-foreground max-w-3xl mx-4">
+      <DialogContent className="bg-card border-border text-foreground max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
         {step === 1 && (
           <>
             <DialogHeader>
@@ -124,7 +147,7 @@ export function InvestmentModalEnhanced({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-y-auto max-h-[60vh] pr-2">
               {/* Vehicle Summary */}
               <div className="p-4 bg-muted rounded-lg">
                 <div className="grid grid-cols-2 gap-4">
@@ -179,26 +202,34 @@ export function InvestmentModalEnhanced({
               {/* Investment Amount */}
               <div className="space-y-4">
                 <Label className="text-foreground font-semibold">Investment Amount</Label>
-                <div className="space-y-2">
-                  <div className="text-center">
-                    <span className="text-2xl font-bold text-foreground">
-                      ${investmentAmount[0].toLocaleString()}
+                <div className="space-y-3">
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground font-medium">
+                      $
                     </span>
-                  </div>
-                  <div className="px-2">
-                    <Slider
+                    <Input
+                      type="number"
                       value={investmentAmount}
-                      onValueChange={setInvestmentAmount}
-                      max={maxInvestment}
+                      onChange={handleAmountChange}
+                      placeholder="Enter amount"
                       min={minInvestment}
+                      max={maxInvestment}
                       step={100}
-                      className="w-full"
+                      className="pl-8 text-lg font-semibold"
                     />
                   </div>
                   <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Min: ${minInvestment}</span>
+                    <span>Min: ${minInvestment.toLocaleString()}</span>
                     <span>Max: ${maxInvestment.toLocaleString()}</span>
                   </div>
+                  {(investmentAmount < minInvestment || investmentAmount > maxInvestment) && (
+                    <p className="text-sm text-red-500">
+                      {investmentAmount < minInvestment 
+                        ? `Amount must be at least $${minInvestment.toLocaleString()}`
+                        : `Amount cannot exceed $${maxInvestment.toLocaleString()}`
+                      }
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -240,24 +271,25 @@ export function InvestmentModalEnhanced({
                   </div>
                 </div>
               )}
+            </div>
 
-              <div className="flex space-x-3">
-                <Button variant="outline" onClick={handleClose} className="flex-1">
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => setStep(2)}
-                  className="flex-1 bg-[#E57700] hover:bg-[#E57700]/90 text-white"
-                  disabled={investmentAmount[0] > availableBalance}
-                >
-                  Review Investment
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
+            <div className="flex space-x-3 mt-6 pt-4 border-t border-border">
+              <Button variant="outline" onClick={handleClose} className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                onClick={() => setStep(2)}
+                className="flex-1 bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+                disabled={investmentAmount > availableBalance || investmentAmount < minInvestment || investmentAmount > maxInvestment}
+              >
+                Review Investment
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
             </div>
           </>
         )}
 
+        {/* Step 2 and Step 3 remain the same, just update the investmentAmount references */}
         {step === 2 && (
           <>
             <DialogHeader>
@@ -270,7 +302,7 @@ export function InvestmentModalEnhanced({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-y-auto max-h-[60vh] pr-2">
               <div className="p-4 bg-muted rounded-lg">
                 <h4 className="font-semibold text-foreground mb-3">Investment Summary</h4>
                 <div className="space-y-2">
@@ -280,7 +312,7 @@ export function InvestmentModalEnhanced({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Investment Amount:</span>
-                    <span className="font-bold text-foreground">${investmentAmount[0].toLocaleString()}</span>
+                    <span className="font-bold text-foreground">${investmentAmount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Investment Term:</span>
@@ -300,19 +332,19 @@ export function InvestmentModalEnhanced({
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="flex space-x-3">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
-                  Back
-                </Button>
-                <Button
-                  onClick={handleInvest}
-                  disabled={isProcessing}
-                  className="flex-1 bg-[#E57700] hover:bg-[#E57700]/90 text-white"
-                >
-                  {isProcessing ? "Processing..." : "Confirm Investment"}
-                </Button>
-              </div>
+            <div className="flex space-x-3 mt-6 pt-4 border-t border-border">
+              <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                Back
+              </Button>
+              <Button
+                onClick={handleInvest}
+                disabled={isProcessing}
+                className="flex-1 bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+              >
+                {isProcessing ? "Processing..." : "Confirm Investment"}
+              </Button>
             </div>
           </>
         )}
@@ -325,11 +357,11 @@ export function InvestmentModalEnhanced({
                 Investment Successful!
               </DialogTitle>
               <DialogDescription className="text-muted-foreground">
-                You have successfully invested ${investmentAmount[0].toLocaleString()} in {vehicle.name}
+                You have successfully invested ${investmentAmount.toLocaleString()} in {vehicle.name}
               </DialogDescription>
             </DialogHeader>
 
-            <div className="p-4 bg-muted rounded-lg">
+            <div className="p-4 bg-muted rounded-lg overflow-y-auto max-h-[60vh]">
               <h4 className="font-semibold text-foreground mb-2">What's Next?</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• You'll receive monthly returns starting next month</li>
@@ -341,7 +373,7 @@ export function InvestmentModalEnhanced({
               </ul>
             </div>
 
-            <Button onClick={handleClose} className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+            <Button onClick={handleClose} className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white mt-6">
               Continue Investing
             </Button>
           </>
