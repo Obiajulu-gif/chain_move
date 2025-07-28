@@ -19,16 +19,18 @@ export async function GET() {
 
     await dbConnect()
 
-    // Include kycStatus, kycDocuments, physicalMeetingDate, physicalMeetingStatus, and notifications
+    // Include kycStatus, kycDocuments, physicalMeetingDate, physicalMeetingStatus, wallet details and notifications
     const user = await User.findById(payload.userId).select(
-      "name email role availableBalance totalInvested totalReturns kycStatus kycDocuments physicalMeetingDate physicalMeetingStatus notifications",
-    )
+      "name email role availableBalance totalInvested totalReturns kycStatus kycDocuments physicalMeetingDate physicalMeetingStatus notifications walletAddress smartWalletAddress privateKey",
+    ).lean();
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
+    // console.log("priv key ", user.privateKey);
+    // I'll make use of the private key later
 
-    // Ensure the returned JSON includes all relevant fields
+    delete user.privateKey; // Remove private key from response
     return NextResponse.json({
       id: user._id,
       name: user.name,
@@ -41,7 +43,9 @@ export async function GET() {
       kycDocuments: user.kycDocuments,
       physicalMeetingDate: user.physicalMeetingDate,
       physicalMeetingStatus: user.physicalMeetingStatus,
-      notifications: user.notifications, // Include notifications
+      notifications: user.notifications,
+      smartWalletAddress: user.smartWalletAddress || '',
+      walletAddress: user.walletAddress || '',
     })
   } catch (error) {
     console.error("Auth error:", error)

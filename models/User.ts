@@ -19,12 +19,14 @@ const UserSchema = new mongoose.Schema(
     },
     walletAddress: {
       type: String,
-      unique: true,
+      sparse: true,
+    },
+    smartWalletAddress: {
+      type: String,
       sparse: true,
     },
     privateKey: {
       type: String,
-      unique: true,
       sparse: true,
     },
     role: {
