@@ -91,7 +91,7 @@ export const useAdminDashboard = () => {
     const interval = setInterval(() => {
       loadDashboardData();
       loadVehicles();
-    }, 30000);
+    }, 30000000);
 
     return () => clearInterval(interval);
   }, [loadDashboardData, loadVehicles]);

@@ -186,7 +186,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Error saving user to database", success: false }, { status: 500 });
     }
 
-    return NextResponse.json({ message: "User created successfully", success: true }, { status: 201 });
+    return NextResponse.json({ message: ` ${role} account created successfully`, success: true }, { status: 201 });
 
   } catch (error) {
     console.error("SIGNUP_ERROR", error);

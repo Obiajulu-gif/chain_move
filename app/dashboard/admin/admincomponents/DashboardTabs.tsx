@@ -1,4 +1,3 @@
-
 // app/dashboard/admin/admincomponents/DashboardTabs.tsx
 
 import React from "react";
@@ -337,45 +336,45 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           ) : (
             <div className="space-y-4">
               {vehicles.map((vehicle) => (
-                <Card key={vehicle._id} className="bg-muted border-border">
+                <Card key={vehicle?._id} className="bg-muted border-border">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-4">
                         <Image
-                          src={vehicle.image || "/placeholder.svg?height=80&width=120"}
-                          alt={vehicle.name}
+                          src={vehicle?.image || "/placeholder.svg?height=80&width=120"}
+                          alt={vehicle?.name}
                           width={120}
                           height={80}
                           className="rounded-lg object-cover"
                         />
                         <div>
-                          <h4 className="font-semibold text-foreground">{vehicle.name}</h4>
+                          <h4 className="font-semibold text-foreground">{vehicle?.name}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {vehicle.year} • {vehicle.type}
+                            {vehicle?.year} • {vehicle?.type}
                           </p>
                           <div className="flex items-center space-x-2 mt-1">
                             <Badge
                               className={`${
-                                vehicle.status === "Available"
+                                vehicle?.status === "Available"
                                   ? "bg-green-100 text-green-800"
-                                  : vehicle.status === "Financed"
+                                  : vehicle?.status === "Financed"
                                   ? "bg-blue-100 text-blue-800"
-                                  : vehicle.status === "Reserved"
+                                  : vehicle?.status === "Reserved"
                                   ? "bg-yellow-100 text-yellow-800"
                                   : "bg-red-100 text-red-800"
                               }`}
                             >
-                              {vehicle.status}
+                              {vehicle?.status}
                             </Badge>
-                            <span className="text-xs text-muted-foreground">ROI: {vehicle.roi}%</span>
+                            <span className="text-xs text-muted-foreground">ROI: {vehicle?.roi}%</span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Added: {new Date(vehicle.addedDate).toLocaleDateString()}
+                            Added: {new Date(vehicle?.addedDate).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-foreground text-lg">${vehicle.price.toLocaleString()}</p>
+                        <p className="font-bold text-foreground text-lg">${vehicle?.price.toLocaleString()}</p>
                         <p className="text-sm text-muted-foreground">Vehicle Price</p>
                         <div className="flex space-x-2 mt-3">
                           <Button
@@ -397,7 +396,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
                             size="sm"
                             variant="outline"
                             className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
-                            onClick={() => onDeleteVehicle(vehicle._id, vehicle.name)}
+                            onClick={() => onDeleteVehicle(vehicle?._id, vehicle?.name)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -406,7 +405,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
                     </div>
                     <div className="mt-4">
                       <div className="flex flex-wrap gap-1">
-                        {vehicle.features.map((feature, index) => (
+                        {vehicle?.features?.map((feature, index) => (
                           <Badge key={index} variant="outline" className="text-xs">
                             {feature}
                           </Badge>
@@ -416,19 +415,19 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
                     <div className="mt-3 grid grid-cols-4 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground">Engine</p>
-                        <p className="font-medium text-foreground">{vehicle.specifications.engine}</p>
+                        <p className="font-medium text-foreground">{vehicle?.specifications?.engine || "none"}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Fuel</p>
-                        <p className="font-medium text-foreground">{vehicle.specifications.fuelType}</p>
+                        <p className="font-medium text-foreground">{vehicle?.specifications?.fuelType || "none"}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Transmission</p>
-                        <p className="font-medium text-foreground">{vehicle.specifications.transmission}</p>
+                        <p className="font-medium text-foreground">{vehicle?.specifications?.transmission || "none"}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Color</p>
-                        <p className="font-medium text-foreground">{vehicle.specifications.color}</p>
+                        <p className="font-medium text-foreground">{vehicle?.specifications?.color || "none"}</p>
                       </div>
                     </div>
                   </CardContent>
