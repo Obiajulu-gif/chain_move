@@ -6,6 +6,26 @@ import Loan from '@/models/Loan';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
+// Function to get USD/NGN exchange rate (convert USD to NGN)
+async function getUSDToNGNRate(): Promise<number> {
+  try {
+    // Use exchange rate API to get current rates
+    const response = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+    const data = await response.json();
+
+    if (data.rates && data.rates.NGN) {
+      return data.rates.NGN; // This gives us how many NGN = 1 USD
+    }
+
+    // Fallback to fixed rate if API fails
+    throw new Error("Exchange rate API failed");
+  } catch (error) {
+    console.warn("Failed to fetch live exchange rate, using fallback rate:", error);
+    // Fallback rate: approximately 1 USD = 1600 NGN (adjust as needed)
+    return 1600;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     console.log('Down payment API called');
@@ -25,8 +45,8 @@ export async function POST(request: Request) {
     const userId = payload.userId as string;
     console.log('User ID from token:', userId);
 
-    const { loanId, amount } = await request.json();
-    console.log('Request data:', { loanId, amount });
+    const { loanId, amount, currency = 'USD' } = await request.json();
+    console.log('Request data:', { loanId, amount, currency });
     
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
 
@@ -71,10 +91,15 @@ export async function POST(request: Request) {
       console.log('Down payment already made');
       return NextResponse.json({ message: 'Down payment already completed' }, { status: 400 });
     }
-    console.log('Loan validation passed, proceeding to Paystack');
+    console.log('Loan validation passed, proceeding with currency conversion');
+
+    // Convert USD amount to NGN (always convert since Paystack uses NGN)
+    const exchangeRate = await getUSDToNGNRate();
+    const amountInNaira = amount * exchangeRate;
+    console.log(`Converting $${amount} to ₦${amountInNaira.toLocaleString()} at rate ${exchangeRate}`);
 
     // Paystack expects the amount in kobo (NGN * 100)
-    const amountInKobo = Math.round(amount * 100);
+    const amountInKobo = Math.round(amountInNaira * 100);
     console.log('Amount in kobo:', amountInKobo);
 
     // Initialize transaction with Paystack
@@ -91,8 +116,12 @@ export async function POST(request: Request) {
         callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/driver/loan-terms?payment=success`,
         metadata: {
           loanId: loanId,
-          paymentType: 'downPayment',
-          userId: userId
+          paymentType: 'down_payment',
+          userId: userId,
+          originalAmountUSD: amount,
+          selectedCurrency: currency,
+          exchangeRate: exchangeRate,
+          amountNGN: amountInNaira
         }
       })
     });
@@ -108,7 +137,13 @@ export async function POST(request: Request) {
     
     return NextResponse.json({
       success: true,
-      data: paystackData.data
+      data: paystackData.data,
+      conversionInfo: {
+        originalAmountUSD: amount,
+        convertedAmountNGN: amountInNaira,
+        exchangeRate: exchangeRate,
+        selectedCurrency: currency
+      }
     });
 
   } catch (error) {

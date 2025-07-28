@@ -36,14 +36,15 @@ export default function AdminLoanManagementPage() {
       if (response.ok) {
         const { loans: fetchedLoans } = await response.json()
         setLoans(fetchedLoans)
-        // Also update the platform context for consistency
+        // Update the platform context for consistency - keep populated objects
         dispatch({
           type: "SET_LOAN_APPLICATIONS",
           payload: fetchedLoans.map((loan) => ({
             ...loan,
             id: loan._id,
-            driverId: loan.driverId._id || loan.driverId,
-            vehicleId: loan.vehicleId._id || loan.vehicleId
+            // Keep the populated objects intact:
+            driverId: loan.driverId,
+            vehicleId: loan.vehicleId
           }))
         })
       }
@@ -112,10 +113,10 @@ export default function AdminLoanManagementPage() {
       // Refresh loans data
       await fetchLoans()
 
-      // Find the driver to send notification
-      const driver = state.users.find(user => user.id === selectedLoan.driverId || user._id === selectedLoan.driverId)
+      // Fix: Get driver info from the populated loan object
+      const driverInfo = selectedLoan.driverId
       
-      if (driver) {
+      if (driverInfo && (driverInfo.email || driverInfo._id)) {
         // Add notification for the driver
         const notificationTitle = actionType === "approve" 
           ? "Loan Application Approved" 
@@ -125,10 +126,14 @@ export default function AdminLoanManagementPage() {
           ? `Your loan application for $${selectedLoan.requestedAmount.toLocaleString()} has been approved.`
           : `Your loan application for $${selectedLoan.requestedAmount.toLocaleString()} has been rejected. ${adminNotes ? `Reason: ${adminNotes}` : ''}`
         
+        // Get the correct user ID
+        const userId = driverInfo._id || driverInfo.id
+        
+        // Dispatch notification to context
         dispatch({
           type: "ADD_NOTIFICATION",
           payload: {
-            userId: driver.id,
+            userId: userId,
             title: notificationTitle,
             message: notificationMessage,
             type: actionType === "approve" ? "success" : "error",
@@ -136,42 +141,66 @@ export default function AdminLoanManagementPage() {
             actionUrl: "/dashboard/driver/loan-terms"
           },
         })
-
-        // Send email notification
-        sendEmailNotification(driver.email, notificationTitle, notificationMessage)
-      }
-
-      // Update vehicle status if approved
-      if (actionType === "approve") {
-        const vehicle = state.vehicles.find(v => v._id === selectedLoan.vehicleId)
-        if (vehicle) {
-          dispatch({
-            type: "UPDATE_VEHICLE",
-            payload: {
-              id: vehicle._id,
-              updates: { status: "Financed" },
-            },
+        
+        // Persist notification to database
+        try {
+          await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: userId,
+              title: notificationTitle,
+              message: notificationMessage,
+              type: actionType === "approve" ? "loan_approved" : "loan_rejected",
+              priority: "high",
+              actionUrl: "/dashboard/driver/loan-terms"
+            })
           })
+        } catch (notifError) {
+          console.error('Error saving notification:', notifError)
         }
+      
+      // Send email notification
+      if (driverInfo.email) {
+        await sendEmailNotification(driverInfo.email, notificationTitle, notificationMessage)
+      } else {
+        console.error('Driver email not found:', driverInfo)
       }
-
-      toast({
-        title: actionType === "approve" ? "Loan Approved" : "Loan Rejected",
-        description: `The loan application has been ${actionType === "approve" ? "approved" : "rejected"}.`,
-      })
-
-      setIsActionDialogOpen(false)
-    } catch (error) {
-      console.error("Error processing loan action:", error)
-      toast({
-        title: "Action Failed",
-        description: "There was an error processing your request.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
+    } else {
+      console.error('Driver information not found in loan:', selectedLoan)
     }
+
+    // Update vehicle status if approved
+    if (actionType === "approve") {
+      const vehicleInfo = selectedLoan.vehicleId
+      if (vehicleInfo && vehicleInfo._id) {
+        dispatch({
+          type: "UPDATE_VEHICLE",
+          payload: {
+            id: vehicleInfo._id,
+            updates: { status: "Financed" },
+          },
+        })
+      }
+    }
+
+    toast({
+      title: actionType === "approve" ? "Loan Approved" : "Loan Rejected",
+      description: `The loan application has been ${actionType === "approve" ? "approved" : "rejected"}.`,
+    })
+
+    setIsActionDialogOpen(false)
+  } catch (error) {
+    console.error("Error processing loan action:", error)
+    toast({
+      title: "Action Failed",
+      description: "There was an error processing your request.",
+      variant: "destructive",
+    })
+  } finally {
+    setIsSubmitting(false)
   }
+}
 
   // Send email notification
   const sendEmailNotification = async (email, subject, message) => {

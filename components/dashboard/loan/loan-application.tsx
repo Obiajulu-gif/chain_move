@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +22,7 @@ import {
   Info,
   Shield,
   TrendingUp,
+  DollarSign,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -146,10 +147,59 @@ export function LoanApplication({ onApplicationSubmit }: LoanApplicationProps) {
     loanPurpose: "",
     additionalInfo: "",
   })
+  
+  // Currency selector state
+  const [selectedCurrency, setSelectedCurrency] = useState<'USD' | 'NGN'>('USD')
+  const [exchangeRate, setExchangeRate] = useState<number>(1)
+  const [isLoadingRate, setIsLoadingRate] = useState(false)
+  
   const { toast } = useToast()
 
   const totalSteps = 4
   const progress = (currentStep / totalSteps) * 100
+
+  // Fetch exchange rate when currency changes
+  useEffect(() => {
+    if (selectedCurrency === 'NGN') {
+      fetchExchangeRate()
+    } else {
+      setExchangeRate(1)
+    }
+  }, [selectedCurrency])
+
+  const fetchExchangeRate = async () => {
+    setIsLoadingRate(true)
+    try {
+      const response = await fetch('/api/exchange-rate')
+      if (response.ok) {
+        const data = await response.json()
+        setExchangeRate(data.rate)
+      } else {
+        // Fallback rate if API fails
+        setExchangeRate(1650)
+      }
+    } catch (error) {
+      console.error('Failed to fetch exchange rate:', error)
+      setExchangeRate(1650) // Fallback rate
+    } finally {
+      setIsLoadingRate(false)
+    }
+  }
+
+  // Currency formatting function
+  const formatCurrency = (amount: number) => {
+    if (selectedCurrency === 'USD') {
+      return `$${amount.toLocaleString()}`
+    } else {
+      const ngnAmount = amount * exchangeRate
+      return `₦${ngnAmount.toLocaleString()}`
+    }
+  }
+
+  // Get display amounts in selected currency
+  const getDisplayAmount = (usdAmount: number) => {
+    return selectedCurrency === 'USD' ? usdAmount : usdAmount * exchangeRate
+  }
 
   const calculateMonthlyPayment = () => {
     const principal = loanAmount[0] - downPayment[0]
@@ -185,10 +235,12 @@ export function LoanApplication({ onApplicationSubmit }: LoanApplicationProps) {
   const handleSubmit = () => {
     const applicationData = {
       vehicle: selectedVehicle,
-      loanAmount: loanAmount[0],
+      loanAmount: loanAmount[0], // Always store in USD
       loanTerm: loanTerm[0],
-      downPayment: downPayment[0],
+      downPayment: downPayment[0], // Always store in USD
       monthlyPayment: calculateMonthlyPayment(),
+      currency: selectedCurrency,
+      exchangeRate: selectedCurrency === 'NGN' ? exchangeRate : 1,
       documents,
       formData,
       submittedAt: new Date().toISOString(),
@@ -304,6 +356,41 @@ export function LoanApplication({ onApplicationSubmit }: LoanApplicationProps) {
               <p className="text-muted-foreground">Adjust loan terms to fit your budget</p>
             </div>
 
+            {/* Currency Selector */}
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <DollarSign className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <h4 className="font-medium text-blue-900">Currency Selection</h4>
+                      <p className="text-sm text-blue-800">Choose your preferred currency for display</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <Select value={selectedCurrency} onValueChange={(value: 'USD' | 'NGN') => setSelectedCurrency(value)}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="NGN">NGN (₦)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {selectedCurrency === 'NGN' && (
+                      <div className="text-sm text-blue-800">
+                        {isLoadingRate ? (
+                          <span>Loading rate...</span>
+                        ) : (
+                          <span>1 USD = ₦{exchangeRate.toLocaleString()}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
                 <Card className="bg-card border-border">
@@ -321,7 +408,10 @@ export function LoanApplication({ onApplicationSubmit }: LoanApplicationProps) {
                       />
                       <div>
                         <h4 className="font-semibold text-foreground">{selectedVehicle.name}</h4>
-                        <p className="text-2xl font-bold text-foreground">${selectedVehicle.price.toLocaleString()}</p>
+                        <p className="text-2xl font-bold text-foreground">{formatCurrency(selectedVehicle.price)}</p>
+                        {selectedCurrency === 'NGN' && (
+                          <p className="text-sm text-muted-foreground">${selectedVehicle.price.toLocaleString()} USD</p>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -329,7 +419,7 @@ export function LoanApplication({ onApplicationSubmit }: LoanApplicationProps) {
 
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-foreground">Loan Amount: ${loanAmount[0].toLocaleString()}</Label>
+                    <Label className="text-foreground">Loan Amount: {formatCurrency(loanAmount[0])}</Label>
                     <Slider
                       value={loanAmount}
                       onValueChange={setLoanAmount}
@@ -339,8 +429,8 @@ export function LoanApplication({ onApplicationSubmit }: LoanApplicationProps) {
                       className="mt-2"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground mt-1">
-                      <span>$5,000</span>
-                      <span>${selectedVehicle.price.toLocaleString()}</span>
+                      <span>{formatCurrency(5000)}</span>
+                      <span>{formatCurrency(selectedVehicle.price)}</span>
                     </div>
                   </div>
 
@@ -354,7 +444,7 @@ export function LoanApplication({ onApplicationSubmit }: LoanApplicationProps) {
                   </div>
 
                   <div>
-                    <Label className="text-foreground">Down Payment: ${downPayment[0].toLocaleString()}</Label>
+                    <Label className="text-foreground">Down Payment: {formatCurrency(downPayment[0])}</Label>
                     <Slider
                       value={downPayment}
                       onValueChange={setDownPayment}
@@ -364,8 +454,8 @@ export function LoanApplication({ onApplicationSubmit }: LoanApplicationProps) {
                       className="mt-2"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground mt-1">
-                      <span>$0</span>
-                      <span>${(selectedVehicle.price * 0.5).toLocaleString()}</span>
+                      <span>{formatCurrency(0)}</span>
+                      <span>{formatCurrency(selectedVehicle.price * 0.5)}</span>
                     </div>
                   </div>
                 </div>
@@ -382,16 +472,16 @@ export function LoanApplication({ onApplicationSubmit }: LoanApplicationProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Vehicle Price</p>
-                      <p className="text-lg font-bold text-foreground">${selectedVehicle.price.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-foreground">{formatCurrency(selectedVehicle.price)}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Down Payment</p>
-                      <p className="text-lg font-bold text-foreground">${downPayment[0].toLocaleString()}</p>
+                      <p className="text-lg font-bold text-foreground">{formatCurrency(downPayment[0])}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Loan Amount</p>
                       <p className="text-lg font-bold text-foreground">
-                        ${(loanAmount[0] - downPayment[0]).toLocaleString()}
+                        {formatCurrency(loanAmount[0] - downPayment[0])}
                       </p>
                     </div>
                     <div>
@@ -403,7 +493,10 @@ export function LoanApplication({ onApplicationSubmit }: LoanApplicationProps) {
                   <div className="border-t pt-4">
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground">Monthly Payment</p>
-                      <p className="text-3xl font-bold text-[#E57700]">${calculateMonthlyPayment().toFixed(2)}</p>
+                      <p className="text-3xl font-bold text-[#E57700]">{formatCurrency(calculateMonthlyPayment())}</p>
+                      {selectedCurrency === 'NGN' && (
+                        <p className="text-sm text-muted-foreground">${calculateMonthlyPayment().toFixed(2)} USD</p>
+                      )}
                     </div>
                   </div>
 
@@ -415,13 +508,13 @@ export function LoanApplication({ onApplicationSubmit }: LoanApplicationProps) {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Total Interest</span>
                       <span className="text-foreground">
-                        ${(calculateMonthlyPayment() * loanTerm[0] - (loanAmount[0] - downPayment[0])).toFixed(2)}
+                        {formatCurrency(calculateMonthlyPayment() * loanTerm[0] - (loanAmount[0] - downPayment[0]))}
                       </span>
                     </div>
                     <div className="flex justify-between font-semibold">
                       <span className="text-foreground">Total Amount</span>
                       <span className="text-foreground">
-                        ${(calculateMonthlyPayment() * loanTerm[0] + downPayment[0]).toFixed(2)}
+                        {formatCurrency(calculateMonthlyPayment() * loanTerm[0] + downPayment[0])}
                       </span>
                     </div>
                   </div>
