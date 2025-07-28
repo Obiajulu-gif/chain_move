@@ -109,7 +109,7 @@ export function InvestmentModalEnhanced({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-card border-border text-foreground max-w-3xl mx-4">
+      <DialogContent className="bg-card border-border text-foreground max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
         {step === 1 && (
           <>
             <DialogHeader>
@@ -124,7 +124,7 @@ export function InvestmentModalEnhanced({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-y-auto max-h-[60vh] pr-2">
               {/* Vehicle Summary */}
               <div className="p-4 bg-muted rounded-lg">
                 <div className="grid grid-cols-2 gap-4">
@@ -241,7 +241,7 @@ export function InvestmentModalEnhanced({
                 </div>
               )}
 
-              <div className="flex space-x-3">
+              <div className="flex space-x-3 mt-6 pt-4 border-t border-border">
                 <Button variant="outline" onClick={handleClose} className="flex-1">
                   Cancel
                 </Button>
@@ -270,7 +270,7 @@ export function InvestmentModalEnhanced({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-y-auto max-h-[60vh] pr-2">
               <div className="p-4 bg-muted rounded-lg">
                 <h4 className="font-semibold text-foreground mb-3">Investment Summary</h4>
                 <div className="space-y-2">
@@ -329,7 +329,7 @@ export function InvestmentModalEnhanced({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="p-4 bg-muted rounded-lg">
+            <div className="p-4 bg-muted rounded-lg overflow-y-auto max-h-[60vh]">
               <h4 className="font-semibold text-foreground mb-2">What's Next?</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• You'll receive monthly returns starting next month</li>
@@ -341,7 +341,7 @@ export function InvestmentModalEnhanced({
               </ul>
             </div>
 
-            <Button onClick={handleClose} className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+            <Button onClick={handleClose} className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white mt-6">
               Continue Investing
             </Button>
           </>
