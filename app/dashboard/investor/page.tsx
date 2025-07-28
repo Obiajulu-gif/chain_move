@@ -40,6 +40,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { VehicleCard } from "@/components/dashboard/investor/VehicleCard"
+import { InvestmentModalEnhanced } from "@/components/dashboard/investment-modal-enhanced"
 
 export default function InvestorDashboard() {
   const { state, dispatch, fetchData } = usePlatform()
@@ -233,22 +234,18 @@ export default function InvestorDashboard() {
     })
   }
 
-  const handleInvestNow = (vehicle) => {
+  // Update the handleInvestNow function
+  const handleInvestNow = (vehicle: any) => {
     setSelectedVehicle(vehicle)
     setIsInvestDialogOpen(true)
   }
 
-  const submitInvestment = async () => {
-    const amount = Number.parseFloat(investmentAmount)
-    if (!selectedVehicle || isNaN(amount) || amount <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a valid amount to invest.", variant: "destructive" })
-      return
-    }
-
-    if (amount > currentBalance) {
+  // Update the submitInvestment function
+  const submitInvestment = async (amount: number, term: number) => {
+    if (!selectedVehicle || !currentInvestorId) {
       toast({
-        title: "Insufficient Funds",
-        description: `Your investment of $${amount.toLocaleString()} exceeds your available balance of $${currentBalance.toLocaleString()}.`,
+        title: "Error",
+        description: "Missing investment details",
         variant: "destructive",
       })
       return
@@ -257,39 +254,41 @@ export default function InvestorDashboard() {
     try {
       const response = await fetch("/api/invest", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           vehicleId: selectedVehicle._id,
-          investorId: authUser.id,
-          amount,
+          investorId: currentInvestorId,
+          amount: amount,
+          term: term,
         }),
       })
 
-      const result = await response.json()
+      const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(result.message || "Investment failed.")
+      if (response.ok) {
+        toast({
+          title: "Investment Successful",
+          description: data.message,
+        })
+
+        // Refresh data
+        await refreshUserData()
+        await fetchInvestments()
+        await fetchData()
+
+        setIsInvestDialogOpen(false)
+        setSelectedVehicle(null)
+      } else {
+        throw new Error(data.message || "Investment failed")
       }
-
-      toast({
-        title: "Investment Successful!",
-        description: `Your investment of $${amount.toLocaleString()} in ${selectedVehicle.name} has been confirmed.`,
-      })
-
-      // Update local states optimistically
-      setCurrentBalance((prev) => prev - amount)
-      setTotalInvested((prev) => prev + amount)
-
-      // Refresh all data to update the UI
-      await Promise.all([refreshUserData(), fetchInvestments(), fetchData?.()])
     } catch (error) {
-      const message = error instanceof Error ? error.message : "An unknown error occurred."
-      toast({ title: "Investment Failed", description: message, variant: "destructive" })
-    } finally {
-      // Close dialog and reset state
-      setIsInvestDialogOpen(false)
-      setSelectedVehicle(null)
-      setInvestmentAmount("")
+      toast({
+        title: "Investment Failed",
+        description: error instanceof Error ? error.message : "Please try again later",
+        variant: "destructive",
+      })
     }
   }
 
@@ -735,35 +734,14 @@ export default function InvestorDashboard() {
         </div>
       </div>
 
-      <Dialog open={isInvestDialogOpen} onOpenChange={setIsInvestDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Invest in {selectedVehicle?.name}</DialogTitle>
-            <DialogDescription>
-              Enter the amount you would like to invest in this vehicle. The total funding goal is $
-              {selectedVehicle?.price.toLocaleString()}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="investment-amount">Investment Amount ($)</Label>
-            <Input
-              id="investment-amount"
-              type="number"
-              value={investmentAmount}
-              onChange={(e) => setInvestmentAmount(e.target.value)}
-              placeholder="e.g., 5000"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsInvestDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={submitInvestment} className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
-              Confirm Investment
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Enhanced Investment Modal */}
+      <InvestmentModalEnhanced
+        isOpen={isInvestDialogOpen}
+        onClose={() => setIsInvestDialogOpen(false)}
+        vehicle={selectedVehicle}
+        availableBalance={currentBalance}
+        onInvestmentComplete={submitInvestment}
+      />
     </>
   )
 }

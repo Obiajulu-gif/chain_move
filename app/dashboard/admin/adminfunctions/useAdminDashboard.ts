@@ -103,7 +103,7 @@ export const useAdminDashboard = () => {
         type: newVehicle.type,
         year: Number.parseInt(newVehicle.year),
         price: Number.parseInt(newVehicle.price),
-        roi: Number.parseFloat(newVehicle.roi),
+        // Remove roi field - it will be set by first investor
         features: newVehicle.features.split(",").map((f) => f.trim()),
         image: newVehicle.image || "/placeholder.svg?height=200&width=300",
         status: "Available",
@@ -117,13 +117,14 @@ export const useAdminDashboard = () => {
         },
         addedDate: new Date().toISOString(),
         popularity: 0,
+        isTermSet: false, // New field
       };
 
       await addVehicle(vehicleData as Omit<Vehicle, '_id'>);
 
       toast({
         title: "Vehicle Added",
-        description: `${vehicleData.name} has been added to the platform`,
+        description: `${vehicleData.name} has been added. ROI will be set by the first investor.`,
       });
 
       setNewVehicle({
