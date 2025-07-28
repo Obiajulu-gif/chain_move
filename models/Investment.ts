@@ -14,6 +14,7 @@ export interface IInvestment extends Document {
   totalPayments: number;
   nextPaymentDate: Date;
   totalReturns: number;
+  investmentTerm: number; // Add term field
 }
 
 const InvestmentSchema: Schema = new Schema({
@@ -34,6 +35,7 @@ const InvestmentSchema: Schema = new Schema({
   totalPayments: { type: Number, required: true },
   nextPaymentDate: { type: Date, required: true },
   totalReturns: { type: Number, default: 0 },
+  investmentTerm: { type: Number, required: true }, // Add this field
 });
 
 export default mongoose.models.Investment || mongoose.model<IInvestment>('Investment', InvestmentSchema);

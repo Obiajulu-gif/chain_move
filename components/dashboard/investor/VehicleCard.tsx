@@ -7,18 +7,20 @@ import { Progress } from "@/components/ui/progress"
 import Image from "next/image"
 import { TrendingUp } from "lucide-react"
 
-// Update the vehicle type to include funding details
+// Update the vehicle type to include new fields
 interface Vehicle {
   _id: string;
   name: string;
   type: string;
   year: number;
   price: number;
-  roi: number;
+  roi?: number; // Make optional
   image?: string;
   features: string[];
-  totalFundedAmount?: number; // Add this field
+  totalFundedAmount?: number;
   fundingStatus?: "Open" | "Funded" | "Active";
+  investmentTerm?: number; // Add term field
+  isTermSet?: boolean; // Add term set flag
 }
 
 interface VehicleCardProps {
@@ -41,10 +43,17 @@ export function VehicleCard({ vehicle, onInvest }: VehicleCardProps) {
           className="w-full h-48 object-cover"
         />
         <div className="absolute top-2 right-2">
+          {vehicle.isTermSet ? (
             <Badge className="bg-green-600 text-white border-green-700">
-                <TrendingUp className="h-4 w-4 mr-1.5" />
-                {vehicle.roi.toFixed(1)}% Expected ROI
+              <TrendingUp className="h-4 w-4 mr-1.5" />
+              {vehicle.roi?.toFixed(1)}% ROI ({vehicle.investmentTerm}mo)
             </Badge>
+          ) : (
+            <Badge className="bg-blue-600 text-white border-blue-700">
+              <TrendingUp className="h-4 w-4 mr-1.5" />
+              ROI: %
+            </Badge>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-4 flex-grow">
@@ -54,7 +63,7 @@ export function VehicleCard({ vehicle, onInvest }: VehicleCardProps) {
             <p className="font-bold text-lg text-foreground mt-1">${vehicle.price.toLocaleString()}</p>
         </div>
         
-        {/* --- NEW: FUNDING PROGRESS BAR --- */}
+        {/* Funding Progress Bar */}
         <div className="space-y-2 mb-4">
             <Progress value={fundingProgress} className="h-2" />
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -71,7 +80,7 @@ export function VehicleCard({ vehicle, onInvest }: VehicleCardProps) {
       </CardContent>
       <CardFooter className="p-4 bg-muted/50 mt-auto">
         <Button onClick={() => onInvest(vehicle)} className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white">
-          Invest Now
+          {vehicle.isTermSet ? 'Invest Now' : 'Set Terms & Invest'}
         </Button>
       </CardFooter>
     </Card>
