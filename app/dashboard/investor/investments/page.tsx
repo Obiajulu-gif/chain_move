@@ -36,6 +36,9 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 
+import { useCurrency } from "@/hooks/use-currency"
+import { CurrencySwitcher } from "@/components/ui/currency-switcher"
+
 interface EnhancedInvestment extends PlatformInvestment {
   vehicleName: string
   vehicleImage: string

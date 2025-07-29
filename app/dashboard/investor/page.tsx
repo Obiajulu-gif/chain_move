@@ -22,9 +22,11 @@ import { Header } from "@/components/dashboard/header"
 import { RealTimeChat } from "@/components/dashboard/real-time-chat"
 import { AdvancedAnalytics } from "@/components/dashboard/advanced-analytics"
 import { NotificationCenter } from "@/components/dashboard/notification-center"
+import { CurrencySwitcher } from "@/components/ui/currency-switcher"
 import { usePlatform, useInvestorData } from "@/contexts/platform-context"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
+import { useCurrency } from "@/hooks/use-currency"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   DollarSign,
@@ -50,6 +52,18 @@ export default function InvestorDashboard() {
   const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // Currency hook
+  const {
+    selectedCurrency,
+    setSelectedCurrency,
+    exchangeRate,
+    isLoadingRate,
+    formatCurrency,
+    convertAmount,
+    getDisplayAmount,
+    supportedCurrencies
+  } = useCurrency('USD')
 
   const [isInvestDialogOpen, setIsInvestDialogOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
@@ -427,6 +441,29 @@ export default function InvestorDashboard() {
           />
 
           <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
+            {/* Currency Switcher */}
+            <Card className="bg-card/50 border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center">
+                  Currency Display
+                </CardTitle>
+                <CardDescription>
+                  Choose your preferred currency for displaying amounts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CurrencySwitcher
+                  selectedCurrency={selectedCurrency}
+                  onCurrencyChange={setSelectedCurrency}
+                  supportedCurrencies={supportedCurrencies}
+                  exchangeRate={exchangeRate}
+                  isLoadingRate={isLoadingRate}
+                  baseCurrency="USD"
+                  showExchangeRate={true}
+                />
+              </CardContent>
+            </Card>
+
             {/* Real-time Portfolio Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
@@ -446,7 +483,12 @@ export default function InvestorDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold mr-4">${currentBalance.toLocaleString()}</div>
+                  <div className="text-2xl font-bold mr-4">{formatCurrency(currentBalance)}</div>
+                  {selectedCurrency !== 'USD' && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(currentBalance, 'USD')} USD
+                    </p>
+                  )}
                   <Dialog open={isFundDialogOpen} onOpenChange={setIsFundDialogOpen}>
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm" className="mt-2 w-full bg-transparent">
@@ -495,7 +537,12 @@ export default function InvestorDashboard() {
                   <TrendingUp className="h-4 w-4 text-foreground" />
                 </CardHeader>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-foreground">${displayTotalInvested.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-foreground">{formatCurrency(displayTotalInvested)}</div>
+                  {selectedCurrency !== 'USD' && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(displayTotalInvested, 'USD')} USD
+                    </p>
+                  )}
                   <p className="text-xs text-blue-500 dark:text-blue-400">Active investments</p>
                 </CardContent>
               </Card>
@@ -506,7 +553,12 @@ export default function InvestorDashboard() {
                   <DollarSign className="h-4 w-4 text-foreground" />
                 </CardHeader>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-foreground">${totalReturns.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-foreground">{formatCurrency(totalReturns)}</div>
+                  {selectedCurrency !== 'USD' && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(totalReturns, 'USD')} USD
+                    </p>
+                  )}
                   <p className="text-xs text-green-500 dark:text-green-400">
                     +{totalInvested > 0 ? ((totalReturns / totalInvested) * 100).toFixed(1) : 0}% ROI
                   </p>
@@ -519,7 +571,12 @@ export default function InvestorDashboard() {
                   <BarChart3 className="h-4 w-4 text-foreground" />
                 </CardHeader>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-foreground">${monthlyIncome.toFixed(0)}</div>
+                  <div className="text-2xl font-bold text-foreground">{formatCurrency(monthlyIncome)}</div>
+                  {selectedCurrency !== 'USD' && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(monthlyIncome, 'USD')} USD
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground">Expected monthly</p>
                 </CardContent>
               </Card>
