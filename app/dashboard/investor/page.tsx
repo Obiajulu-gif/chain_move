@@ -370,15 +370,39 @@ export default function InvestorDashboard() {
   }
 
   const unreadNotifications = state.notifications.filter((n) => n.userId === currentInvestorId && !n.read).length
-  const totalReturns = authUser?.totalReturns || 0
+  
   const monthlyIncome = investorData.investments
     .filter((inv) => inv.status === "Active")
     .reduce((sum, inv) => sum + inv.monthlyReturn, 0)
+  
+  // Calculate weekly income (monthly income divided by approximately 4.33 weeks per month)
+  const weeklyIncome = monthlyIncome / 4.33
 
   // Get investments from the investorData hook for consistency
   const investments = investorData.investments || []
   const calculatedTotalInvested = investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
   const displayTotalInvested = totalInvested > 0 ? totalInvested : calculatedTotalInvested
+  
+  // Calculate total returns based on actual investment data
+  // Total returns = sum of (invested amount + ROI for each investment)
+  const calculatedTotalReturns = investments.reduce((sum, inv) => {
+    const investedAmount = inv.amount || 0
+    const expectedROI = inv.expectedROI || 0
+    const roiAmount = (investedAmount * expectedROI) / 100
+    return sum + investedAmount + roiAmount
+  }, 0)
+  
+  // Use calculated total returns instead of authUser.totalReturns
+  const totalReturns = calculatedTotalReturns
+  
+  // const monthlyIncome = investorData.investments
+  //   .filter((inv) => inv.status === "Active")
+  //   .reduce((sum, inv) => sum + inv.monthlyReturn, 0)
+
+  // Get investments from the investorData hook for consistency
+  // const investments = investorData.investments || []
+  // const calculatedTotalInvested = investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+  // const displayTotalInvested = totalInvested > 0 ? totalInvested : calculatedTotalInvested
 
   // Update the loading condition
   if (authLoading || isReturningFromPayment) {
@@ -443,14 +467,7 @@ export default function InvestorDashboard() {
           <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
             {/* Currency Switcher */}
             <Card className="bg-card/50 border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  Currency Display
-                </CardTitle>
-                <CardDescription>
-                  Choose your preferred currency for displaying amounts
-                </CardDescription>
-              </CardHeader>
+              
               <CardContent>
                 <CurrencySwitcher
                   selectedCurrency={selectedCurrency}
@@ -577,7 +594,16 @@ export default function InvestorDashboard() {
                       {formatCurrency(monthlyIncome, 'USD')} USD
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground">Expected monthly</p>
+                  <div className="mt-2 pt-2 border-t border-border/50">
+                    <p className="text-sm font-medium text-muted-foreground">Weekly Income</p>
+                    <p className="text-lg font-semibold text-foreground">{formatCurrency(weeklyIncome)}</p>
+                    {selectedCurrency !== 'USD' && (
+                      <p className="text-xs text-muted-foreground">
+                        {formatCurrency(weeklyIncome, 'USD')} USD
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Expected income</p>
                 </CardContent>
               </Card>
             </div>
