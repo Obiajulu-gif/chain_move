@@ -148,14 +148,14 @@ const VehicleDialog: React.FC<VehicleDialogProps> = ({
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Expected ROI (%) *</label>
+                <label className="text-sm font-medium">Expected ROI (%)</label>
                 <input
                   type="number"
                   step="0.1"
                   name="roi"
                   value={vehicle.roi}
                   onChange={onVehicleChange}
-                  placeholder="16.5"
+                  placeholder="Abeg leave empty"
                   className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E57700]"
                 />
               </div>
