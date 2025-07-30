@@ -57,7 +57,7 @@ export default function DriverDashboard() {
   const [isApplyLoanDialogOpen, setIsApplyLoanDialogOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [loanApplication, setLoanApplication] = useState({
-    loanTerm: "12", // Only loanTerm and purpose are editable
+    loanTerm: "12", // Default value, will be overridden if vehicle has investmentTerm
     purpose: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -186,7 +186,19 @@ export default function DriverDashboard() {
 
   const handleVehicleSelect = (vehicle) => {
     setSelectedVehicle(vehicle)
-    // No need to set requestedAmount in state as it's now derived and non-editable
+    // Set loan term based on vehicle's investmentTerm or keep it editable
+    if (vehicle.investmentTerm) {
+      setLoanApplication(prev => ({
+        ...prev,
+        loanTerm: vehicle.investmentTerm.toString()
+      }))
+    } else {
+      // Reset to default if no investmentTerm
+      setLoanApplication(prev => ({
+        ...prev,
+        loanTerm: "12"
+      }))
+    }
   }
 
   const handleLoanApplicationSubmit = async () => {
@@ -829,26 +841,43 @@ export default function DriverDashboard() {
                                       </div>
                                       <div>
                                         <Label htmlFor="loanTerm">Loan Term (months)</Label>
-                                        <Select
-                                          value={loanApplication.loanTerm}
-                                          onValueChange={(value) =>
-                                            setLoanApplication((prev) => ({
-                                              ...prev,
-                                              loanTerm: value,
-                                            }))
-                                          }
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="6">6 months</SelectItem>
-                                            <SelectItem value="12">12 months</SelectItem>
-                                            <SelectItem value="18">18 months</SelectItem>
-                                          </SelectContent>
-                                        </Select>
+                                        {selectedVehicle?.investmentTerm ? (
+                                          // If vehicle has investmentTerm, show it as read-only
+                                          <Input
+                                            id="loanTerm"
+                                            type="text"
+                                            value={`${selectedVehicle.investmentTerm} months`}
+                                            readOnly
+                                            disabled
+                                            className="bg-muted cursor-not-allowed"
+                                          />
+                                        ) : (
+                                          // If no investmentTerm, show editable select
+                                          <Select
+                                            value={loanApplication.loanTerm}
+                                            onValueChange={(value) =>
+                                              setLoanApplication((prev) => ({
+                                                ...prev,
+                                                loanTerm: value,
+                                              }))}
+                                          >
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="12">12 months</SelectItem>
+                                              <SelectItem value="24">24 months</SelectItem>
+                                              <SelectItem value="36">36 months</SelectItem>
+                                              <SelectItem value="48">48 months</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        )}
+                                        {selectedVehicle?.investmentTerm && (
+                                          <p className="text-sm text-muted-foreground mt-1">
+                                            This term was set by the  investor and cannot be changed.
+                                          </p>
+                                        )}
                                       </div>
-                                      {/* Removed Credit Score and Monthly Income fields */}
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                       <div>
@@ -890,6 +919,32 @@ export default function DriverDashboard() {
                                           disabled
                                           className="bg-muted cursor-not-allowed"
                                         />
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="weeklyPayment">Weekly Payment ($)</Label>
+                                        <Input
+                                          id="weeklyPayment"
+                                          type="text"
+                                          value={getDisplayAmount(
+                                            (() => {
+                                              const principal = selectedVehicle.price;
+                                              const rate = (selectedVehicle.roi / 100) / 12;
+                                              const term = Number.parseInt(loanApplication.loanTerm);
+                                              // Calculate monthly payment using the same formula as in handleLoanApplicationSubmit
+                                              const monthlyPayment = (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1);
+                                              // Calculate weekly payment (monthly payment / 4.33 weeks per month)
+                                              return monthlyPayment / 4.33;
+                                            })()
+                                          )}
+                                          readOnly
+                                          disabled
+                                          className="bg-muted cursor-not-allowed"
+                                        />
+                                      </div>
+                                      <div>
+                                        {/* Empty div to maintain grid layout */}
                                       </div>
                                     </div>
                                     <div>
