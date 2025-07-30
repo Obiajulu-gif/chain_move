@@ -874,7 +874,7 @@ export default function DriverDashboard() {
                                         )}
                                         {selectedVehicle?.investmentTerm && (
                                           <p className="text-sm text-muted-foreground mt-1">
-                                            This term was set by the first investor and cannot be changed.
+                                            This term was set by the  investor and cannot be changed.
                                           </p>
                                         )}
                                       </div>
@@ -919,6 +919,32 @@ export default function DriverDashboard() {
                                           disabled
                                           className="bg-muted cursor-not-allowed"
                                         />
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="weeklyPayment">Weekly Payment ($)</Label>
+                                        <Input
+                                          id="weeklyPayment"
+                                          type="text"
+                                          value={getDisplayAmount(
+                                            (() => {
+                                              const principal = selectedVehicle.price;
+                                              const rate = (selectedVehicle.roi / 100) / 12;
+                                              const term = Number.parseInt(loanApplication.loanTerm);
+                                              // Calculate monthly payment using the same formula as in handleLoanApplicationSubmit
+                                              const monthlyPayment = (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1);
+                                              // Calculate weekly payment (monthly payment / 4.33 weeks per month)
+                                              return monthlyPayment / 4.33;
+                                            })()
+                                          )}
+                                          readOnly
+                                          disabled
+                                          className="bg-muted cursor-not-allowed"
+                                        />
+                                      </div>
+                                      <div>
+                                        {/* Empty div to maintain grid layout */}
                                       </div>
                                     </div>
                                     <div>
