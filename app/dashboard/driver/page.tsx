@@ -214,11 +214,11 @@ export default function DriverDashboard() {
     setIsSubmitting(true)
     try {
       const principal = selectedVehicle.price // Use selected vehicle price directly
-      
+
       // New interest rate calculation based on investment term
       const term = Number.parseInt(loanApplication.loanTerm)
       let annualInterestRate
-      
+
       switch (term) {
         case 12:
           annualInterestRate = 157.5 // 157.5% for 12 months
@@ -236,7 +236,7 @@ export default function DriverDashboard() {
           // Default to 12 months rate if term doesn't match
           annualInterestRate = 157.5
       }
-      
+
       // New total payback calculation: interest rate * vehicle price
       const totalPayback = (annualInterestRate / 100) * principal
       const monthlyPayment = totalPayback / term
@@ -250,8 +250,9 @@ export default function DriverDashboard() {
         vehicleId: selectedVehicle._id,
         requestedAmount: principal, // Use the vehicle's price
         totalAmountToPayBack: totalPayback,
-  loanTerm: term,
-  monthlyPayment: monthlyPayment,
+        loanTerm: term,
+        monthlyPayment: monthlyPayment,
+        weeklyPayment: monthlyPayment / 4.33,
         interestRate: annualInterestRate, // Use the new interest rate
         status: "Pending" as const,
         submittedDate: new Date().toISOString(),
@@ -276,8 +277,9 @@ export default function DriverDashboard() {
           vehicleId: selectedVehicle._id,
           requestedAmount: principal,
           totalAmountToPayBack: totalPayback,
-    loanTerm: term,
-    monthlyPayment: monthlyPayment,
+          loanTerm: term,
+          monthlyPayment: monthlyPayment,
+          weeklyPayment: monthlyPayment / 4.33,
           interestRate: annualInterestRate,
           purpose: loanApplication.purpose,
           creditScore: 0,
@@ -310,12 +312,12 @@ export default function DriverDashboard() {
           updates: { status: "Reserved", driverId: currentDriverId },
         },
       })
-      
+
       // Send email notification
       try {
         const emailSubject = "Loan Application Submitted"
         const weeklyPayment = monthlyPayment / 4.33 // Calculate weekly payment (monthly payment / 4.33 weeks per month)
-  const emailHtml = `
+        const emailHtml = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
       <h2 style="color: #E57700; margin-bottom: 20px;">Loan Application Submitted</h2>
       <p style="margin-bottom: 15px;">Your loan application for ${selectedVehicle.name} has been submitted for review.</p>
@@ -338,7 +340,7 @@ export default function DriverDashboard() {
             </div>
           </div>
         `
-        
+
         const response = await fetch('/api/send-email', {
           method: 'POST',
           headers: {
@@ -350,7 +352,7 @@ export default function DriverDashboard() {
             html: emailHtml,
           }),
         })
-        
+
         if (!response.ok) {
           console.error('Failed to send email notification')
         }
@@ -358,13 +360,13 @@ export default function DriverDashboard() {
         console.error('Error sending email notification:', emailError)
         // Continue with the process even if email fails
       }
-      
+
       toast({
         title: "✅ Application Submitted Successfully!",
         description: `Your loan application for ${selectedVehicle.name} has been submitted for review. You will receive an email confirmation shortly.`,
         duration: 5000,
       })
-      
+
       // Reset form and close dialog
       setIsApplyLoanDialogOpen(false)
       setSelectedVehicle(null)
@@ -372,7 +374,7 @@ export default function DriverDashboard() {
         loanTerm: "12",
         purpose: "",
       })
-      
+
       // Redirect to loan-terms page after a brief delay to show the success message
       setTimeout(() => {
         router.push('/dashboard/driver/loan-terms')
@@ -504,7 +506,7 @@ export default function DriverDashboard() {
   const downPaymentAmount = selectedVehicle ? (() => {
     const principal = selectedVehicle.price;
     const term = Number.parseInt(loanApplication.loanTerm || "12"); // Default to 12 if not set
-    
+
     // Use the new interest rate calculation
     let annualInterestRate
     switch (term) {
@@ -523,7 +525,7 @@ export default function DriverDashboard() {
       default:
         annualInterestRate = 157.5
     }
-    
+
     const totalPayback = (annualInterestRate / 100) * principal;
     return (totalPayback * 0.15).toLocaleString(undefined, { maximumFractionDigits: 2 });
   })() : "0"
@@ -757,48 +759,48 @@ export default function DriverDashboard() {
                                   : "Select a vehicle and complete your loan application"}
                               </DialogDescription>
                             </DialogHeader>
-                    {/* Currency Selection Card */}
-                    <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-800">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center text-orange-800 dark:text-orange-200">
-                          <CreditCard className="h-5 w-5 mr-2" />
-                          Currency Selection
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="flex items-center space-x-4">
-                          <Label htmlFor="currency" className="text-sm font-medium min-w-[80px]">
-                            Currency:
-                          </Label>
-                          <Select
-                            value={selectedCurrency}
-                            onValueChange={(value: 'USD' | 'NGN') => setSelectedCurrency(value)}
-                            disabled={isLoadingRate}
-                          >
-                            <SelectTrigger className="w-[200px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="USD">🇺🇸 USD (US Dollar)</SelectItem>
-                              <SelectItem value="NGN">🇳🇬 NGN (Nigerian Naira)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {isLoadingRate && (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                          )}
-                        </div>
-                        {selectedCurrency === 'NGN' && (
-                          <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg border">
-                            {/* <p className="text-sm text-muted-foreground">
+                            {/* Currency Selection Card */}
+                            <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-800">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-lg flex items-center text-orange-800 dark:text-orange-200">
+                                  <CreditCard className="h-5 w-5 mr-2" />
+                                  Currency Selection
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <div className="flex items-center space-x-4">
+                                  <Label htmlFor="currency" className="text-sm font-medium min-w-[80px]">
+                                    Currency:
+                                  </Label>
+                                  <Select
+                                    value={selectedCurrency}
+                                    onValueChange={(value: 'USD' | 'NGN') => setSelectedCurrency(value)}
+                                    disabled={isLoadingRate}
+                                  >
+                                    <SelectTrigger className="w-[200px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="USD">🇺🇸 USD (US Dollar)</SelectItem>
+                                      <SelectItem value="NGN">🇳🇬 NGN (Nigerian Naira)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  {isLoadingRate && (
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                  )}
+                                </div>
+                                {selectedCurrency === 'NGN' && (
+                                  <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg border">
+                                    {/* <p className="text-sm text-muted-foreground">
                               <strong>Live Exchange Rate:</strong> 1 USD = ₦{exchangeRate.toLocaleString()}
                             </p> */}
-                            {/* <p className="text-xs text-muted-foreground mt-1">
+                                    {/* <p className="text-xs text-muted-foreground mt-1">
                               All calculations are done in USD and converted to NGN for display
                             </p> */}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
                             {showKycPromptDialog ? (
                               <div className="py-6 text-center">
                                 <p className="text-lg text-foreground mb-4">{kycPromptMessage}</p>
@@ -821,11 +823,10 @@ export default function DriverDashboard() {
                                       {availableVehicles.map((vehicle) => (
                                         <Card
                                           key={vehicle._id}
-                                          className={`cursor-pointer transition-all ${
-                                            selectedVehicle?._id === vehicle._id
+                                          className={`cursor-pointer transition-all ${selectedVehicle?._id === vehicle._id
                                               ? "ring-2 ring-[#E57700] bg-orange-50 dark:bg-orange-950/20"
                                               : "hover:shadow-md"
-                                          }`}
+                                            }`}
                                           onClick={() => handleVehicleSelect(vehicle)}
                                         >
                                           <CardContent className="p-4">
@@ -845,7 +846,7 @@ export default function DriverDashboard() {
                                                 <div className="flex items-center justify-between mt-2">
                                                   <span className="text-lg font-bold text-[#E57700]">
                                                     {getDisplayAmount(vehicle.price)}
-                                                </span>
+                                                  </span>
                                                   {/* <Badge variant="outline" className="text-xs">
                                                     {vehicle.roi}% ROI
                                                   </Badge> */}
@@ -931,7 +932,7 @@ export default function DriverDashboard() {
                                             (() => {
                                               const principal = selectedVehicle.price;
                                               const term = Number.parseInt(loanApplication.loanTerm);
-                                              
+
                                               // Use the new interest rate calculation
                                               let annualInterestRate
                                               switch (term) {
@@ -950,7 +951,7 @@ export default function DriverDashboard() {
                                                 default:
                                                   annualInterestRate = 157.5
                                               }
-                                              
+
                                               // New total payback calculation: interest rate * vehicle price
                                               return (annualInterestRate / 100) * principal;
                                             })()
@@ -969,7 +970,7 @@ export default function DriverDashboard() {
                                             (() => {
                                               const principal = selectedVehicle.price;
                                               const term = Number.parseInt(loanApplication.loanTerm);
-                                              
+
                                               // Use the new interest rate calculation
                                               let annualInterestRate
                                               switch (term) {
@@ -988,7 +989,7 @@ export default function DriverDashboard() {
                                                 default:
                                                   annualInterestRate = 157.5
                                               }
-                                              
+
                                               // Calculate total payback and divide by term for monthly payment
                                               const totalPayback = (annualInterestRate / 100) * principal;
                                               return totalPayback / term;
@@ -1010,7 +1011,7 @@ export default function DriverDashboard() {
                                             (() => {
                                               const principal = selectedVehicle.price;
                                               const term = Number.parseInt(loanApplication.loanTerm);
-                                              
+
                                               // Use the new interest rate calculation
                                               let annualInterestRate
                                               switch (term) {
@@ -1029,7 +1030,7 @@ export default function DriverDashboard() {
                                                 default:
                                                   annualInterestRate = 157.5
                                               }
-                                              
+
                                               // Calculate total payback, monthly payment, then weekly payment
                                               const totalPayback = (annualInterestRate / 100) * principal;
                                               const monthlyPayment = totalPayback / term;
