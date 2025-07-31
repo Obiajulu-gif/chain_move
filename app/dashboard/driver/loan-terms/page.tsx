@@ -330,7 +330,7 @@ export default function LoanTermsPage() {
                     </li>
                     <li className="flex items-start">
                       <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-1 shrink-0" />
-                      <span>Monthly payments are due on the 1st of each month.</span>
+                      <span>Weekly payments are due on every Wednesday of each week.</span>
                     </li>
                     <li className="flex items-start">
                       <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-1 shrink-0" />
