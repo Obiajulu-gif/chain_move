@@ -241,8 +241,8 @@ export default function DriverDashboard() {
       const totalPayback = (annualInterestRate / 100) * principal
       const monthlyPayment = totalPayback / term
 
-      const downPaymentAmount = (totalPayback * 0.15).toLocaleString(undefined, { maximumFractionDigits: 2 })
-      const collateralString = `You will have to pay 15% down payment of the total payback amount for you to be approved for the loan: $${downPaymentAmount}`
+      const downPaymentAmount = (principal * 0.15).toLocaleString(undefined, { maximumFractionDigits: 2 })
+      const collateralString = `You will have to pay 15% down payment of the loan amount for you to be approved for the loan: $${downPaymentAmount}`
 
       const newLoanApplication = {
         id: `loan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -527,10 +527,10 @@ export default function DriverDashboard() {
     }
 
     const totalPayback = (annualInterestRate / 100) * principal;
-    return (totalPayback * 0.15).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    return (principal * 0.15).toLocaleString(undefined, { maximumFractionDigits: 2 });
   })() : "0"
   const collateralDisplayText = selectedVehicle
-    ? `You will have to pay 15% down payment of the total payback amount for you to be approved for the loan: $${downPaymentAmount}`
+    ? `You will have to pay 15% down payment of the loan amount for you to be approved for the loan: $${downPaymentAmount}`
     : ""
 
   return (
