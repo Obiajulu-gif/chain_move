@@ -249,9 +249,9 @@ export default function DriverDashboard() {
         driverId: currentDriverId,
         vehicleId: selectedVehicle._id,
         requestedAmount: principal, // Use the vehicle's price
-        totalAmountToPayBack: Math.round(totalPayback),
-        loanTerm: term,
-        monthlyPayment: Math.round(monthlyPayment),
+        totalAmountToPayBack: totalPayback,
+  loanTerm: term,
+  monthlyPayment: monthlyPayment,
         interestRate: annualInterestRate, // Use the new interest rate
         status: "Pending" as const,
         submittedDate: new Date().toISOString(),
@@ -275,9 +275,9 @@ export default function DriverDashboard() {
           driverId: currentDriverId,
           vehicleId: selectedVehicle._id,
           requestedAmount: principal,
-          totalAmountToPayBack: Math.round(totalPayback),
-          loanTerm: term,
-          monthlyPayment: Math.round(monthlyPayment),
+          totalAmountToPayBack: totalPayback,
+    loanTerm: term,
+    monthlyPayment: monthlyPayment,
           interestRate: annualInterestRate,
           purpose: loanApplication.purpose,
           creditScore: 0,
@@ -314,7 +314,7 @@ export default function DriverDashboard() {
       // Send email notification
       try {
         const emailSubject = "Loan Application Submitted"
-        const weeklyPayment = Math.round(monthlyPayment / 4.33) // Calculate weekly payment (monthly payment / 4.33 weeks per month)
+        const weeklyPayment = monthlyPayment / 4.33 // Calculate weekly payment (monthly payment / 4.33 weeks per month)
   const emailHtml = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
       <h2 style="color: #E57700; margin-bottom: 20px;">Loan Application Submitted</h2>
@@ -324,10 +324,10 @@ export default function DriverDashboard() {
         <p><strong>Vehicle:</strong> ${selectedVehicle.name} (${selectedVehicle.year})</p>
         <p><strong>Loan Amount:</strong> $${principal.toLocaleString()}</p>
         <p><strong>Term:</strong> ${term} months</p>
-        <p><strong>Monthly Payment:</strong> $${Math.round(monthlyPayment).toLocaleString()}</p>
-        <p><strong>Weekly Payment:</strong> $${weeklyPayment.toLocaleString()}</p>
+        <p><strong>Monthly Payment:</strong> $${monthlyPayment.toFixed(2)}</p>
+        <p><strong>Weekly Payment:</strong> $${weeklyPayment.toFixed(2)}</p>
         <p><strong>Interest Rate:</strong> ${annualInterestRate}%</p>
-        <p><strong>Total Payback:</strong> $${Math.round(totalPayback).toLocaleString()}</p>
+        <p><strong>Total Payback:</strong> $${totalPayback.toFixed(2)}</p>
         <p><strong>Down Payment Required:</strong> $${downPaymentAmount}</p>
       </div>
             <p style="margin-bottom: 15px;">Our team will review your application and you will be notified once a decision has been made.</p>
