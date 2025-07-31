@@ -10,6 +10,7 @@ export interface ILoan extends Document {
   status: 'Pending' | 'Under Review' | 'Approved' | 'Rejected' | 'Active' | 'Completed';
   loanTerm: number; // in months
   monthlyPayment: number;
+  weeklyPayment: number;
   interestRate: number;
   creditScore: number;
   purpose: string;
@@ -34,6 +35,7 @@ const LoanSchema: Schema = new Schema({
   },
   loanTerm: { type: Number, required: true },
   monthlyPayment: { type: Number, required: true },
+  weeklyPayment: { type: Number, required: true },
   interestRate: { type: Number, required: true },
   creditScore: { type: Number },
   purpose: { type: String },

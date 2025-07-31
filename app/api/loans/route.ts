@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
       requestedAmount,
       loanTerm,
       monthlyPayment,
+      weeklyPayment,
       interestRate,
       purpose,
       creditScore = 0,
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Validate required fields
-    if (!driverId || !vehicleId || !requestedAmount || !loanTerm || !monthlyPayment || !interestRate) {
+    if (!driverId || !vehicleId || !requestedAmount || !loanTerm || !monthlyPayment || !weeklyPayment || !interestRate) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -126,6 +127,7 @@ export async function POST(request: NextRequest) {
       totalAmountToPayBack,
       loanTerm,
       monthlyPayment,
+      weeklyPayment, // Add weeklyPayment to loan creation
       interestRate,
       purpose,
       creditScore,

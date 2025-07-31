@@ -280,6 +280,12 @@ export default function LoanTermsPage() {
                       {formatCurrency(loanApplication.requestedAmount)}
                     </p>
                   </div>
+                   <div>
+                    <p className="text-sm text-muted-foreground">Payback Amount</p>
+                    <p className="text-xl font-semibold text-foreground">
+                      {formatCurrency(loanApplication.totalAmountToPayBack)}
+                    </p>
+                  </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Loan Term</p>
                     <p className="text-xl font-semibold text-foreground">{loanApplication.loanTerm} months</p>
@@ -288,6 +294,12 @@ export default function LoanTermsPage() {
                     <p className="text-sm text-muted-foreground">Monthly Payment</p>
                     <p className="text-xl font-semibold text-foreground">
                       {formatCurrency(loanApplication.monthlyPayment)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Weekly Payment</p>
+                    <p className="text-xl font-semibold text-foreground">
+                      {formatCurrency((loanApplication.monthlyPayment)/4.33)}
                     </p>
                   </div>
                   <div>
