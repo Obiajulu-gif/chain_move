@@ -576,9 +576,9 @@ export default function InvestorDashboard() {
                       {formatCurrency(totalReturns, 'USD')} USD
                     </p>
                   )}
-                  <p className="text-xs text-green-500 dark:text-green-400">
+                  {/* <p className="text-xs text-green-500 dark:text-green-400">
                     +{totalInvested > 0 ? ((totalReturns / totalInvested) * 100).toFixed(1) : 0}% ROI
-                  </p>
+                  </p> */}
                 </CardContent>
               </Card>
 
