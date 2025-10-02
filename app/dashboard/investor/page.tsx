@@ -22,9 +22,11 @@ import { Header } from "@/components/dashboard/header"
 import { RealTimeChat } from "@/components/dashboard/real-time-chat"
 import { AdvancedAnalytics } from "@/components/dashboard/advanced-analytics"
 import { NotificationCenter } from "@/components/dashboard/notification-center"
+import { CurrencySwitcher } from "@/components/ui/currency-switcher"
 import { usePlatform, useInvestorData } from "@/contexts/platform-context"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
+import { useCurrency } from "@/hooks/use-currency"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   DollarSign,
@@ -40,6 +42,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { VehicleCard } from "@/components/dashboard/investor/VehicleCard"
+import { InvestmentModalEnhanced } from "@/components/dashboard/investment-modal-enhanced"
 
 export default function InvestorDashboard() {
   const { state, dispatch, fetchData } = usePlatform()
@@ -49,6 +52,18 @@ export default function InvestorDashboard() {
   const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // Currency hook
+  const {
+    selectedCurrency,
+    setSelectedCurrency,
+    exchangeRate,
+    isLoadingRate,
+    formatCurrency,
+    convertAmount,
+    getDisplayAmount,
+    supportedCurrencies
+  } = useCurrency('USD')
 
   const [isInvestDialogOpen, setIsInvestDialogOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
@@ -233,22 +248,18 @@ export default function InvestorDashboard() {
     })
   }
 
-  const handleInvestNow = (vehicle) => {
+  // Update the handleInvestNow function
+  const handleInvestNow = (vehicle: any) => {
     setSelectedVehicle(vehicle)
     setIsInvestDialogOpen(true)
   }
 
-  const submitInvestment = async () => {
-    const amount = Number.parseFloat(investmentAmount)
-    if (!selectedVehicle || isNaN(amount) || amount <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a valid amount to invest.", variant: "destructive" })
-      return
-    }
-
-    if (amount > currentBalance) {
+  // Update the submitInvestment function
+  const submitInvestment = async (amount: number, term: number) => {
+    if (!selectedVehicle || !currentInvestorId) {
       toast({
-        title: "Insufficient Funds",
-        description: `Your investment of $${amount.toLocaleString()} exceeds your available balance of $${currentBalance.toLocaleString()}.`,
+        title: "Error",
+        description: "Missing investment details",
         variant: "destructive",
       })
       return
@@ -257,39 +268,41 @@ export default function InvestorDashboard() {
     try {
       const response = await fetch("/api/invest", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           vehicleId: selectedVehicle._id,
-          investorId: authUser.id,
-          amount,
+          investorId: currentInvestorId,
+          amount: amount,
+          term: term,
         }),
       })
 
-      const result = await response.json()
+      const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(result.message || "Investment failed.")
+      if (response.ok) {
+        toast({
+          title: "Investment Successful",
+          description: data.message,
+        })
+
+        // Refresh data
+        await refreshUserData()
+        await fetchInvestments()
+        await fetchData()
+
+        setIsInvestDialogOpen(false)
+        setSelectedVehicle(null)
+      } else {
+        throw new Error(data.message || "Investment failed")
       }
-
-      toast({
-        title: "Investment Successful!",
-        description: `Your investment of $${amount.toLocaleString()} in ${selectedVehicle.name} has been confirmed.`,
-      })
-
-      // Update local states optimistically
-      setCurrentBalance((prev) => prev - amount)
-      setTotalInvested((prev) => prev + amount)
-
-      // Refresh all data to update the UI
-      await Promise.all([refreshUserData(), fetchInvestments(), fetchData?.()])
     } catch (error) {
-      const message = error instanceof Error ? error.message : "An unknown error occurred."
-      toast({ title: "Investment Failed", description: message, variant: "destructive" })
-    } finally {
-      // Close dialog and reset state
-      setIsInvestDialogOpen(false)
-      setSelectedVehicle(null)
-      setInvestmentAmount("")
+      toast({
+        title: "Investment Failed",
+        description: error instanceof Error ? error.message : "Please try again later",
+        variant: "destructive",
+      })
     }
   }
 
@@ -357,15 +370,39 @@ export default function InvestorDashboard() {
   }
 
   const unreadNotifications = state.notifications.filter((n) => n.userId === currentInvestorId && !n.read).length
-  const totalReturns = authUser?.totalReturns || 0
+  
   const monthlyIncome = investorData.investments
     .filter((inv) => inv.status === "Active")
     .reduce((sum, inv) => sum + inv.monthlyReturn, 0)
+  
+  // Calculate weekly income (monthly income divided by approximately 4.33 weeks per month)
+  const weeklyIncome = monthlyIncome / 4.33
 
-  // Get investments from the platform state
-  const investments = state.investments?.filter((inv) => inv.investorId === currentInvestorId) || []
+  // Get investments from the investorData hook for consistency
+  const investments = investorData.investments || []
   const calculatedTotalInvested = investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
   const displayTotalInvested = totalInvested > 0 ? totalInvested : calculatedTotalInvested
+  
+  // Calculate total returns based on actual investment data
+  // Total returns = sum of (invested amount + ROI for each investment)
+  const calculatedTotalReturns = investments.reduce((sum, inv) => {
+    const investedAmount = inv.amount || 0
+    const expectedROI = inv.expectedROI || 0
+    const roiAmount = (investedAmount * expectedROI) / 100
+    return sum + investedAmount + roiAmount
+  }, 0)
+  
+  // Use calculated total returns instead of authUser.totalReturns
+  const totalReturns = calculatedTotalReturns
+  
+  // const monthlyIncome = investorData.investments
+  //   .filter((inv) => inv.status === "Active")
+  //   .reduce((sum, inv) => sum + inv.monthlyReturn, 0)
+
+  // Get investments from the investorData hook for consistency
+  // const investments = investorData.investments || []
+  // const calculatedTotalInvested = investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+  // const displayTotalInvested = totalInvested > 0 ? totalInvested : calculatedTotalInvested
 
   // Update the loading condition
   if (authLoading || isReturningFromPayment) {
@@ -428,6 +465,22 @@ export default function InvestorDashboard() {
           />
 
           <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
+            {/* Currency Switcher */}
+            <Card className="bg-card/50 border-border/50">
+              
+              <CardContent>
+                <CurrencySwitcher
+                  selectedCurrency={selectedCurrency}
+                  onCurrencyChange={setSelectedCurrency}
+                  supportedCurrencies={supportedCurrencies}
+                  exchangeRate={exchangeRate}
+                  isLoadingRate={isLoadingRate}
+                  baseCurrency="USD"
+                  showExchangeRate={true}
+                />
+              </CardContent>
+            </Card>
+
             {/* Real-time Portfolio Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
@@ -447,7 +500,12 @@ export default function InvestorDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold mr-4">${currentBalance.toLocaleString()}</div>
+                  <div className="text-2xl font-bold mr-4">{formatCurrency(currentBalance)}</div>
+                  {selectedCurrency !== 'USD' && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(currentBalance, 'USD')} USD
+                    </p>
+                  )}
                   <Dialog open={isFundDialogOpen} onOpenChange={setIsFundDialogOpen}>
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm" className="mt-2 w-full bg-transparent">
@@ -496,7 +554,12 @@ export default function InvestorDashboard() {
                   <TrendingUp className="h-4 w-4 text-foreground" />
                 </CardHeader>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-foreground">${displayTotalInvested.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-foreground">{formatCurrency(displayTotalInvested)}</div>
+                  {selectedCurrency !== 'USD' && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(displayTotalInvested, 'USD')} USD
+                    </p>
+                  )}
                   <p className="text-xs text-blue-500 dark:text-blue-400">Active investments</p>
                 </CardContent>
               </Card>
@@ -507,10 +570,15 @@ export default function InvestorDashboard() {
                   <DollarSign className="h-4 w-4 text-foreground" />
                 </CardHeader>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-foreground">${totalReturns.toLocaleString()}</div>
-                  <p className="text-xs text-green-500 dark:text-green-400">
+                  <div className="text-2xl font-bold text-foreground">{formatCurrency(totalReturns)}</div>
+                  {selectedCurrency !== 'USD' && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(totalReturns, 'USD')} USD
+                    </p>
+                  )}
+                  {/* <p className="text-xs text-green-500 dark:text-green-400">
                     +{totalInvested > 0 ? ((totalReturns / totalInvested) * 100).toFixed(1) : 0}% ROI
-                  </p>
+                  </p> */}
                 </CardContent>
               </Card>
 
@@ -520,8 +588,22 @@ export default function InvestorDashboard() {
                   <BarChart3 className="h-4 w-4 text-foreground" />
                 </CardHeader>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-foreground">${monthlyIncome.toFixed(0)}</div>
-                  <p className="text-xs text-muted-foreground">Expected monthly</p>
+                  <div className="text-2xl font-bold text-foreground">{formatCurrency(monthlyIncome)}</div>
+                  {selectedCurrency !== 'USD' && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatCurrency(monthlyIncome, 'USD')} USD
+                    </p>
+                  )}
+                  <div className="mt-2 pt-2 border-t border-border/50">
+                    <p className="text-sm font-medium text-muted-foreground">Weekly Income</p>
+                    <p className="text-lg font-semibold text-foreground">{formatCurrency(weeklyIncome)}</p>
+                    {selectedCurrency !== 'USD' && (
+                      <p className="text-xs text-muted-foreground">
+                        {formatCurrency(weeklyIncome, 'USD')} USD
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Expected income</p>
                 </CardContent>
               </Card>
             </div>
@@ -547,7 +629,13 @@ export default function InvestorDashboard() {
                     {investments.length > 0 ? (
                       <div className="space-y-4">
                         {investments.map((investment) => {
-                          const vehicle = state.vehicles.find((v) => v._id === investment.vehicleId)
+                          // Try to get vehicle directly from vehicleId, fallback to loan lookup
+                          const vehicle = investment.vehicleId 
+                            ? state.vehicles.find((v) => v._id === investment.vehicleId)
+                            : (() => {
+                                const loan = state.loanApplications.find((l) => l.id === investment.loanId)
+                                return loan ? state.vehicles.find((v) => v._id === loan.vehicleId) : null
+                              })()
                           return (
                             <Card key={investment.id || investment._id} className="bg-muted border-border">
                               <CardContent className="p-4">
@@ -729,35 +817,14 @@ export default function InvestorDashboard() {
         </div>
       </div>
 
-      <Dialog open={isInvestDialogOpen} onOpenChange={setIsInvestDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Invest in {selectedVehicle?.name}</DialogTitle>
-            <DialogDescription>
-              Enter the amount you would like to invest in this vehicle. The total funding goal is $
-              {selectedVehicle?.price.toLocaleString()}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="investment-amount">Investment Amount ($)</Label>
-            <Input
-              id="investment-amount"
-              type="number"
-              value={investmentAmount}
-              onChange={(e) => setInvestmentAmount(e.target.value)}
-              placeholder="e.g., 5000"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsInvestDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={submitInvestment} className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
-              Confirm Investment
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Enhanced Investment Modal */}
+      <InvestmentModalEnhanced
+        isOpen={isInvestDialogOpen}
+        onClose={() => setIsInvestDialogOpen(false)}
+        vehicle={selectedVehicle}
+        availableBalance={currentBalance}
+        onInvestmentComplete={submitInvestment}
+      />
     </>
   )
 }

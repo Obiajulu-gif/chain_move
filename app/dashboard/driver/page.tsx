@@ -1,8 +1,9 @@
 "use client"
 import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
@@ -27,6 +28,7 @@ import { usePlatform, useDriverData } from "@/contexts/platform-context"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import Link from "next/link" // Import Link
 import {
   Car,
   Calendar,
@@ -52,24 +54,63 @@ export default function DriverDashboard() {
   const driverData = useDriverData(currentDriverId)
 
   // Loan application state
-  const [isLoanDialogOpen, setIsLoanDialogOpen] = useState(false)
+  const [isApplyLoanDialogOpen, setIsApplyLoanDialogOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [loanApplication, setLoanApplication] = useState({
-    requestedAmount: "",
-    loanTerm: "12",
+    loanTerm: "12", // Default value, will be overridden if vehicle has investmentTerm
     purpose: "",
-    creditScore: "",
-    collateral: "",
-    monthlyIncome: "",
-    employmentStatus: "",
-    documents: [],
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Currency selector state
+  const [selectedCurrency, setSelectedCurrency] = useState<'USD' | 'NGN'>('USD')
+  const [exchangeRate, setExchangeRate] = useState<number>(1)
+  const [isLoadingRate, setIsLoadingRate] = useState(false)
+
+  // Currency formatting function
+  const formatCurrency = (amount: number, currency: 'USD' | 'NGN' = selectedCurrency) => {
+    if (currency === 'NGN') {
+      return `₦${(amount * exchangeRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+    }
+    return `$${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+  }
+
+  // Get display amount for dual currency display
+  const getDisplayAmount = (usdAmount: number) => {
+    if (selectedCurrency === 'NGN') {
+      return `${formatCurrency(usdAmount, 'NGN')} (${formatCurrency(usdAmount, 'USD')})`
+    }
+    return formatCurrency(usdAmount, 'USD')
+  }
 
   // KYC state for the dialog
   const [showKycPromptDialog, setShowKycPromptDialog] = useState(false)
   const [kycPromptMessage, setKycPromptMessage] = useState("")
   const [kycPromptAction, setKycPromptAction] = useState<{ label: string; href: string } | null>(null)
+
+  // Fetch exchange rate when currency changes
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      if (selectedCurrency === 'NGN') {
+        setIsLoadingRate(true)
+        try {
+          const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
+          const data = await response.json()
+          setExchangeRate(data.rates.NGN || 1600) // Fallback to 1600 if API fails
+        } catch (error) {
+          console.error('Failed to fetch exchange rate:', error)
+          setExchangeRate(1600) // Fallback rate
+        } finally {
+          setIsLoadingRate(false)
+        }
+      } else {
+        setExchangeRate(1)
+        setIsLoadingRate(false)
+      }
+    }
+
+    fetchExchangeRate()
+  }, [selectedCurrency])
 
   // Set current user on mount
   useEffect(() => {
@@ -83,23 +124,59 @@ export default function DriverDashboard() {
           email: authUser.email,
           // Assuming kycStatus is part of authUser or driverData
           kycStatus: (authUser as any).kycStatus || "none", // Add kycStatus to the user object
+          physicalMeetingStatus: (authUser as any).physicalMeetingStatus || "none", // Add physicalMeetingStatus
+          notifications: (authUser as any).notifications || [], // Add notifications
         },
       })
     }
   }, [dispatch, authUser])
 
+  // Fetch driver's specific loans when they log in
+  useEffect(() => {
+    const fetchDriverLoans = async () => {
+      if (authUser?.id && authUser.role === "driver") {
+        try {
+          const response = await fetch(`/api/loans?userId=${authUser.id}`)
+          if (response.ok) {
+            const data = await response.json()
+            const loans = data.loans || []
+            // Update the platform context with the driver's loans
+            dispatch({
+              type: "SET_LOAN_APPLICATIONS",
+              payload: loans,
+            })
+          }
+        } catch (error) {
+          console.error("Error fetching driver loans:", error)
+        }
+      }
+    }
+
+    fetchDriverLoans()
+  }, [authUser?.id, authUser?.role, dispatch])
+
   const handleMakePayment = (loanId: string, amount: number) => {
     // Find next pending payment
-    const nextPayment = driverData.repayments.find((r) => r.loanId === loanId && r.status === "Pending")
+    const nextPayment = driverData.repayments.find((r) => r.relatedId === loanId && r.status === "pending")
     if (nextPayment) {
+      // In a real app, you'd integrate with a payment gateway here
+      // For simulation, we'll directly update the state
       dispatch({
-        type: "MAKE_PAYMENT",
+        type: "ADD_TRANSACTION", // Assuming a generic ADD_TRANSACTION action exists
         payload: {
-          loanId,
-          amount,
-          paymentId: nextPayment.id,
+          id: `trans_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: "repayment",
+          userId: currentDriverId,
+          userType: "driver",
+          amount: amount,
+          status: "completed",
+          timestamp: new Date().toISOString(),
+          description: `Monthly repayment for Loan #${loanId}`,
+          relatedId: loanId,
         },
       })
+      // Update the repayment status (if you have a specific action for it)
+      // For now, we'll just rely on the transaction being added.
       toast({
         title: "Payment Successful",
         description: `Payment of $${amount.toLocaleString()} has been processed`,
@@ -109,51 +186,123 @@ export default function DriverDashboard() {
 
   const handleVehicleSelect = (vehicle) => {
     setSelectedVehicle(vehicle)
-    setLoanApplication((prev) => ({
-      ...prev,
-      requestedAmount: vehicle.price.toString(),
-    }))
+    // Set loan term based on vehicle's investmentTerm or keep it editable
+    if (vehicle.investmentTerm) {
+      setLoanApplication(prev => ({
+        ...prev,
+        loanTerm: vehicle.investmentTerm.toString()
+      }))
+    } else {
+      // Reset to default if no investmentTerm
+      setLoanApplication(prev => ({
+        ...prev,
+        loanTerm: "12"
+      }))
+    }
   }
 
   const handleLoanApplicationSubmit = async () => {
-    if (!selectedVehicle || !loanApplication.requestedAmount) {
+    if (!selectedVehicle) {
+      // Only check for selectedVehicle
       toast({
         title: "Incomplete Application",
-        description: "Please select a vehicle and fill in all required fields.",
+        description: "Please select a vehicle.",
         variant: "destructive",
       })
       return
     }
     setIsSubmitting(true)
     try {
-      // Calculate monthly payment (simple calculation)
-      const principal = Number.parseFloat(loanApplication.requestedAmount)
-      const rate = 0.15 / 12 // 15% annual rate
+      const principal = selectedVehicle.price // Use selected vehicle price directly
+
+      // New interest rate calculation based on investment term
       const term = Number.parseInt(loanApplication.loanTerm)
-      const monthlyPayment = (principal * rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1)
+      let annualInterestRate
+
+      switch (term) {
+        case 12:
+          annualInterestRate = 157.5 // 157.5% for 12 months
+          break
+        case 24:
+          annualInterestRate = 195 // 195% for 24 months
+          break
+        case 36:
+          annualInterestRate = 225 // 225% for 36 months
+          break
+        case 48:
+          annualInterestRate = 255 // 255% for 48 months
+          break
+        default:
+          // Default to 12 months rate if term doesn't match
+          annualInterestRate = 157.5
+      }
+
+      // New total payback calculation: interest rate * vehicle price
+      const totalPayback = (annualInterestRate / 100) * principal
+      const monthlyPayment = totalPayback / term
+
+      const downPaymentAmount = (principal * 0.15).toLocaleString(undefined, { maximumFractionDigits: 2 })
+      const collateralString = `You will have to pay 15% down payment of the loan amount for you to be approved for the loan: $${downPaymentAmount}`
+
       const newLoanApplication = {
         id: `loan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         driverId: currentDriverId,
         vehicleId: selectedVehicle._id,
-        requestedAmount: principal,
+        requestedAmount: principal, // Use the vehicle's price
+        totalAmountToPayBack: totalPayback,
         loanTerm: term,
-        monthlyPayment: Math.round(monthlyPayment),
-        interestRate: 15,
+        monthlyPayment: monthlyPayment,
+        weeklyPayment: monthlyPayment / 4.33,
+        interestRate: annualInterestRate, // Use the new interest rate
         status: "Pending" as const,
         submittedDate: new Date().toISOString(),
-        documents: loanApplication.documents,
-        creditScore: Number.parseInt(loanApplication.creditScore) || 650,
-        collateral: loanApplication.collateral,
+        documents: [], // Documents are not part of this form currently
+        creditScore: 0, // Default value, assuming it's not collected here
+        collateral: collateralString, // Use the calculated string
         purpose: loanApplication.purpose,
-        riskAssessment: "Medium" as const,
+        riskAssessment: "Medium" as const, // Default value
         fundingProgress: 0,
         totalFunded: 0,
         remainingAmount: principal,
+        downPaymentMade: false, // Initialize downPaymentMade to false
       }
-      // Add to platform state
+      // Save to database via API
+      const loanResponse = await fetch('/api/loans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          driverId: currentDriverId,
+          vehicleId: selectedVehicle._id,
+          requestedAmount: principal,
+          totalAmountToPayBack: totalPayback,
+          loanTerm: term,
+          monthlyPayment: monthlyPayment,
+          weeklyPayment: monthlyPayment / 4.33,
+          interestRate: annualInterestRate,
+          purpose: loanApplication.purpose,
+          creditScore: 0,
+          collateral: collateralString,
+          riskAssessment: "Medium",
+          downPaymentMade: false
+        }),
+      })
+
+      if (!loanResponse.ok) {
+        const errorData = await loanResponse.json()
+        throw new Error(errorData.error || 'Failed to submit loan application')
+      }
+
+      const { loan: savedLoan } = await loanResponse.json()
+
+      // Add to platform state for immediate UI update
       dispatch({
         type: "ADD_LOAN_APPLICATION",
-        payload: newLoanApplication,
+        payload: {
+          ...newLoanApplication,
+          id: savedLoan._id, // Use the database ID
+        },
       })
       // Update vehicle status to Reserved
       dispatch({
@@ -163,23 +312,73 @@ export default function DriverDashboard() {
           updates: { status: "Reserved", driverId: currentDriverId },
         },
       })
+
+      // Send email notification
+      try {
+        const emailSubject = "Loan Application Submitted"
+        const weeklyPayment = monthlyPayment / 4.33 // Calculate weekly payment (monthly payment / 4.33 weeks per month)
+        const emailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+      <h2 style="color: #E57700; margin-bottom: 20px;">Loan Application Submitted</h2>
+      <p style="margin-bottom: 15px;">Your loan application for ${selectedVehicle.name} has been submitted for review.</p>
+      <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; color: #333;">Loan Details:</h3>
+        <p><strong>Vehicle:</strong> ${selectedVehicle.name} (${selectedVehicle.year})</p>
+        <p><strong>Loan Amount:</strong> $${principal.toLocaleString()}</p>
+        <p><strong>Term:</strong> ${term} months</p>
+        <p><strong>Monthly Payment:</strong> $${monthlyPayment.toFixed(2)}</p>
+        <p><strong>Weekly Payment:</strong> $${weeklyPayment.toFixed(2)}</p>
+        <p><strong>Interest Rate:</strong> ${annualInterestRate}%</p>
+        <p><strong>Total Payback:</strong> $${totalPayback.toFixed(2)}</p>
+        <p><strong>Down Payment Required:</strong> $${downPaymentAmount}</p>
+      </div>
+            <p style="margin-bottom: 15px;">Our team will review your application and you will be notified once a decision has been made.</p>
+            <p style="margin-bottom: 15px;">Please log in to your dashboard to check the status of your application.</p>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://chainmove.xyz'}/dashboard/driver/loan-terms" style="display: inline-block; background-color: #E57700; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 15px;">View Application Status</a>
+            <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+              <p style="font-size: 12px; color: #666;">This is an automated message from Chain Move. Please do not reply to this email.</p>
+            </div>
+          </div>
+        `
+
+        const response = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: authUser.email,
+            subject: emailSubject,
+            html: emailHtml,
+          }),
+        })
+
+        if (!response.ok) {
+          console.error('Failed to send email notification')
+        }
+      } catch (emailError) {
+        console.error('Error sending email notification:', emailError)
+        // Continue with the process even if email fails
+      }
+
       toast({
-        title: "Application Submitted",
-        description: `Your loan application for ${selectedVehicle.name} has been submitted for review.`,
+        title: "✅ Application Submitted Successfully!",
+        description: `Your loan application for ${selectedVehicle.name} has been submitted for review. You will receive an email confirmation shortly.`,
+        duration: 5000,
       })
+
       // Reset form and close dialog
-      setIsLoanDialogOpen(false)
+      setIsApplyLoanDialogOpen(false)
       setSelectedVehicle(null)
       setLoanApplication({
-        requestedAmount: "",
         loanTerm: "12",
         purpose: "",
-        creditScore: "",
-        collateral: "",
-        monthlyIncome: "",
-        employmentStatus: "",
-        documents: [],
       })
+
+      // Redirect to loan-terms page after a brief delay to show the success message
+      setTimeout(() => {
+        router.push('/dashboard/driver/loan-terms')
+      }, 2000)
     } catch (error) {
       toast({
         title: "Submission Failed",
@@ -192,17 +391,31 @@ export default function DriverDashboard() {
   }
 
   const handleApplyForLoanClick = () => {
-    const kycStatus = (authUser as any)?.kycStatus || "none" // Assuming kycStatus is on authUser
-    if (kycStatus === "approved") {
-      setIsLoanDialogOpen(true)
+    const kycStatus = (authUser as any)?.kycStatus || "none"
+    const physicalMeetingStatus = (authUser as any)?.physicalMeetingStatus || "none"
+
+    if (kycStatus === "approved_stage2") {
+      // Fully approved, proceed to loan application
+      setIsApplyLoanDialogOpen(true)
     } else {
+      // Not fully approved, show KYC prompt
       setShowKycPromptDialog(true)
       if (kycStatus === "none") {
         setKycPromptMessage("Please complete your KYC verification first to apply for a loan.")
         setKycPromptAction({ label: "Go to KYC Page", href: "/dashboard/driver/kyc" })
       } else if (kycStatus === "pending") {
         setKycPromptMessage(
-          "Your KYC verification is currently under review. Please wait for approval before applying for a loan.",
+          "Your first stage KYC verification is currently under review. Please wait for approval before proceeding.",
+        )
+        setKycPromptAction(null) // No action button for pending
+      } else if (kycStatus === "approved_stage1") {
+        setKycPromptMessage(
+          "Your first stage KYC is approved. Please proceed with the second stage of verification (physical meeting) to apply for a loan.",
+        )
+        setKycPromptAction({ label: "Proceed with Second KYC", href: "/dashboard/driver/kyc" })
+      } else if (kycStatus === "pending_stage2") {
+        setKycPromptMessage(
+          "Your second stage KYC (physical meeting) is currently under review. Please wait for approval before applying for a loan.",
         )
         setKycPromptAction(null) // No action button for pending
       } else if (kycStatus === "rejected") {
@@ -210,6 +423,11 @@ export default function DriverDashboard() {
           "Your KYC verification was rejected. Please review the requirements and re-submit or contact support.",
         )
         setKycPromptAction({ label: "Re-submit KYC", href: "/dashboard/driver/kyc" })
+      } else if (physicalMeetingStatus === "rejected_stage2") {
+        setKycPromptMessage(
+          "Your second stage KYC (physical meeting) was rejected. Please contact support for assistance.",
+        )
+        setKycPromptAction({ label: "Contact Support", href: "/dashboard/driver/support" })
       }
     }
   }
@@ -218,13 +436,18 @@ export default function DriverDashboard() {
     switch (status) {
       case "Active":
       case "Approved":
+      case "approved_stage2": // New status
         return "bg-green-600"
       case "Under Review":
+      case "pending_stage2": // New status
         return "bg-blue-600"
-      case "Pending":
+      case "pending":
         return "bg-yellow-600"
-      case "Rejected":
+      case "rejected":
+      case "rejected_stage2": // New status
         return "bg-red-600"
+      case "approved_stage1": // New status
+        return "bg-purple-600" // Or any other distinct color
       default:
         return "bg-gray-600"
     }
@@ -277,7 +500,38 @@ export default function DriverDashboard() {
   const nextPaymentAmount = activeLoan ? activeLoan.monthlyPayment || 0 : 0
   const unreadNotifications = driverData.notifications.filter((n) => !n.read).length
   // Get available vehicles for loan application
-  const availableVehicles = state.vehicles.filter((v) => v.status === "Financed")
+  const availableVehicles = state.vehicles.filter((v) => v.fundingStatus === "Funded")
+
+  // Calculate down payment for display based on total payback amount
+  const downPaymentAmount = selectedVehicle ? (() => {
+    const principal = selectedVehicle.price;
+    const term = Number.parseInt(loanApplication.loanTerm || "12"); // Default to 12 if not set
+
+    // Use the new interest rate calculation
+    let annualInterestRate
+    switch (term) {
+      case 12:
+        annualInterestRate = 157.5
+        break
+      case 24:
+        annualInterestRate = 195
+        break
+      case 36:
+        annualInterestRate = 225
+        break
+      case 48:
+        annualInterestRate = 255
+        break
+      default:
+        annualInterestRate = 157.5
+    }
+
+    const totalPayback = (annualInterestRate / 100) * principal;
+    return (principal * 0.15).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  })() : "0"
+  const collateralDisplayText = selectedVehicle
+    ? `You will have to pay 15% down payment of the loan amount for you to be approved for the loan: $${downPaymentAmount}`
+    : ""
 
   return (
     <>
@@ -318,7 +572,7 @@ export default function DriverDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-foreground">${totalFundsReceived.toLocaleString()}</div>
-                  <p className="text-xs text-green-500 dark:text-green-400">Available for withdrawal</p>
+                  <p className="text-xs text-green-500 dark:text-green-400">Assigned</p>
                 </CardContent>
               </Card>
               <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
@@ -363,9 +617,10 @@ export default function DriverDashboard() {
                       .filter((n) => !n.read)
                       .slice(0, 3)
                       .map((notification) => (
-                        <div
+                        <Link
                           key={notification.id}
-                          className="flex items-center justify-between p-3 bg-white dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-800"
+                          href={notification.actionUrl || "/dashboard/driver/notifications"} // Link to the notification's specific link or general notifications page
+                          className="flex items-center justify-between p-3 bg-white dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-800 hover:bg-blue-100/50 dark:hover:bg-blue-900/50 transition-colors"
                         >
                           <div>
                             <p className="font-medium text-blue-900 dark:text-blue-100 text-sm">{notification.title}</p>
@@ -374,14 +629,8 @@ export default function DriverDashboard() {
                               {new Date(notification.timestamp).toLocaleString()}
                             </p>
                           </div>
-                          <Button
-                            size="sm"
-                            onClick={() => dispatch({ type: "MARK_NOTIFICATION_READ", payload: notification.id })}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8"
-                          >
-                            Mark Read
-                          </Button>
-                        </div>
+                          {/* Removed "Mark Read" button from here, as it will be handled on the dedicated page */}
+                        </Link>
                       ))}
                   </div>
                 </CardContent>
@@ -473,10 +722,21 @@ export default function DriverDashboard() {
                       </p>
                       {pendingLoans.length === 0 && (
                         <Dialog
-                          open={isLoanDialogOpen || showKycPromptDialog}
+                          open={isApplyLoanDialogOpen} // Use the new state for overall dialog control
                           onOpenChange={(open) => {
-                            setIsLoanDialogOpen(open)
-                            setShowKycPromptDialog(open)
+                            setIsApplyLoanDialogOpen(open)
+                            if (!open) {
+                              // Reset states when dialog closes
+                              setShowKycPromptDialog(false) // Ensure KYC prompt is hidden when dialog closes
+                              setSelectedVehicle(null) // Clear selected vehicle
+                              setSelectedCurrency('USD')
+                              setExchangeRate(1)
+                              setLoanApplication({
+                                // Reset loan application form
+                                loanTerm: "12",
+                                purpose: "",
+                              })
+                            }
                           }}
                         >
                           <DialogTrigger asChild>
@@ -499,6 +759,48 @@ export default function DriverDashboard() {
                                   : "Select a vehicle and complete your loan application"}
                               </DialogDescription>
                             </DialogHeader>
+                            {/* Currency Selection Card */}
+                            <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-800">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-lg flex items-center text-orange-800 dark:text-orange-200">
+                                  <CreditCard className="h-5 w-5 mr-2" />
+                                  Currency Selection
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <div className="flex items-center space-x-4">
+                                  <Label htmlFor="currency" className="text-sm font-medium min-w-[80px]">
+                                    Currency:
+                                  </Label>
+                                  <Select
+                                    value={selectedCurrency}
+                                    onValueChange={(value: 'USD' | 'NGN') => setSelectedCurrency(value)}
+                                    disabled={isLoadingRate}
+                                  >
+                                    <SelectTrigger className="w-[200px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="USD">🇺🇸 USD (US Dollar)</SelectItem>
+                                      <SelectItem value="NGN">🇳🇬 NGN (Nigerian Naira)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  {isLoadingRate && (
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                  )}
+                                </div>
+                                {selectedCurrency === 'NGN' && (
+                                  <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg border">
+                                    {/* <p className="text-sm text-muted-foreground">
+                              <strong>Live Exchange Rate:</strong> 1 USD = ₦{exchangeRate.toLocaleString()}
+                            </p> */}
+                                    {/* <p className="text-xs text-muted-foreground mt-1">
+                              All calculations are done in USD and converted to NGN for display
+                            </p> */}
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
                             {showKycPromptDialog ? (
                               <div className="py-6 text-center">
                                 <p className="text-lg text-foreground mb-4">{kycPromptMessage}</p>
@@ -521,11 +823,10 @@ export default function DriverDashboard() {
                                       {availableVehicles.map((vehicle) => (
                                         <Card
                                           key={vehicle._id}
-                                          className={`cursor-pointer transition-all ${
-                                            selectedVehicle?._id === vehicle._id
+                                          className={`cursor-pointer transition-all ${selectedVehicle?._id === vehicle._id
                                               ? "ring-2 ring-[#E57700] bg-orange-50 dark:bg-orange-950/20"
                                               : "hover:shadow-md"
-                                          }`}
+                                            }`}
                                           onClick={() => handleVehicleSelect(vehicle)}
                                         >
                                           <CardContent className="p-4">
@@ -544,11 +845,11 @@ export default function DriverDashboard() {
                                                 </p>
                                                 <div className="flex items-center justify-between mt-2">
                                                   <span className="text-lg font-bold text-[#E57700]">
-                                                    ${vehicle.price.toLocaleString()}
+                                                    {getDisplayAmount(vehicle.price)}
                                                   </span>
-                                                  <Badge variant="outline" className="text-xs">
+                                                  {/* <Badge variant="outline" className="text-xs">
                                                     {vehicle.roi}% ROI
-                                                  </Badge>
+                                                  </Badge> */}
                                                 </div>
                                               </div>
                                             </div>
@@ -574,69 +875,176 @@ export default function DriverDashboard() {
                                         <Label htmlFor="requestedAmount">Requested Amount ($)</Label>
                                         <Input
                                           id="requestedAmount"
-                                          type="number"
-                                          value={loanApplication.requestedAmount}
-                                          onChange={(e) =>
-                                            setLoanApplication((prev) => ({
-                                              ...prev,
-                                              requestedAmount: e.target.value,
-                                            }))
-                                          }
-                                          placeholder="Enter loan amount"
+                                          type="text" // Changed to text as it's non-editable
+                                          value={getDisplayAmount(selectedVehicle.price)} // Display selected vehicle price
+                                          readOnly // Make it non-editable
+                                          disabled // Make it non-editable
+                                          className="bg-muted cursor-not-allowed" // Style as non-editable
                                         />
                                       </div>
                                       <div>
                                         <Label htmlFor="loanTerm">Loan Term (months)</Label>
-                                        <Select
-                                          value={loanApplication.loanTerm}
-                                          onValueChange={(value) =>
-                                            setLoanApplication((prev) => ({
-                                              ...prev,
-                                              loanTerm: value,
-                                            }))
-                                          }
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="6">6 months</SelectItem>
-                                            <SelectItem value="12">12 months</SelectItem>
-                                            <SelectItem value="18">18 months</SelectItem>
-                                            <SelectItem value="24">24 months</SelectItem>
-                                            <SelectItem value="36">36 months</SelectItem>
-                                          </SelectContent>
-                                        </Select>
+                                        {selectedVehicle?.investmentTerm ? (
+                                          // If vehicle has investmentTerm, show it as read-only
+                                          <Input
+                                            id="loanTerm"
+                                            type="text"
+                                            value={`${selectedVehicle.investmentTerm} months`}
+                                            readOnly
+                                            disabled
+                                            className="bg-muted cursor-not-allowed"
+                                          />
+                                        ) : (
+                                          // If no investmentTerm, show editable select
+                                          <Select
+                                            value={loanApplication.loanTerm}
+                                            onValueChange={(value) =>
+                                              setLoanApplication((prev) => ({
+                                                ...prev,
+                                                loanTerm: value,
+                                              }))}
+                                          >
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="12">12 months</SelectItem>
+                                              <SelectItem value="24">24 months</SelectItem>
+                                              <SelectItem value="36">36 months</SelectItem>
+                                              <SelectItem value="48">48 months</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        )}
+                                        {selectedVehicle?.investmentTerm && (
+                                          <p className="text-sm text-muted-foreground mt-1">
+                                            This term was set by the  investor and cannot be changed.
+                                          </p>
+                                        )}
                                       </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                       <div>
-                                        <Label htmlFor="creditScore">Credit Score</Label>
+                                        <Label htmlFor="paybackAmount">Total Amount to Pay Back ($)</Label>
                                         <Input
-                                          id="creditScore"
-                                          type="number"
-                                          value={loanApplication.creditScore}
-                                          onChange={(e) =>
-                                            setLoanApplication((prev) => ({
-                                              ...prev,
-                                              creditScore: e.target.value,
-                                            }))
-                                          }
-                                          placeholder="e.g., 650"
+                                          id="paybackAmount"
+                                          type="text"
+                                          value={getDisplayAmount(
+                                            (() => {
+                                              const principal = selectedVehicle.price;
+                                              const term = Number.parseInt(loanApplication.loanTerm);
+
+                                              // Use the new interest rate calculation
+                                              let annualInterestRate
+                                              switch (term) {
+                                                case 12:
+                                                  annualInterestRate = 157.5
+                                                  break
+                                                case 24:
+                                                  annualInterestRate = 195
+                                                  break
+                                                case 36:
+                                                  annualInterestRate = 225
+                                                  break
+                                                case 48:
+                                                  annualInterestRate = 255
+                                                  break
+                                                default:
+                                                  annualInterestRate = 157.5
+                                              }
+
+                                              // New total payback calculation: interest rate * vehicle price
+                                              return (annualInterestRate / 100) * principal;
+                                            })()
+                                          )}
+                                          readOnly
+                                          disabled
+                                          className="bg-muted cursor-not-allowed"
                                         />
                                       </div>
                                       <div>
-                                        <Label htmlFor="monthlyIncome">Monthly Income ($)</Label>
+                                        <Label htmlFor="monthlyPayment">Monthly Payment ($)</Label>
                                         <Input
-                                          id="monthlyIncome"
-                                          type="number"
-                                          value={loanApplication.monthlyIncome}
-                                          onChange={(e) =>
-                                            setLoanApplication((prev) => ({
-                                              ...prev,
-                                              monthlyIncome: e.target.value,
-                                            }))
-                                          }
-                                          placeholder="Enter monthly income"
+                                          id="monthlyPayment"
+                                          type="text"
+                                          value={getDisplayAmount(
+                                            (() => {
+                                              const principal = selectedVehicle.price;
+                                              const term = Number.parseInt(loanApplication.loanTerm);
+
+                                              // Use the new interest rate calculation
+                                              let annualInterestRate
+                                              switch (term) {
+                                                case 12:
+                                                  annualInterestRate = 157.5
+                                                  break
+                                                case 24:
+                                                  annualInterestRate = 195
+                                                  break
+                                                case 36:
+                                                  annualInterestRate = 225
+                                                  break
+                                                case 48:
+                                                  annualInterestRate = 255
+                                                  break
+                                                default:
+                                                  annualInterestRate = 157.5
+                                              }
+
+                                              // Calculate total payback and divide by term for monthly payment
+                                              const totalPayback = (annualInterestRate / 100) * principal;
+                                              return totalPayback / term;
+                                            })()
+                                          )}
+                                          readOnly
+                                          disabled
+                                          className="bg-muted cursor-not-allowed"
                                         />
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="weeklyPayment">Weekly Payment ($)</Label>
+                                        <Input
+                                          id="weeklyPayment"
+                                          type="text"
+                                          value={getDisplayAmount(
+                                            (() => {
+                                              const principal = selectedVehicle.price;
+                                              const term = Number.parseInt(loanApplication.loanTerm);
+
+                                              // Use the new interest rate calculation
+                                              let annualInterestRate
+                                              switch (term) {
+                                                case 12:
+                                                  annualInterestRate = 157.5
+                                                  break
+                                                case 24:
+                                                  annualInterestRate = 195
+                                                  break
+                                                case 36:
+                                                  annualInterestRate = 225
+                                                  break
+                                                case 48:
+                                                  annualInterestRate = 255
+                                                  break
+                                                default:
+                                                  annualInterestRate = 157.5
+                                              }
+
+                                              // Calculate total payback, monthly payment, then weekly payment
+                                              const totalPayback = (annualInterestRate / 100) * principal;
+                                              const monthlyPayment = totalPayback / term;
+                                              // Calculate weekly payment (monthly payment / 4.33 weeks per month)
+                                              return monthlyPayment / 4.33;
+                                            })()
+                                          )}
+                                          readOnly
+                                          disabled
+                                          className="bg-muted cursor-not-allowed"
+                                        />
+                                      </div>
+                                      <div>
+                                        {/* Empty div to maintain grid layout */}
                                       </div>
                                     </div>
                                     <div>
@@ -658,14 +1066,10 @@ export default function DriverDashboard() {
                                       <Label htmlFor="collateral">Collateral/Security</Label>
                                       <Input
                                         id="collateral"
-                                        value={loanApplication.collateral}
-                                        onChange={(e) =>
-                                          setLoanApplication((prev) => ({
-                                            ...prev,
-                                            collateral: e.target.value,
-                                          }))
-                                        }
-                                        placeholder="Describe any collateral you can provide"
+                                        value={collateralDisplayText} // Display calculated collateral text
+                                        readOnly // Make it non-editable
+                                        disabled // Make it non-editable
+                                        className="bg-muted cursor-not-allowed" // Style as non-editable
                                       />
                                     </div>
                                   </div>
@@ -676,7 +1080,7 @@ export default function DriverDashboard() {
                               <Button
                                 variant="outline"
                                 onClick={() => {
-                                  setIsLoanDialogOpen(false)
+                                  setIsApplyLoanDialogOpen(false)
                                   setShowKycPromptDialog(false)
                                 }}
                               >
@@ -685,7 +1089,7 @@ export default function DriverDashboard() {
                               {!showKycPromptDialog && (
                                 <Button
                                   onClick={handleLoanApplicationSubmit}
-                                  disabled={!selectedVehicle || isSubmitting}
+                                  disabled={!selectedVehicle || isSubmitting || isLoadingRate}
                                   className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
                                 >
                                   {isSubmitting ? (
@@ -730,26 +1134,26 @@ export default function DriverDashboard() {
                             className="flex items-center justify-between p-4 bg-muted/30 dark:bg-muted/10 rounded-lg"
                           >
                             <div className="flex items-center space-x-3">
-                              {payment.status === "Paid" ? (
+                              {payment.status === "completed" ? (
                                 <CheckCircle className="h-5 w-5 text-green-500" />
-                              ) : payment.status === "Overdue" ? (
+                              ) : payment.status === "failed" ? (
                                 <AlertTriangle className="h-5 w-5 text-red-500" />
                               ) : (
                                 <Clock className="h-5 w-5 text-yellow-500" />
                               )}
                               <div>
                                 <p className="font-medium text-foreground">
-                                  {new Date(payment.dueDate).toLocaleDateString()}
+                                  {new Date(payment.timestamp).toLocaleDateString()}
                                 </p>
                                 <p className="text-sm text-muted-foreground">{payment.status}</p>
                               </div>
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-foreground">${payment.amount.toLocaleString()}</p>
-                              {payment.status === "Pending" && (
+                              {payment.status === "pending" && (
                                 <Button
                                   size="sm"
-                                  onClick={() => handleMakePayment(payment.loanId, payment.amount)}
+                                  onClick={() => handleMakePayment(payment.relatedId, payment.amount)}
                                   className="mt-1 bg-[#E57700] hover:bg-[#E57700]/90 text-white"
                                 >
                                   Pay Now
@@ -869,7 +1273,12 @@ export default function DriverDashboard() {
               </TabsContent>
               {/* Notifications Tab */}
               <TabsContent value="notifications" className="space-y-6">
-                <NotificationCenter userId={currentDriverId} userRole="driver" />
+                {/* This tab will now render the full NotificationCenter */}
+                <NotificationCenter
+                  userId={currentDriverId}
+                  userRole="driver"
+                  notifications={authUser.notifications || []}
+                />
               </TabsContent>
             </Tabs>
           </div>

@@ -5,9 +5,16 @@ export interface IInvestment extends Document {
   loanId: Schema.Types.ObjectId;
   vehicleId: Schema.Types.ObjectId;
   amount: number;
-  status: 'Funding' | 'Active' | 'Completed';
+  expectedROI: number;
   monthlyReturn: number;
-  date: Date;
+  status: 'Active' | 'Completed' | 'Overdue';
+  startDate: Date;
+  endDate: Date;
+  paymentsReceived: number;
+  totalPayments: number;
+  nextPaymentDate: Date;
+  totalReturns: number;
+  investmentTerm: number; // Add term field
 }
 
 const InvestmentSchema: Schema = new Schema({
@@ -15,13 +22,20 @@ const InvestmentSchema: Schema = new Schema({
   loanId: { type: Schema.Types.ObjectId, ref: 'Loan', required: false },
   vehicleId: { type: Schema.Types.ObjectId, ref: 'Vehicle', required: true },
   amount: { type: Number, required: true },
+  expectedROI: { type: Number, required: true },
+  monthlyReturn: { type: Number, required: true },
   status: {
     type: String,
-    enum: ['Active', 'Completed'],
+    enum: ['Active', 'Completed', 'Overdue'],
     default: 'Active',
   },
-  monthlyReturn: { type: Number, required: true },
-  date: { type: Date, default: Date.now },
+  startDate: { type: Date, default: Date.now },
+  endDate: { type: Date, required: true },
+  paymentsReceived: { type: Number, default: 0 },
+  totalPayments: { type: Number, required: true },
+  nextPaymentDate: { type: Date, required: true },
+  totalReturns: { type: Number, default: 0 },
+  investmentTerm: { type: Number, required: true }, // Add this field
 });
 
 export default mongoose.models.Investment || mongoose.model<IInvestment>('Investment', InvestmentSchema);

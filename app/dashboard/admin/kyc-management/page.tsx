@@ -16,24 +16,38 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, CheckCircle, XCircle, FileText, Eye, RefreshCw, AlertTriangle } from "lucide-react"
-import { useAuth } from "@/hooks/use-auth" // Assuming useAuth provides user role
+import { Loader2, CheckCircle, XCircle, FileText, Eye, RefreshCw, AlertTriangle, Calendar } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input" // Import Input for date picker
 
 // Reusing the updateUserKycStatus Server Action
 import { updateUserKycStatus } from "@/actions/user"
 
-// Update the KycRequest interface to include kycRejectionReason
+// Update the KycRequest interface to include new fields
 interface KycRequest {
   _id: string
   name: string
   email: string
-  kycStatus: "none" | "pending" | "approved" | "rejected"
+  kycStatus: "none" | "pending" | "approved_stage1" | "pending_stage2" | "approved_stage2" | "rejected"
   kycDocuments: string[]
   createdAt: string
   updatedAt: string
-  kycRejectionReason?: string | null // Added rejection reason
+  kycRejectionReason?: string | null
+  physicalMeetingDate?: string | null
+  physicalMeetingStatus?: "none" | "scheduled" | "approved" | "rescheduled" | "completed" | "rejected_stage2" // Updated enum
+}
+
+// Add this helper function at the top of the component, before the `export default function AdminKycManagementPage()`
+// It checks if the given date string is today or in the past.
+const isMeetingDatePassedOrToday = (dateString: string | null | undefined) => {
+  if (!dateString) return false
+  const meetingDate = new Date(dateString)
+  meetingDate.setHours(0, 0, 0, 0) // Normalize to start of day
+  const today = new Date()
+  today.setHours(0, 0, 0, 0) // Normalize to start of day
+  return meetingDate <= today
 }
 
 export default function AdminKycManagementPage() {
@@ -44,14 +58,30 @@ export default function AdminKycManagementPage() {
   const [kycRequests, setKycRequests] = useState<KycRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // State for confirmation dialog (approve/reject stage 1, complete/reject stage 2)
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<KycRequest | null>(null)
-  const [actionType, setActionType] = useState<"approve" | "reject" | null>(null)
+  const [actionType, setActionType] = useState<
+    | "approve_stage1"
+    | "reject_stage1"
+    | "approve_meeting_date" // New action
+    | "reschedule_meeting" // New action
+    | "complete_stage2"
+    | "reject_stage2"
+    | null
+  >(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [rejectionReasonInput, setRejectionReasonInput] = useState("")
+
+  // State for document viewer dialog
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false)
   const [currentDocumentUrl, setCurrentDocumentUrl] = useState<string | null>(null)
-  // Add new state for rejection reason input
-  const [rejectionReasonInput, setRejectionReasonInput] = useState("")
+
+  // State for reschedule meeting dialog
+  const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false)
+  const [rescheduleDateInput, setRescheduleDateInput] = useState("")
+  const [rescheduleReasonInput, setRescheduleReasonInput] = useState("")
 
   const fetchKycRequests = useCallback(async () => {
     setLoading(true)
@@ -87,20 +117,34 @@ export default function AdminKycManagementPage() {
     }
   }, [authLoading, authUser, router, toast, fetchKycRequests])
 
-  // Modify handleAction to reset rejectionReasonInput
-  const handleAction = (request: KycRequest, type: "approve" | "reject") => {
+  const handleAction = (
+    request: KycRequest,
+    type:
+      | "approve_stage1"
+      | "reject_stage1"
+      | "approve_meeting_date"
+      | "reschedule_meeting"
+      | "complete_stage2"
+      | "reject_stage2",
+  ) => {
     setSelectedRequest(request)
     setActionType(type)
-    setRejectionReasonInput("") // Reset input when opening dialog
-    setIsConfirmDialogOpen(true)
+    setRejectionReasonInput("") // Reset rejection reason input
+    setRescheduleDateInput("") // Reset reschedule date input
+    setRescheduleReasonInput("") // Reset reschedule reason input
+
+    if (type === "reschedule_meeting") {
+      setIsRescheduleDialogOpen(true)
+    } else {
+      setIsConfirmDialogOpen(true)
+    }
   }
 
-  // Modify confirmAction to pass the rejection reason
   const confirmAction = async () => {
     if (!selectedRequest || !actionType) return
 
-    // If rejecting, ensure a reason is provided (optional, but good practice)
-    if (actionType === "reject" && !rejectionReasonInput.trim()) {
+    // If rejecting, ensure a reason is provided
+    if ((actionType === "reject_stage1" || actionType === "reject_stage2") && !rejectionReasonInput.trim()) {
       toast({
         title: "Rejection Reason Required",
         description: "Please provide a reason for rejecting the KYC.",
@@ -111,32 +155,68 @@ export default function AdminKycManagementPage() {
 
     setIsSubmitting(true)
     try {
-      const newStatus = actionType === "approve" ? "approved" : "rejected"
+      let newKycStatus: KycRequest["kycStatus"] = selectedRequest.kycStatus
+      let newPhysicalMeetingStatus: KycRequest["physicalMeetingStatus"] = selectedRequest.physicalMeetingStatus
+      const newPhysicalMeetingDate: Date | null = selectedRequest.physicalMeetingDate
+        ? new Date(selectedRequest.physicalMeetingDate)
+        : null
+      let rejectionReason: string | null = null
+
+      switch (actionType) {
+        case "approve_stage1":
+          newKycStatus = "approved_stage1"
+          break
+        case "reject_stage1":
+          newKycStatus = "rejected"
+          rejectionReason = rejectionReasonInput.trim()
+          break
+        case "approve_meeting_date": // New action
+          newPhysicalMeetingStatus = "approved"
+          // kycStatus will be updated to pending_stage2 in actions/user.ts based on this transition
+          break
+        case "reschedule_meeting": // This action is handled by a separate dialog, but included for completeness
+          // This case should ideally not be reached via this dialog
+          break
+        case "complete_stage2":
+          newKycStatus = "approved_stage2"
+          newPhysicalMeetingStatus = "completed"
+          break
+        case "reject_stage2":
+          newKycStatus = "rejected" // Or keep approved_stage1 and set physicalMeetingStatus to rejected_stage2
+          newPhysicalMeetingStatus = "rejected_stage2"
+          rejectionReason = rejectionReasonInput.trim()
+          break
+        default:
+          break
+      }
+
       const res = await updateUserKycStatus(
         selectedRequest._id,
-        newStatus,
-        selectedRequest.kycDocuments, // Pass existing documents
-        actionType === "reject" ? rejectionReasonInput.trim() : null, // Pass reason only if rejecting
+        newKycStatus,
+        selectedRequest.kycDocuments,
+        rejectionReason,
+        newPhysicalMeetingDate, // Pass existing or updated date
+        newPhysicalMeetingStatus, // Pass updated physical meeting status
       )
 
       if (res.success) {
         toast({
-          title: `${actionType === "approve" ? "Approved" : "Rejected"}`,
-          description: `KYC for ${selectedRequest.name} has been ${actionType}.`,
+          title: "Success",
+          description: `KYC for ${selectedRequest.name} has been ${actionType.replace(/_/g, " ")}.`,
         })
         fetchKycRequests() // Re-fetch to update the list
       } else {
         toast({
           title: "Action Failed",
-          description: res.message || `Failed to ${actionType} KYC.`,
+          description: res.message || `Failed to ${actionType.replace(/_/g, " ")} KYC.`,
           variant: "destructive",
         })
       }
     } catch (err) {
-      console.error(`Error during ${actionType} KYC:`, err)
+      console.error(`Error during ${actionType.replace(/_/g, " ")} KYC:`, err)
       toast({
         title: "Error",
-        description: `An unexpected error occurred during ${actionType} action.`,
+        description: `An unexpected error occurred during ${actionType.replace(/_/g, " ")} action.`,
         variant: "destructive",
       })
     } finally {
@@ -145,6 +225,57 @@ export default function AdminKycManagementPage() {
       setSelectedRequest(null)
       setActionType(null)
       setRejectionReasonInput("") // Clear input after action
+    }
+  }
+
+  const handleRescheduleSubmit = async () => {
+    if (!selectedRequest || !rescheduleDateInput || !rescheduleReasonInput.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a new date and provide a reason for rescheduling.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const res = await updateUserKycStatus(
+        selectedRequest._id,
+        selectedRequest.kycStatus, // Keep current KYC status
+        selectedRequest.kycDocuments,
+        null, // No rejection reason for reschedule
+        new Date(rescheduleDateInput), // New rescheduled date
+        "rescheduled", // Set physical meeting status to rescheduled
+      )
+
+      if (res.success) {
+        toast({
+          title: "Success",
+          description: `Physical meeting for ${selectedRequest.name} has been rescheduled to ${new Date(rescheduleDateInput).toLocaleDateString()}.`,
+        })
+        fetchKycRequests() // Re-fetch to update the list
+      } else {
+        toast({
+          title: "Reschedule Failed",
+          description: res.message || "Failed to reschedule the meeting.",
+          variant: "destructive",
+        })
+      }
+    } catch (err) {
+      console.error("Error during reschedule:", err)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred during reschedule action.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+      setIsRescheduleDialogOpen(false)
+      setSelectedRequest(null)
+      setActionType(null)
+      setRescheduleDateInput("")
+      setRescheduleReasonInput("")
     }
   }
 
@@ -157,9 +288,30 @@ export default function AdminKycManagementPage() {
     switch (status) {
       case "pending":
         return "yellow"
-      case "approved":
+      case "approved_stage1":
+        return "purple"
+      case "pending_stage2":
+        return "blue"
+      case "approved_stage2":
         return "green"
       case "rejected":
+        return "red"
+      default:
+        return "secondary"
+    }
+  }
+
+  const getPhysicalMeetingStatusBadgeVariant = (status: KycRequest["physicalMeetingStatus"]) => {
+    switch (status) {
+      case "scheduled":
+        return "yellow"
+      case "approved":
+        return "green"
+      case "rescheduled":
+        return "blue"
+      case "completed":
+        return "green"
+      case "rejected_stage2":
         return "red"
       default:
         return "secondary"
@@ -180,9 +332,6 @@ export default function AdminKycManagementPage() {
 
   return (
     <>
-      {/* Sidebar is handled by layout */}
-      {/* Header is handled by layout */}
-      {/* The main content area is now directly within the layout's <main> tag */}
       <Card className="max-w-6xl mx-auto">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold">KYC Management</CardTitle>
@@ -221,7 +370,9 @@ export default function AdminKycManagementPage() {
                   <TableRow>
                     <TableHead>Driver Name</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>KYC Status</TableHead>
+                    <TableHead>Meeting Status</TableHead>
+                    <TableHead>Meeting Date</TableHead>
                     <TableHead>Documents</TableHead>
                     <TableHead>Rejection Reason</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -234,8 +385,30 @@ export default function AdminKycManagementPage() {
                       <TableCell>{request.email}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(request.kycStatus)}>
-                          {request.kycStatus.charAt(0).toUpperCase() + request.kycStatus.slice(1)}
+                          {request.kycStatus.charAt(0).toUpperCase() + request.kycStatus.slice(1).replace(/_/g, " ")}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {request.physicalMeetingStatus && request.physicalMeetingStatus !== "none" ? (
+                          <Badge
+                            variant={getPhysicalMeetingStatusBadgeVariant(request.physicalMeetingStatus)}
+                            className="capitalize"
+                          >
+                            {request.physicalMeetingStatus.replace(/_/g, " ")}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {request.physicalMeetingDate ? (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            {new Date(request.physicalMeetingDate).toLocaleDateString()}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">N/A</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {request.kycDocuments && request.kycDocuments.length > 0 ? (
@@ -245,7 +418,7 @@ export default function AdminKycManagementPage() {
                                 key={index}
                                 variant="outline"
                                 size="sm"
-                                onClick={() => openDocumentViewer(doc)} // Assuming 'doc' is a direct URL
+                                onClick={() => openDocumentViewer(doc)}
                                 className="flex items-center gap-1"
                               >
                                 <Eye className="h-3 w-3" />
@@ -258,29 +431,80 @@ export default function AdminKycManagementPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {request.kycStatus === "rejected" && request.kycRejectionReason ? (
+                        {request.kycRejectionReason ? (
                           <span className="text-sm text-red-600">{request.kycRejectionReason}</span>
                         ) : (
                           <span className="text-muted-foreground text-sm">N/A</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {request.kycStatus === "pending" ? (
+                        {request.kycStatus === "pending" && (
                           <div className="flex justify-end gap-2">
                             <Button
                               size="sm"
-                              onClick={() => handleAction(request, "approve")}
+                              onClick={() => handleAction(request, "approve_stage1")}
                               className="bg-green-600 hover:bg-green-700 text-white"
                             >
-                              <CheckCircle className="h-4 w-4 mr-1" /> Approve
+                              <CheckCircle className="h-4 w-4 mr-1" /> Approve Stage 1
                             </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleAction(request, "reject")}>
-                              <XCircle className="h-4 w-4 mr-1" /> Reject
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleAction(request, "reject_stage1")}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" /> Reject Stage 1
                             </Button>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">No action needed</span>
                         )}
+                        {/* Updated condition to include pending_stage2 for scheduled meetings */}
+                        {(request.kycStatus === "approved_stage1" || request.kycStatus === "pending_stage2") &&
+                          request.physicalMeetingStatus === "scheduled" && (
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleAction(request, "approve_meeting_date")}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" /> Approve Meeting
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleAction(request, "reschedule_meeting")}
+                              >
+                                <Calendar className="h-4 w-4 mr-1" /> Reschedule
+                              </Button>
+                            </div>
+                          )}
+                        {request.kycStatus === "pending_stage2" && request.physicalMeetingStatus === "approved" && (
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleAction(request, "complete_stage2")}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              disabled={!isMeetingDatePassedOrToday(request.physicalMeetingDate)} // Disable until meeting date
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" /> Complete Stage 2
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleAction(request, "reject_stage2")}
+                              disabled={!isMeetingDatePassedOrToday(request.physicalMeetingDate)} // Disable until meeting date
+                            >
+                              <XCircle className="h-4 w-4 mr-1" /> Reject Stage 2
+                            </Button>
+                          </div>
+                        )}
+                        {/* Display "No action needed" for other statuses */}
+                        {!(
+                          request.kycStatus === "pending" ||
+                          ((request.kycStatus === "approved_stage1" || request.kycStatus === "pending_stage2") &&
+                            request.physicalMeetingStatus === "scheduled") ||
+                          (request.kycStatus === "pending_stage2" &&
+                            request.physicalMeetingStatus === "approved" &&
+                            isMeetingDatePassedOrToday(request.physicalMeetingDate))
+                        ) && <span className="text-muted-foreground text-sm">No action needed</span>}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -291,17 +515,17 @@ export default function AdminKycManagementPage() {
         </CardContent>
       </Card>
 
-      {/* Confirmation Dialog */}
+      {/* Confirmation Dialog (for approve/reject stage 1, approve/complete/reject stage 2) */}
       <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm KYC {actionType === "approve" ? "Approval" : "Rejection"}</DialogTitle>
+            <DialogTitle>Confirm KYC {actionType?.replace(/_/g, " ")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to {actionType} KYC for{" "}
+              Are you sure you want to {actionType?.replace(/_/g, " ")} KYC for{" "}
               <span className="font-semibold">{selectedRequest?.name}</span>? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          {actionType === "reject" && (
+          {(actionType === "reject_stage1" || actionType === "reject_stage2") && (
             <div className="space-y-2">
               <Label htmlFor="rejection-reason">Reason for Rejection</Label>
               <Textarea
@@ -321,7 +545,7 @@ export default function AdminKycManagementPage() {
               onClick={confirmAction}
               disabled={isSubmitting}
               className={
-                actionType === "approve"
+                actionType?.includes("approve") || actionType?.includes("complete")
                   ? "bg-green-600 hover:bg-green-700 text-white"
                   : "bg-red-600 hover:bg-red-700 text-white"
               }
@@ -332,7 +556,65 @@ export default function AdminKycManagementPage() {
                   Processing...
                 </>
               ) : (
-                `${actionType === "approve" ? "Approve" : "Reject"}`
+                `${actionType?.replace(/_/g, " ")}`
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule Meeting Dialog */}
+      <Dialog open={isRescheduleDialogOpen} onOpenChange={setIsRescheduleDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reschedule Physical Meeting</DialogTitle>
+            <DialogDescription>
+              Select a new date and provide a reason for rescheduling the physical meeting for{" "}
+              <span className="font-semibold">{selectedRequest?.name}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reschedule-date">New Preferred Date</Label>
+              <Input
+                id="reschedule-date"
+                type="date"
+                value={rescheduleDateInput}
+                onChange={(e) => setRescheduleDateInput(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reschedule-reason">Reason for Rescheduling</Label>
+              <Textarea
+                id="reschedule-reason"
+                placeholder="Explain why the meeting is being rescheduled..."
+                value={rescheduleReasonInput}
+                onChange={(e) => setRescheduleReasonInput(e.target.value)}
+                rows={3}
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRescheduleDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRescheduleSubmit}
+              disabled={isSubmitting || !rescheduleDateInput || !rescheduleReasonInput.trim()}
+              className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Rescheduling...
+                </>
+              ) : (
+                <>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Reschedule Meeting
+                </>
               )}
             </Button>
           </DialogFooter>
@@ -350,7 +632,6 @@ export default function AdminKycManagementPage() {
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
             {currentDocumentUrl ? (
-              // Basic display for image/PDF. For robust viewing, consider a dedicated library.
               currentDocumentUrl.match(/\.(jpeg|jpg|png|gif)$/i) ? (
                 <img
                   src={currentDocumentUrl || "/placeholder.svg"}

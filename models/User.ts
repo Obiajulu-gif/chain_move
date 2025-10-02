@@ -8,25 +8,25 @@ const UserSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: function (this: any) {
-        return !this.walletaddress
-      },
+      required: [true, "Please provide your email."],
       unique: true,
       match: [/.+@.+\..+/, "Please fill a valid email address"],
     },
     password: {
       type: String,
-      required: function (this: any) {
-        return !this.walletaddress
-      },
+      required: [true, "Please provide a password."],
       minlength: 8,
     },
-    walletaddress: {
+    walletAddress: {
       type: String,
-      required: function (this: any) {
-        return !this.email && !this.password
-      },
-      unique: true,
+      sparse: true,
+    },
+    smartWalletAddress: {
+      type: String,
+      sparse: true,
+    },
+    privateKey: {
+      type: String,
       sparse: true,
     },
     role: {
@@ -38,10 +38,10 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // New fields for KYC
+    // Updated fields for KYC stages
     kycStatus: {
       type: String,
-      enum: ["none", "pending", "approved", "rejected"],
+      enum: ["none", "pending", "approved_stage1", "pending_stage2", "approved_stage2", "rejected"], // Updated enum
       default: "none",
     },
     kycDocuments: {
@@ -52,6 +52,27 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: null, // Can be null if not rejected or no reason provided
     },
+    // New fields for second stage KYC (physical meeting)
+    physicalMeetingDate: {
+      type: Date,
+      default: null,
+    },
+    physicalMeetingStatus: {
+      type: String,
+      enum: ["none", "scheduled", "approved", "rescheduled", "completed", "rejected_stage2"], // Added 'approved' and 'rescheduled'
+      default: "none",
+    },
+    // New field for in-app notifications
+    notifications: [
+      {
+        id: { type: String, required: true },
+        title: { type: String, required: true },
+        message: { type: String, required: true },
+        read: { type: Boolean, default: false },
+        timestamp: { type: Date, default: Date.now },
+        link: { type: String }, // Optional link for the notification
+      },
+    ],
   },
   { timestamps: true },
 )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
 import { useToast } from "@/hooks/use-toast"
+import { useCurrentUser, useInvestorData, usePlatform } from "@/contexts/platform-context"
+import { useAuth } from "@/hooks/use-auth"
+import type { Investment as PlatformInvestment, Vehicle, LoanApplication, User } from "@/contexts/platform-context"
 import {
   TrendingUp,
   DollarSign,
@@ -33,140 +36,118 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 
-interface Investment {
-  id: string
+import { useCurrency } from "@/hooks/use-currency"
+import { CurrencySwitcher } from "@/components/ui/currency-switcher"
+
+interface EnhancedInvestment extends PlatformInvestment {
   vehicleName: string
   vehicleImage: string
-  investmentAmount: number
   currentValue: number
-  roi: number
-  status: "Active" | "Completed" | "Overdue" | "Pending"
-  monthlyReturn: number
-  totalReturns: number
   repaymentStatus: "On Track" | "Ahead" | "Behind" | "Completed"
   driverName: string
   driverRating: number
   location: string
-  startDate: string
-  endDate: string
-  nextPayment: string
-  paymentsReceived: number
-  totalPayments: number
   riskLevel: "Low" | "Medium" | "High"
   loanTerm: number
   lastPaymentDate: string
   notes: string
+  nextPayment: string
 }
 
-const mockInvestments: Investment[] = [
-  {
-    id: "1",
-    vehicleName: "Toyota Corolla 2020",
-    vehicleImage: "/placeholder.svg?height=150&width=200",
-    investmentAmount: 8000,
-    currentValue: 9280,
-    roi: 16.0,
-    status: "Active",
-    monthlyReturn: 128,
-    totalReturns: 1280,
-    repaymentStatus: "On Track",
-    driverName: "Samuel Adebayo",
-    driverRating: 4.8,
-    location: "Lagos, Nigeria",
-    startDate: "2024-01-15",
-    endDate: "2027-01-15",
-    nextPayment: "2024-12-15",
-    paymentsReceived: 10,
-    totalPayments: 36,
-    riskLevel: "Low",
-    loanTerm: 36,
-    lastPaymentDate: "2024-11-15",
-    notes: "Excellent payment history, driver very reliable",
-  },
-  {
-    id: "2",
-    vehicleName: "Honda Civic 2021",
-    vehicleImage: "/placeholder.svg?height=150&width=200",
-    investmentAmount: 12000,
-    currentValue: 13800,
-    roi: 15.0,
-    status: "Active",
-    monthlyReturn: 180,
-    totalReturns: 1800,
-    repaymentStatus: "Ahead",
-    driverName: "Kwame Asante",
-    driverRating: 4.9,
-    location: "Accra, Ghana",
-    startDate: "2024-03-01",
-    endDate: "2027-09-01",
-    nextPayment: "2024-12-01",
-    paymentsReceived: 8,
-    totalPayments: 42,
-    riskLevel: "Low",
-    loanTerm: 42,
-    lastPaymentDate: "2024-11-01",
-    notes: "Driver making extra payments, ahead of schedule",
-  },
-  {
-    id: "3",
-    vehicleName: "Ford Transit 2019",
-    vehicleImage: "/placeholder.svg?height=150&width=200",
-    investmentAmount: 15000,
-    currentValue: 17550,
-    roi: 17.0,
-    status: "Active",
-    monthlyReturn: 255,
-    totalReturns: 2550,
-    repaymentStatus: "Behind",
-    driverName: "Grace Wanjiku",
-    driverRating: 4.7,
-    location: "Nairobi, Kenya",
-    startDate: "2024-02-10",
-    endDate: "2028-02-10",
-    nextPayment: "2024-11-10",
-    paymentsReceived: 9,
-    totalPayments: 48,
-    riskLevel: "Medium",
-    loanTerm: 48,
-    lastPaymentDate: "2024-10-10",
-    notes: "Payment delayed by 5 days last month, monitoring closely",
-  },
-  {
-    id: "4",
-    vehicleName: "Tesla Model 3 2022",
-    vehicleImage: "/placeholder.svg?height=150&width=200",
-    investmentAmount: 20000,
-    currentValue: 24500,
-    roi: 22.5,
-    status: "Completed",
-    monthlyReturn: 0,
-    totalReturns: 4500,
-    repaymentStatus: "Completed",
-    driverName: "Thabo Mthembu",
-    driverRating: 4.9,
-    location: "Cape Town, South Africa",
-    startDate: "2022-06-01",
-    endDate: "2024-06-01",
-    nextPayment: "Completed",
-    paymentsReceived: 24,
-    totalPayments: 24,
-    riskLevel: "Low",
-    loanTerm: 24,
-    lastPaymentDate: "2024-06-01",
-    notes: "Successfully completed, excellent returns achieved",
-  },
-]
+// Helper function to calculate current value based on investment and returns
+const calculateCurrentValue = (investment: PlatformInvestment): number => {
+  return investment.amount + (investment.totalReturns || 0)
+}
+
+// Helper function to determine repayment status
+const getRepaymentStatus = (investment: PlatformInvestment): "On Track" | "Ahead" | "Behind" | "Completed" => {
+  if (investment.status === "Completed") return "Completed"
+  
+  const expectedPayments = Math.floor(
+    (new Date().getTime() - new Date(investment.startDate).getTime()) / 
+    (30 * 24 * 60 * 60 * 1000) // Approximate months
+  )
+  
+  if (investment.paymentsReceived > expectedPayments) return "Ahead"
+  if (investment.paymentsReceived < expectedPayments) return "Behind"
+  return "On Track"
+}
+
+// Helper function to calculate next payment date
+const getNextPaymentDate = (investment: PlatformInvestment): string => {
+  if (investment.status === "Completed") return "Completed"
+  return investment.nextPaymentDate
+}
 
 export default function MyInvestmentsPage() {
-  const [investments, setInvestments] = useState<Investment[]>(mockInvestments)
+  const { state, dispatch } = usePlatform()
+  const { user: authUser } = useAuth()
+  const currentInvestorId = authUser?.id || ""
+  const investorData = useInvestorData(currentInvestorId)
+  
   const [activeTab, setActiveTab] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null)
+  const [selectedInvestment, setSelectedInvestment] = useState<EnhancedInvestment | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editNotes, setEditNotes] = useState("")
   const { toast } = useToast()
+
+  // Function to fetch investments
+  const fetchInvestments = async () => {
+    try {
+      const response = await fetch(`/api/investments?investorId=${currentInvestorId}`)
+      if (response.ok) {
+        const investmentsData = await response.json()
+        dispatch({
+          type: "SET_INVESTMENTS",
+          payload: investmentsData.investments || [],
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching investments:", error)
+    }
+  }
+
+  // Fetch investments when component mounts or user changes
+  useEffect(() => {
+    if (currentInvestorId) {
+      fetchInvestments()
+    }
+  }, [currentInvestorId])
+
+  // Transform platform investments into enhanced investments with additional UI data
+  const investments = useMemo(() => {
+    if (!investorData.investments) return []
+    
+    return investorData.investments.map((investment): EnhancedInvestment => {
+      // Get vehicle data directly from populated investment or fallback to platform state
+      const vehicle = investment.vehicleId && typeof investment.vehicleId === 'object' 
+        ? investment.vehicleId // Populated vehicle object
+        : state.vehicles.find(v => v._id === investment.vehicleId || v.id === investment.vehicleId)
+      
+      // Find related loan application to get driver info
+      const loanApplication = state.loanApplications.find(loan => loan.id === investment.loanId)
+      const driver = state.users.find(u => (u.id === loanApplication?.driverId || u._id === loanApplication?.driverId) && u.role === "driver")
+      
+      return {
+        ...investment,
+        vehicleName: vehicle?.name || "Unknown Vehicle",
+        vehicleImage: vehicle?.image || "/placeholder.svg?height=150&width=200",
+        currentValue: calculateCurrentValue(investment),
+        repaymentStatus: getRepaymentStatus(investment),
+        driverName: driver?.name || "Unknown Driver",
+        driverRating: 4.5, // Default rating - could be enhanced with actual driver ratings
+        location: "Location TBD", // Could be enhanced with actual location data
+        riskLevel: loanApplication?.riskAssessment || "Medium",
+        loanTerm: Math.ceil((new Date(investment.endDate).getTime() - new Date(investment.startDate).getTime()) / (30 * 24 * 60 * 60 * 1000)),
+        lastPaymentDate: investment.nextPaymentDate, // Using next payment as placeholder
+        notes: loanApplication?.adminNotes || "No notes available",
+        nextPayment: getNextPaymentDate(investment)
+      }
+    })
+  }, [investorData.investments, state.loanApplications, state.vehicles, state.users])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -225,20 +206,20 @@ export default function MyInvestmentsPage() {
     return matchesSearch && matchesTab && matchesStatus
   })
 
-  const totalInvested = investments.reduce((sum, inv) => sum + inv.investmentAmount, 0)
+  const totalInvested = investments.reduce((sum, inv) => sum + inv.amount, 0)
   const totalCurrentValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0)
   const totalReturns = totalCurrentValue - totalInvested
-  const averageROI = investments.reduce((sum, inv) => sum + inv.roi, 0) / investments.length
+  const averageROI = investments.length > 0 ? investments.reduce((sum, inv) => sum + inv.expectedROI, 0) / investments.length : 0
   const monthlyIncome = investments
     .filter((inv) => inv.status === "Active")
     .reduce((sum, inv) => sum + inv.monthlyReturn, 0)
 
-  const handleViewDetails = (investment: Investment) => {
+  const handleViewDetails = (investment: EnhancedInvestment) => {
     setSelectedInvestment(investment)
     setIsDetailsOpen(true)
   }
 
-  const handleEditNotes = (investment: Investment) => {
+  const handleEditNotes = (investment: EnhancedInvestment) => {
     setSelectedInvestment(investment)
     setEditNotes(investment.notes)
     setIsEditOpen(true)
@@ -246,10 +227,8 @@ export default function MyInvestmentsPage() {
 
   const handleSaveNotes = () => {
     if (selectedInvestment) {
-      const updatedInvestments = investments.map((inv) =>
-        inv.id === selectedInvestment.id ? { ...inv, notes: editNotes } : inv,
-      )
-      setInvestments(updatedInvestments)
+      // Note: In a real app, this would update the database
+      // For now, we'll just show a success message
       setIsEditOpen(false)
       toast({
         title: "Notes Updated",
@@ -259,8 +238,8 @@ export default function MyInvestmentsPage() {
   }
 
   const handleRemoveInvestment = (investmentId: string) => {
-    const updatedInvestments = investments.filter((inv) => inv.id !== investmentId)
-    setInvestments(updatedInvestments)
+    // Note: In a real app, this would remove from the database
+    // For now, we'll just show a success message
     toast({
       title: "Investment Removed",
       description: "Investment has been removed from your portfolio",
@@ -272,9 +251,9 @@ export default function MyInvestmentsPage() {
       ["Vehicle", "Investment Amount", "Current Value", "ROI", "Status", "Monthly Return", "Driver", "Location"],
       ...filteredInvestments.map((inv) => [
         inv.vehicleName,
-        inv.investmentAmount,
+        inv.amount,
         inv.currentValue,
-        `${inv.roi}%`,
+        `${inv.expectedROI}%`,
         inv.status,
         inv.monthlyReturn,
         inv.driverName,
@@ -308,7 +287,7 @@ export default function MyInvestmentsPage() {
 
       <div className="md:ml-64 lg:ml-72">
         <Header 
-          userName="Marcus" 
+          userName={authUser?.name || "Investor"} 
           userStatus="Verified Investor"
           className="md:pl-6 lg:pl-8"
         />
@@ -533,7 +512,7 @@ export default function MyInvestmentsPage() {
                         <div>
                           <p className="text-sm text-muted-foreground">Invested</p>
                           <p className="text-lg font-semibold text-foreground">
-                            ${investment.investmentAmount.toLocaleString()}
+                            ${investment.amount.toLocaleString()}
                           </p>
                         </div>
                         <div>
@@ -544,7 +523,7 @@ export default function MyInvestmentsPage() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">ROI</p>
-                          <p className="text-lg font-semibold text-green-400">+{investment.roi}%</p>
+                          <p className="text-lg font-semibold text-green-400">+{investment.expectedROI}%</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Monthly Return</p>
@@ -555,13 +534,13 @@ export default function MyInvestmentsPage() {
                         <div>
                           <p className="text-sm text-muted-foreground">Total Returns</p>
                           <p className="text-lg font-semibold text-green-400">
-                            +${investment.totalReturns.toLocaleString()}
+                            +${(investment.totalReturns || 0).toLocaleString()}
                           </p>
                         </div>
                       </div>
 
                       {/* Driver Info */}
-                      <div className="flex items-center justify-between p-3 bg-muted rounded-lg mb-4">
+                      {/* <div className="flex items-center justify-between p-3 bg-muted rounded-lg mb-4">
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 bg-[#E57700] rounded-full flex items-center justify-center">
                             <span className="text-white text-sm font-medium">{investment.driverName.charAt(0)}</span>
@@ -575,7 +554,7 @@ export default function MyInvestmentsPage() {
                           <Star className="h-4 w-4 text-yellow-400 fill-current" />
                           <span className="text-sm text-foreground">{investment.driverRating}</span>
                         </div>
-                      </div>
+                      </div> */}
 
                       {/* Repayment Progress */}
                       <div className="space-y-3">
@@ -668,7 +647,7 @@ export default function MyInvestmentsPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Investment Amount</p>
                   <p className="font-semibold text-foreground">
-                    ${selectedInvestment.investmentAmount.toLocaleString()}
+                    ${selectedInvestment.amount.toLocaleString()}
                   </p>
                 </div>
                 <div>
@@ -681,7 +660,7 @@ export default function MyInvestmentsPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Returns</p>
-                  <p className="font-semibold text-green-500">${selectedInvestment.totalReturns.toLocaleString()}</p>
+                  <p className="font-semibold text-green-500">${(selectedInvestment.totalReturns || 0).toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Last Payment</p>

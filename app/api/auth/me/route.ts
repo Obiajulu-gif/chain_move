@@ -6,6 +6,7 @@ import User from "@/models/User"
 
 export async function GET() {
   try {
+    // Await cookies() here
     const cookieStore = await cookies()
     const tokenCookie = cookieStore.get("token")?.value
 
@@ -18,28 +19,33 @@ export async function GET() {
 
     await dbConnect()
 
-    // --- IMPORTANT CHANGE HERE ---
-    // Include kycStatus and kycDocuments in the select statement
+    // Include kycStatus, kycDocuments, physicalMeetingDate, physicalMeetingStatus, wallet details and notifications
     const user = await User.findById(payload.userId).select(
-      "name email role availableBalance totalInvested totalReturns kycStatus kycDocuments",
-    )
+      "name email role availableBalance totalInvested totalReturns kycStatus kycDocuments physicalMeetingDate physicalMeetingStatus notifications walletAddress smartWalletAddress privateKey",
+    ).lean();
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
+    // console.log("priv key ", user.privateKey);
+    // I'll make use of the private key later
 
-    // --- IMPORTANT CHANGE HERE ---
-    // Ensure the returned JSON includes kycStatus and kycDocuments
+    delete user.privateKey; // Remove private key from response
     return NextResponse.json({
       id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
       availableBalance: user.availableBalance,
-      totalInvested: user.totalInvested, // Assuming these fields exist on your User model
-      totalReturns: user.totalReturns, // Assuming these fields exist on your User model
-      kycStatus: user.kycStatus, // Include kycStatus
-      kycDocuments: user.kycDocuments, // Include kycDocuments
+      totalInvested: user.totalInvested,
+      totalReturns: user.totalReturns,
+      kycStatus: user.kycStatus,
+      kycDocuments: user.kycDocuments,
+      physicalMeetingDate: user.physicalMeetingDate,
+      physicalMeetingStatus: user.physicalMeetingStatus,
+      notifications: user.notifications,
+      smartWalletAddress: user.smartWalletAddress || '',
+      walletAddress: user.walletAddress || '',
     })
   } catch (error) {
     console.error("Auth error:", error)

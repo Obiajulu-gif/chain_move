@@ -7,7 +7,7 @@ import User from "@/models/User"
 
 export async function POST(request: Request): Promise<NextResponse> {
   const cookieStore = cookies()
-  const tokenCookie = cookieStore.get("token")?.value
+  const tokenCookie = await cookieStore.get("token")?.value
 
   if (!tokenCookie) {
     return NextResponse.json({ error: "No token found" }, { status: 401 })
