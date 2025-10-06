@@ -8,27 +8,48 @@ import { createThirdwebClient, defineChain, getContract, prepareContractCall, re
 import { privateKeyToAccount, smartWallet } from "thirdweb/wallets";
 
 
-const web3 = new Web3(process.env.RPC_URL);
-const algorithm = process.env.ALGORITHM;
-const secretKeyHex = process.env.SECRET_KEY_HEX;
-const secretKey = Buffer.from(secretKeyHex, 'hex');
-const iv = crypto.randomBytes(16); // random initialization vector
-const THIRDWEB_CLIENT_ID = process.env.THIRDWEB_CLIENT_ID;
-const THIRDWEB_SECRET_KEY = process.env.THIRDWEB_SECRET_KEY;
-const ACCOUNT_FACTORY_ADDRESS = process.env.ACCOUNT_FACTORY_ADDRESS;
-const TREASURY_ADDRESS = process.env.TREASURY_ADDRESS;
-const CHAINMOVE_CA = process.env.CHAINMOVE_CA;
+// Validate required environment variables
+const requiredEnvVars = {
+  RPC_URL: process.env.RPC_URL,
+  ALGORITHM: process.env.ALGORITHM,
+  SECRET_KEY_HEX: process.env.SECRET_KEY_HEX,
+  THIRDWEB_CLIENT_ID: process.env.THIRDWEB_CLIENT_ID,
+  THIRDWEB_SECRET_KEY: process.env.THIRDWEB_SECRET_KEY,
+  ACCOUNT_FACTORY_ADDRESS: process.env.ACCOUNT_FACTORY_ADDRESS,
+  TREASURY_ADDRESS: process.env.TREASURY_ADDRESS,
+  CHAINMOVE_CA: process.env.CHAINMOVE_CA,
+};
+
+// Check for missing environment variables
+const missingVars = Object.entries(requiredEnvVars)
+  .filter(([key, value]) => !value)
+  .map(([key]) => key);
+
+if (missingVars.length > 0) {
+  throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+}
+
+const web3 = new Web3(requiredEnvVars.RPC_URL);
+const algorithm = requiredEnvVars.ALGORITHM;
+const secretKeyHex = requiredEnvVars.SECRET_KEY_HEX;
+const secretKey = Buffer.from(secretKeyHex!, 'hex');
+const THIRDWEB_CLIENT_ID = requiredEnvVars.THIRDWEB_CLIENT_ID;
+const THIRDWEB_SECRET_KEY = requiredEnvVars.THIRDWEB_SECRET_KEY;
+const ACCOUNT_FACTORY_ADDRESS = requiredEnvVars.ACCOUNT_FACTORY_ADDRESS;
+const TREASURY_ADDRESS = requiredEnvVars.TREASURY_ADDRESS;
+const CHAINMOVE_CA = requiredEnvVars.CHAINMOVE_CA;
 const chain = defineChain(4202);
 
 const client = createThirdwebClient({
-  secretKey: THIRDWEB_SECRET_KEY,
-  clientId: THIRDWEB_CLIENT_ID,
+  secretKey: THIRDWEB_SECRET_KEY!,
+  clientId: THIRDWEB_CLIENT_ID!,
 });
 
 
 // Function To Encrypt private key before saving to DB
 function encrypt(text: string) {
-  const cipher = crypto.createCipheriv(algorithm, secretKey, iv);
+  const iv = crypto.randomBytes(16); // Generate a new IV for each encryption
+  const cipher = crypto.createCipheriv(algorithm!, secretKey, iv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
   return {
     iv: iv.toString('hex'),
@@ -39,7 +60,7 @@ function encrypt(text: string) {
 // Function To Decrypt private key before saving to DB
 function decrypt(encrypted: { iv: string; content: string }) {
   const decipher = crypto.createDecipheriv(
-    algorithm,
+    algorithm!,
     secretKey,
     Buffer.from(encrypted.iv, 'hex'),
   );
@@ -51,10 +72,27 @@ function decrypt(encrypted: { iv: string; content: string }) {
 }
 
 export async function POST(request: Request) {
-  await dbConnect();
+  try {
+    await dbConnect();
+  } catch (dbError) {
+    console.error("DATABASE_CONNECTION_ERROR", dbError);
+    return NextResponse.json({ 
+      message: "Database connection failed", 
+      success: false 
+    }, { status: 500 });
+  }
 
-  const chainId = await web3.eth.getChainId();
-  console.log('Chain ID:', chainId);
+  let chainId;
+  try {
+    chainId = await web3.eth.getChainId();
+    console.log('Chain ID:', chainId);
+  } catch (chainError) {
+    console.error("CHAIN_CONNECTION_ERROR", chainError);
+    return NextResponse.json({ 
+      message: "Blockchain connection failed", 
+      success: false 
+    }, { status: 500 });
+  }
 
   try {
     const { name, email, password, role } = await request.json();
@@ -119,7 +157,7 @@ export async function POST(request: Request) {
     try {
       smartWalletInstance = smartWallet({
         chain,
-        factoryAddress: ACCOUNT_FACTORY_ADDRESS,
+        factoryAddress: ACCOUNT_FACTORY_ADDRESS!,
         gasless: true,
       });
       smartAccount = await smartWalletInstance.connect({
@@ -135,11 +173,11 @@ export async function POST(request: Request) {
     // Deploy smart wallet by calling approve function
     try {
       const contract = getContract({
-        address: CHAINMOVE_CA,
+        address: CHAINMOVE_CA!,
         chain: chain,
         client,
       });
-      const spender = TREASURY_ADDRESS;
+      const spender = TREASURY_ADDRESS!;
       const value = 1_000_000_000_000_000_000; // in wei
 
       const transaction = await prepareContractCall({
