@@ -4,50 +4,15 @@ import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { Web3 } from 'web3';
 import crypto from 'crypto';
-import { createThirdwebClient, defineChain, getContract, prepareContractCall, readContract, sendTransaction } from "thirdweb";
-import { privateKeyToAccount, smartWallet } from "thirdweb/wallets";
+// thirdweb modules will be loaded dynamically inside the handler to avoid SSR-time browser APIs
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 
-// Validate required environment variables
-const requiredEnvVars = {
-  RPC_URL: process.env.RPC_URL,
-  ALGORITHM: process.env.ALGORITHM,
-  SECRET_KEY_HEX: process.env.SECRET_KEY_HEX,
-  THIRDWEB_CLIENT_ID: process.env.THIRDWEB_CLIENT_ID,
-  THIRDWEB_SECRET_KEY: process.env.THIRDWEB_SECRET_KEY,
-  ACCOUNT_FACTORY_ADDRESS: process.env.ACCOUNT_FACTORY_ADDRESS,
-  TREASURY_ADDRESS: process.env.TREASURY_ADDRESS,
-  CHAINMOVE_CA: process.env.CHAINMOVE_CA,
-};
-
-// Check for missing environment variables
-const missingVars = Object.entries(requiredEnvVars)
-  .filter(([key, value]) => !value)
-  .map(([key]) => key);
-
-if (missingVars.length > 0) {
-  throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
-}
-
-const web3 = new Web3(requiredEnvVars.RPC_URL);
-const algorithm = requiredEnvVars.ALGORITHM;
-const secretKeyHex = requiredEnvVars.SECRET_KEY_HEX;
-const secretKey = Buffer.from(secretKeyHex!, 'hex');
-const THIRDWEB_CLIENT_ID = requiredEnvVars.THIRDWEB_CLIENT_ID;
-const THIRDWEB_SECRET_KEY = requiredEnvVars.THIRDWEB_SECRET_KEY;
-const ACCOUNT_FACTORY_ADDRESS = requiredEnvVars.ACCOUNT_FACTORY_ADDRESS;
-const TREASURY_ADDRESS = requiredEnvVars.TREASURY_ADDRESS;
-const CHAINMOVE_CA = requiredEnvVars.CHAINMOVE_CA;
-const chain = defineChain(4202);
-
-const client = createThirdwebClient({
-  secretKey: THIRDWEB_SECRET_KEY!,
-  clientId: THIRDWEB_CLIENT_ID!,
-});
 
 
 // Function To Encrypt private key before saving to DB
-function encrypt(text: string) {
+function encrypt(text: string, algorithm: string, secretKey: Buffer) {
   const iv = crypto.randomBytes(16); // Generate a new IV for each encryption
   const cipher = crypto.createCipheriv(algorithm!, secretKey, iv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
@@ -58,7 +23,11 @@ function encrypt(text: string) {
 }
 
 // Function To Decrypt private key before saving to DB
-function decrypt(encrypted: { iv: string; content: string }) {
+function decrypt(
+  encrypted: { iv: string; content: string },
+  algorithm: string,
+  secretKey: Buffer,
+) {
   const decipher = crypto.createDecipheriv(
     algorithm!,
     secretKey,
@@ -74,17 +43,49 @@ function decrypt(encrypted: { iv: string; content: string }) {
 export async function POST(request: Request) {
   console.log("🚀 SIGNUP_START: Request received");
   
+  // Read and validate environment variables at request time
+  const requiredEnvVars = {
+    RPC_URL: process.env.RPC_URL,
+    ALGORITHM: process.env.ALGORITHM,
+    SECRET_KEY_HEX: process.env.SECRET_KEY_HEX,
+    THIRDWEB_SECRET_KEY: process.env.THIRDWEB_SECRET_KEY,
+    ACCOUNT_FACTORY_ADDRESS: process.env.ACCOUNT_FACTORY_ADDRESS,
+    TREASURY_ADDRESS: process.env.TREASURY_ADDRESS,
+    CHAINMOVE_CA: process.env.CHAINMOVE_CA,
+  } as const;
+
   // Log environment variables status (without exposing values)
   console.log("🔧 ENV_CHECK:", {
     hasRpcUrl: !!requiredEnvVars.RPC_URL,
     hasAlgorithm: !!requiredEnvVars.ALGORITHM,
     hasSecretKey: !!requiredEnvVars.SECRET_KEY_HEX,
-    hasThirdwebClientId: !!requiredEnvVars.THIRDWEB_CLIENT_ID,
     hasThirdwebSecretKey: !!requiredEnvVars.THIRDWEB_SECRET_KEY,
     hasAccountFactory: !!requiredEnvVars.ACCOUNT_FACTORY_ADDRESS,
     hasTreasury: !!requiredEnvVars.TREASURY_ADDRESS,
     hasChainmoveCA: !!requiredEnvVars.CHAINMOVE_CA,
   });
+
+  const missingVars = Object.entries(requiredEnvVars)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key);
+  if (missingVars.length > 0) {
+    console.error("❌ ENV_VALIDATION_ERROR", { missingVars });
+    return NextResponse.json({
+      message: `Missing required environment variables: ${missingVars.join(', ')}`,
+      success: false,
+    }, { status: 500 });
+  }
+
+  const algorithm = requiredEnvVars.ALGORITHM!;
+  const secretKeyHex = requiredEnvVars.SECRET_KEY_HEX!;
+  const secretKey = Buffer.from(secretKeyHex, 'hex');
+  const ACCOUNT_FACTORY_ADDRESS = requiredEnvVars.ACCOUNT_FACTORY_ADDRESS!;
+  const TREASURY_ADDRESS = requiredEnvVars.TREASURY_ADDRESS!;
+  const CHAINMOVE_CA = requiredEnvVars.CHAINMOVE_CA!;
+
+  const web3 = new Web3(requiredEnvVars.RPC_URL!);
+  let client: any;
+  let chainConfig: any;
 
   try {
     console.log("📊 DB_CONNECT: Attempting database connection");
@@ -185,6 +186,12 @@ export async function POST(request: Request) {
     let myWallet;
     try {
       console.log("👤 PERSONAL_WALLET: Creating personal wallet account");
+      const { createThirdwebClient, defineChain } = await import("thirdweb");
+      const { privateKeyToAccount } = await import("thirdweb/wallets");
+      client = createThirdwebClient({
+        secretKey: requiredEnvVars.THIRDWEB_SECRET_KEY!,
+      });
+      chainConfig = defineChain(4202);
       myWallet = privateKeyToAccount({
         client,
         privateKey: generatedPrivateKey,
@@ -203,8 +210,10 @@ export async function POST(request: Request) {
     let smartWalletInstance, smartAccount;
     try {
       console.log("🧠 SMART_WALLET: Creating smart wallet instance");
+      const { smartWallet } = await import("thirdweb/wallets");
+      // client and chainConfig were initialized earlier
       smartWalletInstance = smartWallet({
-        chain,
+        chain: chainConfig,
         factoryAddress: ACCOUNT_FACTORY_ADDRESS!,
         gasless: true,
       });
@@ -226,9 +235,10 @@ export async function POST(request: Request) {
     // Deploy smart wallet by calling approve function
     try {
       console.log("📜 CONTRACT: Getting contract instance");
+      const { getContract, prepareContractCall, sendTransaction } = await import("thirdweb");
       const contract = getContract({
         address: CHAINMOVE_CA!,
-        chain: chain,
+        chain: chainConfig,
         client,
       });
       const spender = TREASURY_ADDRESS!;
@@ -260,7 +270,7 @@ export async function POST(request: Request) {
     let encryptedPrivateKey;
     try {
       console.log("🔐 ENCRYPT: Encrypting private key");
-      const privKey = encrypt(generateWallet[0].privateKey);
+      const privKey = encrypt(generateWallet[0].privateKey, algorithm, secretKey);
       encryptedPrivateKey = `${privKey.iv}:${privKey.content}`;
       console.log("✅ ENCRYPT: Private key encrypted successfully");
     } catch (encryptError) {
