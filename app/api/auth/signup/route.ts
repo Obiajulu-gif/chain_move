@@ -7,6 +7,7 @@ import crypto from 'crypto';
 // thirdweb modules will be loaded dynamically inside the handler to avoid SSR-time browser APIs
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 
 
