@@ -30,6 +30,7 @@ import {
   Search,
   Coins,
   Wallet,
+  CreditCard,
 } from "lucide-react"
 interface SidebarProps {
   role: "driver" | "investor" | "admin"
@@ -42,6 +43,7 @@ const navigationItems = {
     { name: "Maintenance", href: "/dashboard/driver/maintenance", icon: Wrench },
     { name: "Loan Terms", href: "/dashboard/driver/loan-terms", icon: FileText },
     { name: "Repayment", href: "/dashboard/driver/repayment", icon: Calendar },
+    { name: "Payments", href: "/dashboard/driver/payments", icon: CreditCard },
     { name: "Support", href: "/dashboard/driver/support", icon: HelpCircle },
     { name: "Trips", href: "/dashboard/driver/trips", icon: Route },
     { name: "Performance", href: "/dashboard/driver/performance", icon: Award },

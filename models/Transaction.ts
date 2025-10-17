@@ -3,11 +3,18 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface ITransaction extends Document {
   userId: Schema.Types.ObjectId;
   userType: 'driver' | 'investor' | 'admin';
-  type: 'investment' | 'loan_disbursement' | 'repayment' | 'deposit' | 'withdrawal' | 'return';
+  type: 'investment' | 'loan_disbursement' | 'repayment' | 'deposit' | 'withdrawal' | 'return' | 'down_payment';
   amount: number;
   description: string;
   status: 'Pending' | 'Completed' | 'Failed';
   timestamp: Date;
+  method?: 'wallet' | 'gateway';
+  originalCurrency?: string;
+  currency?: string;
+  amountOriginal?: number;
+  exchangeRate?: number;
+  gatewayReference?: string;
+  relatedId?: string;
 }
 
 const TransactionSchema: Schema = new Schema({
@@ -19,7 +26,7 @@ const TransactionSchema: Schema = new Schema({
   },
   type: {
     type: String,
-    enum: ['investment', 'loan_disbursement', 'repayment', 'deposit', 'withdrawal', 'return'],
+    enum: ['investment', 'loan_disbursement', 'repayment', 'deposit', 'withdrawal', 'return', 'down_payment'],
     required: true,
   },
   amount: { type: Number, required: true },
@@ -30,6 +37,13 @@ const TransactionSchema: Schema = new Schema({
     default: 'Completed',
   },
   timestamp: { type: Date, default: Date.now },
+  method: { type: String },
+  originalCurrency: { type: String },
+  currency: { type: String },
+  amountOriginal: { type: Number },
+  exchangeRate: { type: Number },
+  gatewayReference: { type: String },
+  relatedId: { type: String },
 });
 
 export default mongoose.models.Transaction || mongoose.model<ITransaction>('Transaction', TransactionSchema);

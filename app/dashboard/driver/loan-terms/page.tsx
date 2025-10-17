@@ -177,6 +177,48 @@ export default function LoanTermsPage() {
     }
   }
 
+  // Verify down payment when returning from Paystack
+  useEffect(() => {
+    const reference = searchParams.get("reference") || searchParams.get("trxref")
+    if (!reference) return
+
+    toast({
+      title: "Verifying Payment...",
+      description: "Confirming your down payment.",
+    })
+
+    const verify = async () => {
+      try {
+        const res = await fetch("/api/payments/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference }),
+        })
+        const result = await res.json()
+        if (res.ok && result.success && result.type === "down_payment") {
+          toast({ title: "Down Payment Verified", description: "Loan activated. Welcome aboard!" })
+          const loanIdFromResult = result.loanId || loanApplication?._id
+          if (loanIdFromResult) {
+            dispatch({ type: "MARK_LOAN_AS_ACTIVE", payload: { loanId: loanIdFromResult } })
+          }
+        } else {
+          toast({ title: "Verification Failed", description: result.message || "Could not confirm payment.", variant: "destructive" })
+        }
+      } catch (error) {
+        console.error("Verify error:", error)
+        toast({ title: "Network Error", description: "Could not verify payment.", variant: "destructive" })
+      } finally {
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete("reference")
+        newUrl.searchParams.delete("trxref")
+        newUrl.searchParams.delete("payment")
+        router.replace(newUrl.pathname + newUrl.search)
+      }
+    }
+
+    verify()
+  }, [searchParams])
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

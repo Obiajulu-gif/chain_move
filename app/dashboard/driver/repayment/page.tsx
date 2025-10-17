@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
@@ -130,9 +131,12 @@ const DriverRepaymentPage = () => {
                   <Button
                     variant="outline"
                     className="w-full sm:w-auto hover:bg-muted/50 transition-colors duration-200"
+                    asChild
                   >
-                    <FileText className="h-4 w-4 mr-2" />
-                    View Payment History
+                    <Link href="/dashboard/driver/payments">
+                      <FileText className="h-4 w-4 mr-2" />
+                      View Payment History
+                    </Link>
                   </Button>
                 </div>
               </div>

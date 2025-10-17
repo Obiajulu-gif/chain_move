@@ -146,30 +146,58 @@ export default function InvestorDashboard() {
 
   // Update the useEffect that handles payment returns
   useEffect(() => {
-    // Get the transaction reference from the URL
-    const reference = searchParams.get("reference")
-    const trxref = searchParams.get("trxref")
+    const reference = searchParams.get("reference") || searchParams.get("trxref")
+    if (!reference) return
 
-    // If a reference exists, it means the user just returned from a payment
-    if (reference || trxref) {
-      setIsReturningFromPayment(true)
-      toast({
-        title: "Processing Payment...",
-        description: "Verifying your transaction. Your balance will update shortly.",
-      })
+    setIsReturningFromPayment(true)
+    toast({
+      title: "Verifying Payment...",
+      description: "Hold tight while we confirm your transaction.",
+    })
 
-      // Wait a moment for webhook processing, then refresh data
-      setTimeout(() => {
-        refreshUserData()
+    const verify = async () => {
+      try {
+        const res = await fetch("/api/payments/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference }),
+        })
+        const result = await res.json()
+        if (res.ok && result.success) {
+          toast({
+            title: "Payment Verified",
+            description:
+              result.type === "deposit"
+                ? `Wallet funded successfully (+$${Number(result.amountUSD).toFixed(2)}).`
+                : "Down payment confirmed.",
+          })
+          await refreshUserData()
+        } else {
+          toast({
+            title: "Verification Failed",
+            description:
+              result.message ||
+              "We couldn’t confirm the payment. If you were debited, your balance may update shortly.",
+            variant: "destructive",
+          })
+        }
+      } catch (error) {
+        console.error("Verify error:", error)
+        toast({
+          title: "Network Error",
+          description: "Could not verify payment. The webhook may still process it.",
+          variant: "destructive",
+        })
+      } finally {
         setIsReturningFromPayment(false)
-      }, 3000) // Wait 3 seconds for webhook to process
-
-      // Clean up URL by removing the reference parameter
-      const newUrl = new URL(window.location.href)
-      newUrl.searchParams.delete("reference")
-      newUrl.searchParams.delete("trxref")
-      router.replace(newUrl.pathname + newUrl.search)
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete("reference")
+        newUrl.searchParams.delete("trxref")
+        router.replace(newUrl.pathname + newUrl.search)
+      }
     }
+
+    verify()
   }, [searchParams, router])
 
   // Update local balance when authUser changes
