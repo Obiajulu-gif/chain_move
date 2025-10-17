@@ -42,6 +42,32 @@ export function NotificationCenter({ userId, userRole, notifications: initialNot
     setNotifications(initialNotifications)
   }, [initialNotifications])
 
+  // Fetch latest notifications from API for the given user
+  React.useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch(`/api/notifications?userId=${userId}`)
+        if (!res.ok) return
+        const data = await res.json()
+        const items = (data.notifications || []).map((n: any) => ({
+          id: n._id || n.id,
+          title: n.title,
+          message: n.message,
+          read: !!n.read,
+          timestamp: typeof n.timestamp === "string" ? n.timestamp : new Date(n.timestamp).toISOString(),
+          link: n.actionUrl || undefined,
+        }))
+        // Prefer server notifications; fall back to existing if empty
+        if (items.length > 0) {
+          setNotifications(items)
+        }
+      } catch (err) {
+        console.error("Failed to fetch notifications:", err)
+      }
+    }
+    if (userId) fetchNotifications()
+  }, [userId])
+
   const filteredNotifications = useMemo(() => {
     let filtered = notifications.filter(
       (n) =>
@@ -144,102 +170,96 @@ export function NotificationCenter({ userId, userRole, notifications: initialNot
   }
 
   return (
-    <Card className="max-w-4xl mx-auto">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="flex items-center space-x-2">
-          <Bell className="h-6 w-6 text-foreground" />
-          <CardTitle className="text-2xl font-bold">Notification Center</CardTitle>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={handleMarkAllRead} disabled={unreadCount === 0}>
-            Mark All Read
-          </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8 bg-transparent">
-            <Settings className="h-4 w-4" />
-            <span className="sr-only">Notification settings</span>
-          </Button>
-        </div>
-      </CardHeader>
-      <CardDescription className="px-6 pb-4">Stay updated with real-time platform notifications</CardDescription>
-      <CardContent>
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search notifications..."
-              className="pl-9"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+    <div className="space-y-6">
+      <Card className="bg-card border-border">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Bell className="h-5 w-5" />
+              <CardTitle className="text-foreground">Notifications</CardTitle>
+              {unreadCount > 0 && <Badge>{unreadCount} unread</Badge>}
+            </div>
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm" onClick={handleMarkAllRead}>
+                Mark all as read
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => router.refresh()}>
+                Refresh
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
+          <CardDescription className="text-muted-foreground">
+            Stay updated with your loan, payments, and system events.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search notifications..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
             <Button
               variant={filterUnread ? "default" : "outline"}
-              onClick={() => setFilterUnread(!filterUnread)}
-              className={filterUnread ? "bg-[#E57700] hover:bg-[#E57700]/90 text-white" : ""}
+              size="sm"
+              onClick={() => setFilterUnread((v) => !v)}
+              className="flex items-center space-x-1"
             >
-              Unread ({unreadCount})
+              <Filter className="h-4 w-4" /> <span>Unread</span>
             </Button>
             <Button
               variant={filterHighPriority ? "default" : "outline"}
-              onClick={() => setFilterHighPriority(!filterHighPriority)}
-              className={filterHighPriority ? "bg-[#E57700] hover:bg-[#E57700]/90 text-white" : ""}
+              size="sm"
+              onClick={() => setFilterHighPriority((v) => !v)}
+              className="flex items-center space-x-1"
             >
-              <Filter className="h-4 w-4 mr-1" /> High Priority
+              <Filter className="h-4 w-4" /> <span>High Priority</span>
             </Button>
           </div>
-        </div>
 
-        <Tabs defaultValue="recent" onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-5 lg:grid-cols-6">
-            <TabsTrigger value="recent">Recent</TabsTrigger>
-            <TabsTrigger value="financial">Financial</TabsTrigger>
-            <TabsTrigger value="system">System</TabsTrigger>
-            <TabsTrigger value="archived">Archived</TabsTrigger>
-            {/* Add more categories as needed */}
-          </TabsList>
-        </Tabs>
-
-        <div className="space-y-4">
-          {filteredNotifications.length > 0 ? (
-            filteredNotifications.map((notification) => (
-              <Link
-                key={notification.id}
-                href={notification.link || "#"} // Fallback to # if no link
-                className={`flex items-start p-4 rounded-lg transition-colors ${
-                  notification.read
-                    ? "bg-muted/30 text-muted-foreground hover:bg-muted/50"
-                    : "bg-card border border-border hover:bg-accent/50"
-                }`}
-              >
-                <div className="flex-shrink-0 mr-3 mt-1">{getNotificationIcon(notification)}</div>
-                <div className="flex-1">
-                  <h3 className={`font-semibold ${notification.read ? "text-muted-foreground" : "text-foreground"}`}>
-                    {notification.title}
-                  </h3>
-                  <p className={`text-sm ${notification.read ? "text-muted-foreground" : "text-foreground/80"}`}>
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(notification.timestamp).toLocaleString()}
-                  </p>
+          <div className="space-y-3">
+            {filteredNotifications.length === 0 ? (
+              <div className="text-center text-muted-foreground py-6">No notifications found.</div>
+            ) : (
+              filteredNotifications.map((notification) => (
+                <div key={notification.id} className="flex items-start space-x-3 p-3 rounded-lg border bg-background">
+                  {getNotificationIcon(notification)}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{notification.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(notification.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      {!notification.read && <Badge variant="secondary">New</Badge>}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+                    {notification.link && (
+                      <Link href={notification.link} className="text-xs text-primary hover:underline mt-2 inline-block">
+                        View details
+                      </Link>
+                    )}
+                  </div>
                 </div>
-                {!notification.read && (
-                  <Badge variant="default" className="ml-auto bg-[#E57700] text-white">
-                    New
-                  </Badge>
-                )}
-              </Link>
-            ))
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <Bell className="h-12 w-12 mx-auto mb-4" />
-              <p className="text-lg font-medium">No notifications found</p>
-              <p>You're all caught up!</p>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="recent" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="recent">Recent</TabsTrigger>
+          <TabsTrigger value="financial">Financial</TabsTrigger>
+          <TabsTrigger value="system">System</TabsTrigger>
+          <TabsTrigger value="archived">Archived</TabsTrigger>
+        </TabsList>
+      </Tabs>
+    </div>
   )
 }
