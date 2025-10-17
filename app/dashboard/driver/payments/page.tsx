@@ -178,7 +178,15 @@ export default function DriverPaymentsPage() {
                           <TableCell className="text-foreground">{p.description || "Repayment"}</TableCell>
                           <TableCell className="text-foreground">${(p.amount || 0).toLocaleString()}</TableCell>
                           <TableCell>
-                            <Badge className="text-white" variant="outline">
+                            <Badge
+                              className={
+                                status === "completed"
+                                  ? "bg-green-600 text-white"
+                                  : status === "pending"
+                                  ? "bg-yellow-600 text-white"
+                                  : "bg-red-600 text-white"
+                              }
+                            >
                               {status === "completed" ? "Completed" : status === "pending" ? "Pending" : "Failed"}
                             </Badge>
                           </TableCell>
