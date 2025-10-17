@@ -17,8 +17,10 @@ export async function GET() {
         const totalInvestors = await User.countDocuments({ role: 'investor' });
 
         // --- Loan Stats ---
-        const activeLoans = await Loan.countDocuments({ status: 'Active' });
-        const pendingLoans = await Loan.countDocuments({ status: 'Under Review' });
+        // Count both 'Active' and 'Approved' as active loans
+        const activeLoans = await Loan.countDocuments({ status: { $in: ['Active', 'Approved'] } });
+        // Include both 'Pending' and 'Under Review' in pending loans
+        const pendingLoans = await Loan.countDocuments({ status: { $in: ['Pending', 'Under Review'] } });
         const completedLoans = await Loan.countDocuments({ status: 'Completed' });
         const totalLoans = await Loan.countDocuments();
         const successRate = totalLoans > 0 ? (completedLoans / totalLoans) * 100 : 0;
@@ -62,7 +64,7 @@ export async function GET() {
             totalFundsInvested,
             totalFundsAvailable,
             platformRevenue,
-            successRate: successRate.toFixed(1),
+            successRate: Number(successRate.toFixed(1)),
             systemUptime: "99.9%", 
             averageROI,
             vehicleUtilization,
