@@ -85,7 +85,9 @@ export default function DriverPaymentsPage() {
                 <CardDescription className="text-muted-foreground">Cumulative payments</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl sm:text-3xl font-bold text-foreground">${totalPaid.toLocaleString()}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">
+                  ${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
               </CardContent>
             </Card>
 
@@ -100,7 +102,9 @@ export default function DriverPaymentsPage() {
               <CardContent>
                 {lastPayment ? (
                   <div>
-                    <p className="text-lg font-medium text-foreground">${lastPayment.amount.toLocaleString()}</p>
+                    <p className="text-lg font-medium text-foreground">
+                      ${lastPayment.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(lastPayment.timestamp).toLocaleString()}
                     </p>
@@ -176,7 +180,9 @@ export default function DriverPaymentsPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-foreground">{p.description || "Repayment"}</TableCell>
-                          <TableCell className="text-foreground">${(p.amount || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-foreground">
+                            ${Number(p.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </TableCell>
                           <TableCell>
                             <Badge
                               className={
