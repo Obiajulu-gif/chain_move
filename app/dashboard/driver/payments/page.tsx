@@ -18,6 +18,7 @@ export default function DriverPaymentsPage() {
 
   const [dbPayments, setDbPayments] = useState<any[]>([])
   const [loading, setLoading] = useState<boolean>(false)
+  const [driverLoans, setDriverLoans] = useState<any[]>([])
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -37,7 +38,22 @@ export default function DriverPaymentsPage() {
         setLoading(false)
       }
     }
+    const fetchLoans = async () => {
+      if (!driverId) return
+      try {
+        const res = await fetch(`/api/loans?userId=${driverId}`)
+        const data = await res.json()
+        if (res.ok && data.loans) {
+          setDriverLoans(data.loans)
+        } else {
+          setDriverLoans([])
+        }
+      } catch (e) {
+        setDriverLoans([])
+      }
+    }
     fetchTransactions()
+    fetchLoans()
   }, [driverId])
 
   const payments = useMemo(() => {
@@ -51,6 +67,16 @@ export default function DriverPaymentsPage() {
 
   const totalPaid = useMemo(() => payments.reduce((sum, t) => sum + (t.amount || 0), 0), [payments])
   const lastPayment = payments[0]
+
+  const vehicleNameByLoanId = useMemo(() => {
+    const map = new Map<string, string>()
+    driverLoans.forEach((loan: any) => {
+      const loanId = loan.id || loan._id
+      const vehicleName = loan?.vehicleId?.name || ""
+      if (loanId && vehicleName) map.set(String(loanId), vehicleName)
+    })
+    return map
+  }, [driverLoans])
 
   return (
     <div className="min-h-screen bg-background">
@@ -196,7 +222,29 @@ export default function DriverPaymentsPage() {
                               {status === "completed" ? "Completed" : status === "pending" ? "Pending" : "Failed"}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{p.relatedId || "-"}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {(() => {
+                              const relatedId = p.relatedId
+                              if (!relatedId) return "-"
+                              const nameFromApi = vehicleNameByLoanId.get(String(relatedId))
+                              if (nameFromApi) return nameFromApi
+                              const loanFromState = state.loanApplications.find(
+                                (l) => l.id === relatedId || (l as any)._id === relatedId
+                              )
+                              if (loanFromState) {
+                                const vehName = typeof loanFromState.vehicleId === "object" && (loanFromState.vehicleId as any)?.name
+                                  ? (loanFromState.vehicleId as any).name
+                                  : (() => {
+                                      const v = state.vehicles.find(
+                                        (vv) => vv._id === (loanFromState as any).vehicleId || vv.id === (loanFromState as any).vehicleId
+                                      )
+                                      return v?.name
+                                    })()
+                                if (vehName) return vehName
+                              }
+                              return String(relatedId)
+                            })()}
+                          </TableCell>
                         </TableRow>
                       )
                     })}
