@@ -171,7 +171,7 @@ export default function DriverDashboard() {
           amount: amount,
           status: "completed",
           timestamp: new Date().toISOString(),
-          description: `Monthly repayment for Loan #${loanId}`,
+          description: `Weekly repayment for Loan #${loanId}`,
           relatedId: loanId,
         },
       })
@@ -497,7 +497,20 @@ export default function DriverDashboard() {
   const activeLoan = driverData.loans.find((l) => l.status === "Active" || l.status === "Approved")
   const pendingLoans = driverData.loans.filter((l) => l.status === "Pending" || l.status === "Under Review")
   const totalFundsReceived = activeLoan ? activeLoan.totalFunded || 0 : 0
-  const nextPaymentAmount = activeLoan ? activeLoan.monthlyPayment || 0 : 0
+  const weeklyPaymentAmount = activeLoan ? (activeLoan.weeklyPayment || (activeLoan.monthlyPayment ? activeLoan.monthlyPayment / 4.33 : 0)) : 0
+  const nextPaymentAmount = weeklyPaymentAmount
+  const nextPaymentDueLabel = (() => {
+    if (!activeLoan) return "No active loan"
+    const today = new Date()
+    const day = today.getDay() // 0-6 Sun-Sat, Wednesday=3
+    let daysToAdd = (3 - day + 7) % 7
+    if (daysToAdd === 0) daysToAdd = 7
+    const nextWed = new Date(today)
+    nextWed.setDate(today.getDate() + daysToAdd)
+    const daysUntil = Math.ceil((nextWed.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    const dateStr = nextWed.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+    return `Due ${dateStr} (${daysUntil} days)`
+  })()
   const unreadNotifications = driverData.notifications.filter((n) => !n.read).length
   // Get available vehicles for loan application
   const availableVehicles = state.vehicles.filter((v) => v.fundingStatus === "Funded")
@@ -582,9 +595,9 @@ export default function DriverDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-foreground">
-                    {nextPaymentAmount > 0 ? `$${nextPaymentAmount}` : "N/A"}
+                    {nextPaymentAmount > 0 ? `$${nextPaymentAmount.toLocaleString()}` : "N/A"}
                   </div>
-                  <p className="text-xs text-muted-foreground">{activeLoan ? "Due in 15 days" : "No active loan"}</p>
+                  <p className="text-xs text-muted-foreground">{nextPaymentDueLabel}</p>
                 </CardContent>
               </Card>
               <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
@@ -665,9 +678,9 @@ export default function DriverDashboard() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Monthly Payment</p>
+                          <p className="text-sm text-muted-foreground">Weekly Payment</p>
                           <p className="text-2xl font-bold text-foreground">
-                            ${activeLoan.monthlyPayment.toLocaleString()}
+                            ${weeklyPaymentAmount.toLocaleString()}
                           </p>
                         </div>
                         <div>
@@ -695,7 +708,7 @@ export default function DriverDashboard() {
                       <div className="mt-6 flex space-x-2">
                         <Button
                           className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
-                          onClick={() => handleMakePayment(activeLoan.id, activeLoan.monthlyPayment)}
+                          onClick={() => handleMakePayment(activeLoan.id, weeklyPaymentAmount)}
                         >
                           <CreditCard className="h-4 w-4 mr-2" />
                           Make Payment
