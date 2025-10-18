@@ -690,6 +690,7 @@ export default function DriverDashboard() {
                         <div>
                           <p className="text-sm text-muted-foreground">Term</p>
                           <p className="text-2xl font-bold text-foreground">{activeLoan.loanTerm} months</p>
+                          <p className="text-sm text-muted-foreground">({Math.round((activeLoan.loanTerm || 0) * 4.33)} weeks)</p>
                         </div>
                       </div>
                       <div className="mt-6">
