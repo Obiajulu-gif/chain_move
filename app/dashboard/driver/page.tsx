@@ -498,6 +498,7 @@ export default function DriverDashboard() {
   const pendingLoans = driverData.loans.filter((l) => l.status === "Pending" || l.status === "Under Review")
   const totalFundsReceived = activeLoan ? activeLoan.totalFunded || 0 : 0
   const weeklyPaymentAmount = activeLoan ? (activeLoan.weeklyPayment || (activeLoan.monthlyPayment ? activeLoan.monthlyPayment / 4.33 : 0)) : 0
+  const totalPaybackAmount = activeLoan ? ((activeLoan.monthlyPayment || (weeklyPaymentAmount * 4.33)) * (activeLoan.loanTerm || 0)) : 0
   const nextPaymentAmount = weeklyPaymentAmount
   const nextPaymentDueLabel = (() => {
     if (!activeLoan) return "No active loan"
@@ -691,6 +692,10 @@ export default function DriverDashboard() {
                           <p className="text-sm text-muted-foreground">Term</p>
                           <p className="text-2xl font-bold text-foreground">{activeLoan.loanTerm} months</p>
                           <p className="text-sm text-muted-foreground">({Math.round((activeLoan.loanTerm || 0) * 4.33)} weeks)</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total Payback</p>
+                          <p className="text-2xl font-bold text-foreground">${totalPaybackAmount.toLocaleString()}</p>
                         </div>
                       </div>
                       <div className="mt-6">
