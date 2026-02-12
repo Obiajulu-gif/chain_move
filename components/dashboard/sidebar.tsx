@@ -36,6 +36,8 @@ import {
 
 interface SidebarProps {
   role: "driver" | "investor" | "admin"
+  className?: string
+  mobileWidth?: string
 }
 
 /* ---------------- Navigation definitions --------------- */
@@ -69,7 +71,7 @@ const navigationItems = {
 } as const
 
 /* ---------------- Sidebar component ------------------- */
-export function Sidebar({ role }: SidebarProps) {
+export function Sidebar({ role, className, mobileWidth = "w-64" }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter() // Initialize router
@@ -121,10 +123,12 @@ export function Sidebar({ role }: SidebarProps) {
       {/* Drawer with improved transitions and touch targets */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 h-full w-64 bg-card/95 backdrop-blur-sm border-r border-border/20",
+          "fixed left-0 top-0 z-50 h-full bg-card/95 backdrop-blur-sm border-r border-border/20",
+          mobileWidth,
           "transform transition-all duration-300 ease-in-out md:translate-x-0",
           "shadow-lg md:shadow-none",
           isOpen ? "translate-x-0" : "-translate-x-full",
+          className,
         )}
         aria-label="Sidebar navigation"
       >

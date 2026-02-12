@@ -3,8 +3,8 @@ import { DashboardRouteLoading } from "@/components/dashboard/dashboard-route-lo
 export default function Loading() {
   return (
     <DashboardRouteLoading
-      title="Loading investments"
-      description="Fetching portfolio records, payout progress, and returns."
+      title="Loading DAO governance"
+      description="Preparing proposals, treasury metrics, and wallet voting state."
     />
   )
 }

@@ -1,251 +1,256 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { ArrowUpRight, CheckCircle2, Coins, Loader2, PlusCircle, RefreshCw, Wallet } from "lucide-react"
+import { Sidebar } from "@/components/dashboard/sidebar"
+import { Header } from "@/components/dashboard/header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { Sidebar } from "@/components/dashboard/sidebar"
-import { Header } from "@/components/dashboard/header"
-import { RealTimeChat } from "@/components/dashboard/real-time-chat"
-import { AdvancedAnalytics } from "@/components/dashboard/advanced-analytics"
-import { NotificationCenter } from "@/components/dashboard/notification-center"
+import { Skeleton } from "@/components/ui/skeleton"
 import { usePlatform, useInvestorData } from "@/contexts/platform-context"
-import { useAuth } from "@/hooks/use-auth"
+import { getUserDisplayName, useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
-import { useRouter, useSearchParams } from "next/navigation"
-import {
-  DollarSign,
-  TrendingUp,
-  CheckCircle,
-  Clock,
-  Send,
-  Wallet,
-  BarChart3,
-  Search,
-  PlusCircle,
-  RefreshCw,
-} from "lucide-react"
-import Image from "next/image"
-import { VehicleCard } from "@/components/dashboard/investor/VehicleCard"
+import { formatNaira, formatPercent } from "@/lib/currency"
+import { DashboardRouteLoading } from "@/components/dashboard/dashboard-route-loading"
+
+type DashboardInvestment = {
+  _id?: string
+  id?: string
+  vehicleId: string
+  amount: number
+  monthlyReturn?: number
+  status?: string
+  paymentsReceived?: number
+  totalPayments?: number
+  date?: string
+  startDate?: string
+}
+
+type InvestmentVehicle = {
+  _id: string
+  name: string
+  type: string
+  year: number
+  price: number
+  roi: number
+  features: string[]
+  totalFundedAmount?: number
+}
 
 export default function InvestorDashboard() {
-  const { state, dispatch, fetchData } = usePlatform()
-  const { user: authUser, loading: authLoading, setUser } = useAuth()
-  const currentInvestorId = authUser?.id || ""
-  const { availableVehicles, ...investorData } = useInvestorData(currentInvestorId)
-  const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
+  const { state, dispatch, fetchData } = usePlatform()
+  const { user: authUser, loading: authLoading, setUser } = useAuth()
 
-  const [isInvestDialogOpen, setIsInvestDialogOpen] = useState(false)
-  const [selectedVehicle, setSelectedVehicle] = useState(null)
-  const [investmentAmount, setInvestmentAmount] = useState("")
-  const [isFundDialogOpen, setIsFundDialogOpen] = useState(false)
-  const [depositAmount, setDepositAmount] = useState("")
-  const [isFunding, setIsFunding] = useState(false)
-  const [isRefreshing, setIsRefreshing] = useState(false)
+  const investorId = authUser?.id || ""
+  const investorName = getUserDisplayName(authUser, "Investor")
+  const { availableVehicles, pendingReleases } = useInvestorData(investorId)
 
-  // Add state for real-time balance - use authUser balance as primary source
-  const [currentBalance, setCurrentBalance] = useState(authUser?.availableBalance || 0)
+  const [investments, setInvestments] = useState<DashboardInvestment[]>([])
+  const [investmentsError, setInvestmentsError] = useState<string | null>(null)
+  const [isLoadingInvestments, setIsLoadingInvestments] = useState(false)
+
+  const [availableBalance, setAvailableBalance] = useState(authUser?.availableBalance || 0)
   const [totalInvested, setTotalInvested] = useState(authUser?.totalInvested || 0)
+  const [totalReturns, setTotalReturns] = useState(authUser?.totalReturns || 0)
 
-  // Function to refresh user data
-  const refreshUserData = async () => {
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isFundDialogOpen, setIsFundDialogOpen] = useState(false)
+  const [isFunding, setIsFunding] = useState(false)
+  const [depositAmount, setDepositAmount] = useState("")
+
+  const [selectedVehicle, setSelectedVehicle] = useState<InvestmentVehicle | null>(null)
+  const [investmentAmount, setInvestmentAmount] = useState("")
+  const [isInvestDialogOpen, setIsInvestDialogOpen] = useState(false)
+  const [isSubmittingInvestment, setIsSubmittingInvestment] = useState(false)
+
+  const unreadNotifications = useMemo(() => {
+    if (!investorId) return 0
+    return state.notifications.filter((item) => item.userId === investorId && !item.read).length
+  }, [investorId, state.notifications])
+
+  const monthlyIncome = useMemo(() => {
+    return investments
+      .filter((item) => (item.status || "").toLowerCase() === "active")
+      .reduce((sum, item) => sum + (item.monthlyReturn || 0), 0)
+  }, [investments])
+
+  const roi = useMemo(() => {
+    if (totalInvested <= 0) return 0
+    return (totalReturns / totalInvested) * 100
+  }, [totalInvested, totalReturns])
+
+  const vehicleById = useMemo(() => {
+    const map = new Map<string, InvestmentVehicle>()
+    state.vehicles.forEach((vehicle) => {
+      map.set(vehicle._id, vehicle as InvestmentVehicle)
+    })
+    return map
+  }, [state.vehicles])
+
+  const refreshUserData = useCallback(async () => {
+    if (!investorId) return
+
     setIsRefreshing(true)
     try {
-      const response = await fetch(`/api/users/${currentInvestorId}`)
-      if (response.ok) {
-        const userData = await response.json()
-        setCurrentBalance(userData.availableBalance || 0)
-        setTotalInvested(userData.totalInvested || 0)
-
-        // Update the auth user data
-        if (setUser) {
-          setUser({
-            ...authUser,
-            availableBalance: userData.availableBalance,
-            totalInvested: userData.totalInvested,
-            totalReturns: userData.totalReturns,
-          })
-        }
-
-        // Update the platform context
-        dispatch({
-          type: "UPDATE_USER_BALANCE",
-          payload: {
-            userId: currentInvestorId,
-            balance: userData.availableBalance,
-          },
-        })
-
-        toast({
-          title: "Data Updated",
-          description: `Balance: $${userData.availableBalance?.toLocaleString() || 0} | Invested: $${userData.totalInvested?.toLocaleString() || 0}`,
-        })
-      } else {
-        throw new Error("Failed to fetch user data")
+      const response = await fetch(`/api/users/${investorId}`)
+      if (!response.ok) {
+        throw new Error("Could not refresh account data")
       }
-    } catch (error) {
-      console.error("Error refreshing user data:", error)
+
+      const payload = await response.json()
+      const nextBalance = payload.availableBalance || 0
+      const nextTotalInvested = payload.totalInvested || 0
+      const nextTotalReturns = payload.totalReturns || 0
+
+      setAvailableBalance(nextBalance)
+      setTotalInvested(nextTotalInvested)
+      setTotalReturns(nextTotalReturns)
+
+      setUser?.({
+        ...authUser,
+        availableBalance: nextBalance,
+        totalInvested: nextTotalInvested,
+        totalReturns: nextTotalReturns,
+      })
+
+      dispatch({
+        type: "UPDATE_USER_BALANCE",
+        payload: {
+          userId: investorId,
+          balance: nextBalance,
+        },
+      })
+
       toast({
-        title: "Refresh Failed",
-        description: "Could not update data. Please try again.",
+        title: "Account refreshed",
+        description: `Available balance: ${formatNaira(nextBalance)}`,
+      })
+    } catch (error) {
+      toast({
+        title: "Refresh failed",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       })
     } finally {
       setIsRefreshing(false)
     }
-  }
+  }, [authUser, dispatch, investorId, setUser, toast])
 
-  // Function to fetch investments
-  const fetchInvestments = async () => {
+  const fetchInvestments = useCallback(async () => {
+    if (!investorId) return
+
+    setIsLoadingInvestments(true)
+    setInvestmentsError(null)
+
     try {
-      const response = await fetch(`/api/investments?investorId=${currentInvestorId}`)
-      if (response.ok) {
-        const investmentsData = await response.json()
-        dispatch({
-          type: "SET_INVESTMENTS",
-          payload: investmentsData.investments || [],
-        })
+      const response = await fetch(`/api/investments?investorId=${investorId}`)
+      if (!response.ok) {
+        throw new Error("Unable to load investments")
       }
+
+      const payload = await response.json()
+      const nextInvestments = payload.investments || []
+
+      setInvestments(nextInvestments)
+      dispatch({ type: "SET_INVESTMENTS", payload: nextInvestments })
     } catch (error) {
-      console.error("Error fetching investments:", error)
+      setInvestmentsError(error instanceof Error ? error.message : "Unable to load investments")
+    } finally {
+      setIsLoadingInvestments(false)
     }
-  }
+  }, [dispatch, investorId])
 
-  useEffect(() => {
-    // Get the transaction reference from the URL
-    const reference = searchParams.get("reference")
+  const handleFundWallet = async () => {
+    const amount = Number.parseFloat(depositAmount)
 
-    // If a reference exists, it means the user just returned from a payment
-    if (reference) {
+    if (!authUser?.email) {
       toast({
-        title: "Processing Payment...",
-        description: "Verifying your transaction. Your balance will update shortly.",
-      })
-
-      // Wait a moment for webhook processing, then refresh data
-      setTimeout(() => {
-        refreshUserData()
-      }, 3000) // Wait 3 seconds for webhook to process
-
-      // Clean up URL by removing the reference parameter
-      const newUrl = new URL(window.location.href)
-      newUrl.searchParams.delete("reference")
-      router.replace(newUrl.pathname + newUrl.search)
-    }
-  }, [searchParams, router])
-
-  // Update local balance when authUser changes
-  useEffect(() => {
-    if (authUser?.availableBalance !== undefined) {
-      setCurrentBalance(authUser.availableBalance)
-    }
-    if (authUser?.totalInvested !== undefined) {
-      setTotalInvested(authUser.totalInvested)
-    }
-  }, [authUser?.availableBalance, authUser?.totalInvested])
-
-  // Fetch investments when component mounts or user changes
-  useEffect(() => {
-    if (currentInvestorId) {
-      fetchInvestments()
-    }
-  }, [currentInvestorId])
-
-  // Set current user on mount
-  useEffect(() => {
-    if (authUser) {
-      dispatch({
-        type: "SET_CURRENT_USER",
-        payload: {
-          id: authUser.id,
-          role: authUser.role as "investor",
-          name: authUser.name,
-          email: authUser.email,
-          availableBalance: authUser.availableBalance,
-        },
-      })
-    }
-  }, [dispatch, authUser])
-
-  const handleApproveLoan = (loanId, amount) => {
-    if (!authUser || amount > currentBalance) {
-      toast({
-        title: "Insufficient Funds",
-        description: "You don't have enough balance for this investment",
+        title: "Authentication error",
+        description: "Could not find your account email. Please sign in again.",
         variant: "destructive",
       })
       return
     }
 
-    dispatch({
-      type: "APPROVE_LOAN",
-      payload: {
-        loanId,
-        investorId: currentInvestorId,
-        amount,
-      },
-    })
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Enter a valid amount in Naira.",
+        variant: "destructive",
+      })
+      return
+    }
 
-    // Update local balance
-    setCurrentBalance((prev) => prev - amount)
+    setIsFunding(true)
+    try {
+      const response = await fetch("/api/payments/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: depositAmount,
+          email: authUser.email,
+        }),
+      })
 
-    toast({
-      title: "Loan Approved",
-      description: `You have approved $${amount.toLocaleString()} for this loan`,
-    })
-    setInvestmentAmount("")
-  }
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to initialize payment")
+      }
 
-  const handleReleaseFunds = (loanId) => {
-    dispatch({
-      type: "RELEASE_FUNDS",
-      payload: {
-        loanId,
-        investorId: currentInvestorId,
-      },
-    })
-    toast({
-      title: "Funds Released",
-      description: "Funds have been released to the driver",
-    })
-  }
-
-  const handleInvestNow = (vehicle) => {
-    setSelectedVehicle(vehicle)
-    setIsInvestDialogOpen(true)
+      setDepositAmount("")
+      setIsFundDialogOpen(false)
+      window.location.href = data.data.authorization_url
+    } catch (error) {
+      toast({
+        title: "Funding failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsFunding(false)
+    }
   }
 
   const submitInvestment = async () => {
-    const amount = Number.parseFloat(investmentAmount)
-    if (!selectedVehicle || isNaN(amount) || amount <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a valid amount to invest.", variant: "destructive" })
-      return
-    }
+    if (!authUser?.id || !selectedVehicle) return
 
-    if (amount > currentBalance) {
+    const amount = Number.parseFloat(investmentAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
       toast({
-        title: "Insufficient Funds",
-        description: `Your investment of $${amount.toLocaleString()} exceeds your available balance of $${currentBalance.toLocaleString()}.`,
+        title: "Invalid amount",
+        description: "Enter a valid amount in Naira.",
         variant: "destructive",
       })
       return
     }
 
+    if (amount > availableBalance) {
+      toast({
+        title: "Insufficient balance",
+        description: `You can invest up to ${formatNaira(availableBalance)}.`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmittingInvestment(true)
     try {
       const response = await fetch("/api/invest", {
         method: "POST",
@@ -258,128 +263,102 @@ export default function InvestorDashboard() {
       })
 
       const result = await response.json()
-
       if (!response.ok) {
-        throw new Error(result.message || "Investment failed.")
+        throw new Error(result.message || "Investment failed")
       }
 
       toast({
-        title: "Investment Successful!",
-        description: `Your investment of $${amount.toLocaleString()} in ${selectedVehicle.name} has been confirmed.`,
+        title: "Investment successful",
+        description: `${formatNaira(amount)} invested in ${selectedVehicle.name}.`,
       })
 
-      // Update local states optimistically
-      setCurrentBalance((prev) => prev - amount)
+      setAvailableBalance((prev) => Math.max(prev - amount, 0))
       setTotalInvested((prev) => prev + amount)
+      setInvestmentAmount("")
+      setSelectedVehicle(null)
+      setIsInvestDialogOpen(false)
 
-      // Refresh all data to update the UI
       await Promise.all([refreshUserData(), fetchInvestments(), fetchData?.()])
     } catch (error) {
-      const message = error instanceof Error ? error.message : "An unknown error occurred."
-      toast({ title: "Investment Failed", description: message, variant: "destructive" })
-    } finally {
-      // Close dialog and reset state
-      setIsInvestDialogOpen(false)
-      setSelectedVehicle(null)
-      setInvestmentAmount("")
-    }
-  }
-
-  const handleFundWallet = async () => {
-    setIsFunding(true)
-    const amount = Number.parseFloat(depositAmount)
-
-    if (!authUser?.email) {
       toast({
-        title: "Authentication Error",
-        description: "Could not find user email. Please log in again.",
+        title: "Investment failed",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       })
-      setIsFunding(false)
-      return
-    }
-
-    if (isNaN(amount) || amount <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a valid amount.", variant: "destructive" })
-      setIsFunding(false)
-      return
-    }
-
-    try {
-      const response = await fetch("/api/payments/initialize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: depositAmount,
-          email: authUser.email,
-        }),
-      })
-
-      const data = await response.json()
-      if (response.ok) {
-        // Close dialog before redirect
-        setIsFundDialogOpen(false)
-        setDepositAmount("")
-        // Redirect to Paystack's payment page
-        window.location.href = data.data.authorization_url
-      } else {
-        throw new Error(data.message || "Failed to initialize payment.")
-      }
-    } catch (error) {
-      toast({ title: "Error", description: (error as Error).message, variant: "destructive" })
     } finally {
-      setIsFunding(false)
+      setIsSubmittingInvestment(false)
     }
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Active":
-      case "Approved":
-        return "bg-green-600"
-      case "Under Review":
-        return "bg-blue-600"
-      case "Pending":
-        return "bg-yellow-600"
-      case "Rejected":
-        return "bg-red-600"
-      default:
-        return "bg-gray-600"
+  useEffect(() => {
+    if (authUser?.availableBalance !== undefined) setAvailableBalance(authUser.availableBalance)
+    if (authUser?.totalInvested !== undefined) setTotalInvested(authUser.totalInvested)
+    if (authUser?.totalReturns !== undefined) setTotalReturns(authUser.totalReturns)
+  }, [authUser])
+
+  useEffect(() => {
+    if (!authUser || !investorId) return
+
+    dispatch({
+      type: "SET_CURRENT_USER",
+      payload: {
+        id: authUser.id,
+        role: "investor",
+        name: investorName,
+        email: authUser.email || "",
+        status: "Active",
+        joinedDate: new Date().toISOString(),
+        availableBalance,
+        totalInvested,
+        totalReturns,
+      },
+    })
+  }, [authUser, availableBalance, dispatch, investorId, investorName, totalInvested, totalReturns])
+
+  useEffect(() => {
+    if (investorId) {
+      fetchInvestments()
     }
-  }
+  }, [fetchInvestments, investorId])
 
-  const unreadNotifications = state.notifications.filter((n) => n.userId === currentInvestorId && !n.read).length
-  const totalReturns = authUser?.totalReturns || 0
-  const monthlyIncome = investorData.investments
-    .filter((inv) => inv.status === "Active")
-    .reduce((sum, inv) => sum + inv.monthlyReturn, 0)
+  useEffect(() => {
+    const paymentReference = searchParams.get("reference")
+    if (!paymentReference) return
 
-  // Get investments from the platform state
-  const investments = state.investments?.filter((inv) => inv.investorId === currentInvestorId) || []
-  const calculatedTotalInvested = investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
-  const displayTotalInvested = totalInvested > 0 ? totalInvested : calculatedTotalInvested
+    toast({
+      title: "Verifying payment",
+      description: "Checking your transaction and refreshing wallet balance.",
+    })
+
+    const timerId = window.setTimeout(() => {
+      refreshUserData()
+    }, 3000)
+
+    const nextUrl = new URL(window.location.href)
+    nextUrl.searchParams.delete("reference")
+    router.replace(nextUrl.pathname + nextUrl.search)
+
+    return () => window.clearTimeout(timerId)
+  }, [refreshUserData, router, searchParams, toast])
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
-          <p className="text-muted-foreground">Please wait while we fetch your account information.</p>
-        </div>
-      </div>
-    )
+    return <DashboardRouteLoading title="Loading investor dashboard" description="Preparing your portfolio data." />
   }
 
   if (!authUser || authUser.role !== "investor") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-          <p className="text-muted-foreground">You need to be logged in as an investor to access this page.</p>
-          <Button onClick={() => router.push("/signin")} className="mt-4">
-            Sign In
-          </Button>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Access denied</CardTitle>
+            <CardDescription>You need an investor account to access this dashboard.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => router.push("/signin")} className="w-full">
+              Go to Sign in
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -387,342 +366,383 @@ export default function InvestorDashboard() {
   return (
     <>
       <div className="min-h-screen bg-background">
-        <Sidebar role="investor" className="md:w-64 lg:w-72" mobileWidth="w-64" />
-        <div className="md:ml-64 lg:ml-72">
-          <Header
-            userName={authUser.name || "Investor"}
-            userStatus="Verified Investor"
-            notificationCount={unreadNotifications}
-            className="md:pl-6 lg:pl-8"
-          />
+        <Sidebar role="investor" />
 
-          <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
-            {/* Real-time Portfolio Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Available Balance</CardTitle>
-                  <div className="flex items-center space-x-2">
-                    <Wallet className="h-4 w-4 text-foreground" />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={refreshUserData}
-                      disabled={isRefreshing}
-                      className="h-6 w-6 p-0"
-                    >
-                      <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold mr-4">${currentBalance.toLocaleString()}</div>
+        <div className="md:ml-64 lg:ml-72">
+          <Header userStatus="Verified Investor" notificationCount={unreadNotifications} />
+
+          <main className="space-y-6 p-4 sm:p-6 lg:p-8">
+            <section className="rounded-2xl border bg-card p-5 sm:p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="space-y-2">
+                  <Badge variant="secondary" className="w-fit">
+                    Investor workspace
+                  </Badge>
+                  <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Welcome back, {investorName}</h1>
+                  <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
+                    Manage liquidity, deploy capital into vehicle opportunities, and track return performance from one
+                    place.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button variant="outline" onClick={refreshUserData} disabled={isRefreshing}>
+                    <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                    Refresh
+                  </Button>
+
                   <Dialog open={isFundDialogOpen} onOpenChange={setIsFundDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="mt-2 w-full bg-transparent">
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Fund Account
+                      <Button className="bg-[#E57700] text-white hover:bg-[#E57700]/90">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Fund Wallet
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Fund Your Wallet</DialogTitle>
+                        <DialogTitle>Fund your wallet</DialogTitle>
                         <DialogDescription>
-                          Enter the amount you would like to deposit. You will be redirected to our secure payment
-                          partner to complete the transaction.
+                          Add capital to your wallet. You will be redirected to complete payment securely.
                         </DialogDescription>
                       </DialogHeader>
-                      <div className="py-4">
-                        <Label htmlFor="deposit-amount">Amount (NGN)</Label>
+
+                      <div className="space-y-2 py-1">
+                        <Label htmlFor="wallet-fund-amount">Amount (NGN)</Label>
                         <Input
-                          id="deposit-amount"
+                          id="wallet-fund-amount"
                           type="number"
+                          inputMode="decimal"
+                          placeholder="50000"
                           value={depositAmount}
-                          onChange={(e) => setDepositAmount(e.target.value)}
-                          placeholder="e.g., 50000"
+                          onChange={(event) => setDepositAmount(event.target.value)}
                         />
                       </div>
+
                       <DialogFooter>
                         <Button variant="outline" onClick={() => setIsFundDialogOpen(false)}>
                           Cancel
                         </Button>
-                        <Button
-                          onClick={handleFundWallet}
-                          disabled={isFunding}
-                          className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
-                        >
-                          {isFunding ? "Processing..." : "Proceed to Payment"}
+                        <Button onClick={handleFundWallet} disabled={isFunding} className="bg-[#E57700] text-white">
+                          {isFunding ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processing
+                            </>
+                          ) : (
+                            "Continue to payment"
+                          )}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
+            </section>
 
-              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Invested</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-foreground" />
+            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Available Balance</CardDescription>
+                  <CardTitle>{formatNaira(availableBalance)}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-foreground">${displayTotalInvested.toLocaleString()}</div>
-                  <p className="text-xs text-blue-500 dark:text-blue-400">Active investments</p>
-                </CardContent>
+                <CardContent className="text-xs text-muted-foreground">Capital ready for deployment</CardContent>
               </Card>
 
-              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Returns</CardTitle>
-                  <DollarSign className="h-4 w-4 text-foreground" />
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Total Invested</CardDescription>
+                  <CardTitle>{formatNaira(totalInvested)}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-foreground">${totalReturns.toLocaleString()}</div>
-                  <p className="text-xs text-green-500 dark:text-green-400">
-                    +{totalInvested > 0 ? ((totalReturns / totalInvested) * 100).toFixed(1) : 0}% ROI
-                  </p>
-                </CardContent>
+                <CardContent className="text-xs text-muted-foreground">Current active principal</CardContent>
               </Card>
 
-              <Card className="bg-card/50 hover:bg-card/70 transition-all duration-200 border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Income</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-foreground" />
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Total Returns</CardDescription>
+                  <CardTitle>{formatNaira(totalReturns)}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-foreground">${monthlyIncome.toFixed(0)}</div>
-                  <p className="text-xs text-muted-foreground">Expected monthly</p>
+                <CardContent className="text-xs text-green-600">Portfolio ROI: {formatPercent(roi)}</CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Projected Monthly Returns</CardDescription>
+                  <CardTitle>{formatNaira(monthlyIncome)}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-xs text-muted-foreground">From active positions</CardContent>
+              </Card>
+            </section>
+
+            <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.45fr_1fr]">
+              <Card>
+                <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">Portfolio activity</CardTitle>
+                    <CardDescription>Recent investments and payout progress.</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={fetchInvestments} disabled={isLoadingInvestments}>
+                    <RefreshCw className={`h-4 w-4 ${isLoadingInvestments ? "animate-spin" : ""}`} />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingInvestments ? (
+                    <div className="space-y-3">
+                      {Array.from({ length: 4 }).map((_, index) => (
+                        <div key={index} className="rounded-xl border p-4">
+                          <Skeleton className="mb-2 h-4 w-40" />
+                          <Skeleton className="mb-3 h-3 w-28" />
+                          <Skeleton className="h-2 w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : investmentsError ? (
+                    <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+                      <p className="font-medium text-destructive">Unable to load investments</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{investmentsError}</p>
+                      <Button variant="outline" size="sm" className="mt-3" onClick={fetchInvestments}>
+                        Retry
+                      </Button>
+                    </div>
+                  ) : investments.length === 0 ? (
+                    <div className="rounded-xl border border-dashed p-8 text-center">
+                      <Wallet className="mx-auto h-9 w-9 text-muted-foreground" />
+                      <h3 className="mt-3 font-semibold">No investments yet</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Fund your wallet and pick an open vehicle opportunity to start.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {investments.slice(0, 8).map((investment) => {
+                        const vehicle = vehicleById.get(investment.vehicleId)
+                        const progress =
+                          (investment.totalPayments || 0) > 0
+                            ? ((investment.paymentsReceived || 0) / (investment.totalPayments || 1)) * 100
+                            : 0
+
+                        return (
+                          <div key={investment._id || investment.id} className="rounded-xl border p-4">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                              <div>
+                                <p className="font-semibold">{vehicle?.name || "Vehicle investment"}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Started {new Date(investment.date || investment.startDate || Date.now()).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="text-left sm:text-right">
+                                <p className="font-semibold">{formatNaira(investment.amount)}</p>
+                                <p className="text-xs text-green-600">
+                                  Monthly return: {formatNaira(investment.monthlyReturn || 0)}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 space-y-2">
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>Payout progress</span>
+                                <span>
+                                  {investment.paymentsReceived || 0}/{investment.totalPayments || 0}
+                                </span>
+                              </div>
+                              <Progress value={progress} className="h-2" />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            </div>
 
-            {/* Main Content Tabs */}
-            <Tabs defaultValue="investments" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-5">
-                <TabsTrigger value="investments">My Investments</TabsTrigger>
-                <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-                <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
-                <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                <TabsTrigger value="chat">Chat</TabsTrigger>
-              </TabsList>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Pending approvals</CardTitle>
+                  <CardDescription>Loan commitments waiting for release.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {pendingReleases.length === 0 ? (
+                    <div className="rounded-xl border border-dashed p-8 text-center">
+                      <CheckCircle2 className="mx-auto h-9 w-9 text-muted-foreground" />
+                      <h3 className="mt-3 font-semibold">All clear</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">No pending fund release approvals right now.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {pendingReleases.map((loan) => {
+                        const approval = loan.investorApprovals?.find(
+                          (item) => item.investorId === investorId && item.status === "Approved",
+                        )
+                        const vehicle = state.vehicles.find((item) => item._id === loan.vehicleId)
 
-              {/* Investments Tab */}
-              <TabsContent value="investments" className="space-y-6">
-                <Card className="bg-card border-border">
-                  <CardHeader>
-                    <CardTitle>My Active Investments ({investments.length})</CardTitle>
-                    <CardDescription>Monitor your current investments and returns.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {investments.length > 0 ? (
-                      <div className="space-y-4">
-                        {investments.map((investment) => {
-                          const vehicle = state.vehicles.find((v) => v._id === investment.vehicleId)
-                          return (
-                            <Card key={investment.id || investment._id} className="bg-muted border-border">
-                              <CardContent className="p-4">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-4">
-                                    <Image
-                                      src={vehicle?.image || "/placeholder.svg"}
-                                      alt={vehicle?.name || ""}
-                                      width={60}
-                                      height={45}
-                                      className="rounded-lg object-cover"
-                                    />
-                                    <div>
-                                      <h4 className="font-semibold text-foreground">{vehicle?.name}</h4>
-                                      <Badge className={getStatusColor(investment.status)}>{investment.status}</Badge>
-                                      <p className="text-xs text-muted-foreground mt-1">
-                                        Started:{" "}
-                                        {investment.date || investment.startDate
-                                          ? new Date(investment.date || investment.startDate).toLocaleDateString()
-                                          : "Recently"}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-lg font-bold text-foreground">
-                                      ${investment.amount.toLocaleString()}
-                                    </p>
-                                    <p className="text-sm text-green-500">+{investment.expectedROI}% ROI</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      ${investment.monthlyReturn?.toFixed(2)}/month
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="mt-4">
-                                  <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                                    <span>Progress</span>
-                                    <span>
-                                      {investment.paymentsReceived || 0}/{investment.totalPayments || 12} payments
-                                    </span>
-                                  </div>
-                                  <Progress
-                                    value={
-                                      ((investment.paymentsReceived || 0) / (investment.totalPayments || 12)) * 100
-                                    }
-                                    className="h-2"
-                                  />
-                                </div>
-                              </CardContent>
-                            </Card>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium">No Active Investments</h3>
-                        <p className="text-muted-foreground">Explore opportunities to get started.</p>
-                      </div>
-                    )}
+                        return (
+                          <div key={loan.id} className="rounded-xl border p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="font-medium">{vehicle?.name || "Vehicle loan"}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Approved on{" "}
+                                  {new Date(approval?.approvedDate || Date.now()).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-semibold">{formatNaira(approval?.amount || 0)}</p>
+                                <Badge variant="secondary">Approved</Badge>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+
+            <section className="space-y-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">Open opportunities</h2>
+                  <p className="text-sm text-muted-foreground">Review currently fundable vehicles and deploy capital.</p>
+                </div>
+                <Button variant="outline" onClick={() => router.push("/dashboard/investor/dao")}>
+                  <Coins className="mr-2 h-4 w-4" />
+                  Open DAO Governance
+                </Button>
+              </div>
+
+              {state.isLoading ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <Card key={index}>
+                      <CardHeader>
+                        <Skeleton className="h-5 w-40" />
+                        <Skeleton className="h-4 w-24" />
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-2 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : availableVehicles.length === 0 ? (
+                <Card>
+                  <CardContent className="py-10 text-center">
+                    <h3 className="font-semibold">No open opportunities</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      All listed vehicles are currently funded. Check back shortly for new listings.
+                    </p>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {availableVehicles.map((vehicle) => {
+                    const fundedAmount = vehicle.totalFundedAmount || 0
+                    const progress = vehicle.price > 0 ? (fundedAmount / vehicle.price) * 100 : 0
 
-              <TabsContent value="opportunities" className="space-y-6">
-                <Card className="bg-card border-border">
-                  <CardHeader>
-                    <CardTitle className="text-foreground">Investment Opportunities</CardTitle>
-                    <CardDescription className="text-muted-foreground">
-                      Browse available vehicles to fund and earn returns.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {availableVehicles.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {availableVehicles.map((vehicle) => (
-                          <VehicleCard key={vehicle._id} vehicle={vehicle} onInvest={handleInvestNow} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-16">
-                        <Search className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <h3 className="mt-4 text-lg font-semibold">No Opportunities Available</h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          There are currently no new vehicles available for investment. Please check back later.
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                    return (
+                      <Card key={vehicle._id} className="flex h-full flex-col">
+                        <CardHeader className="space-y-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <CardTitle className="text-base">{vehicle.name}</CardTitle>
+                              <CardDescription>
+                                {vehicle.year} • {vehicle.type}
+                              </CardDescription>
+                            </div>
+                            <Badge className="bg-emerald-600 text-white">{formatPercent(vehicle.roi)}</Badge>
+                          </div>
+                        </CardHeader>
 
-              {/* Pending Approvals Tab */}
-              <TabsContent value="approvals" className="space-y-6">
-                <Card className="bg-card border-border">
-                  <CardHeader>
-                    <CardTitle className="text-foreground flex items-center">
-                      <Clock className="h-5 w-5 mr-2" />
-                      Pending Fund Releases
-                    </CardTitle>
-                    <CardDescription className="text-muted-foreground">
-                      Release approved funds to drivers
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {investorData.pendingReleases.length > 0 ? (
-                      <div className="space-y-4">
-                        {investorData.pendingReleases.map((loan) => {
-                          const approval = loan.investorApprovals.find(
-                            (a) => a.investorId === currentInvestorId && a.status === "Approved",
-                          )
-                          const driver = state.drivers?.find((d) => d.id === loan.driverId)
-                          const vehicle = state.vehicles.find((v) => v.id === loan.vehicleId)
+                        <CardContent className="flex flex-1 flex-col gap-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Target</span>
+                              <span className="font-medium">{formatNaira(vehicle.price)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Funded</span>
+                              <span className="font-medium">{formatNaira(fundedAmount)}</span>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>Funding progress</span>
+                                <span>{progress.toFixed(0)}%</span>
+                              </div>
+                              <Progress value={progress} className="h-2" />
+                            </div>
+                          </div>
 
-                          return (
-                            <Card key={loan.id} className="bg-yellow-50 border-yellow-200">
-                              <CardContent className="p-4">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-4">
-                                    <Image
-                                      src={vehicle?.image || "/placeholder.svg"}
-                                      alt={vehicle?.name || "Vehicle"}
-                                      width={60}
-                                      height={45}
-                                      className="rounded-lg object-cover"
-                                    />
-                                    <div>
-                                      <h4 className="font-semibold text-yellow-900">{vehicle?.name}</h4>
-                                      <p className="text-sm text-yellow-700">Driver: {driver?.name}</p>
-                                      <p className="text-xs text-yellow-600">
-                                        Approved: {new Date(approval?.approvedDate || "").toLocaleDateString()}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="text-right space-y-2">
-                                    <p className="text-lg font-bold text-yellow-900">
-                                      ${approval?.amount.toLocaleString()}
-                                    </p>
-                                    <Button
-                                      onClick={() => handleReleaseFunds(loan.id)}
-                                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                                    >
-                                      <Send className="h-4 w-4 mr-2" />
-                                      Release Funds
-                                    </Button>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-foreground mb-2">No Pending Releases</h3>
-                        <p className="text-muted-foreground">All approved funds have been released to drivers</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                          <div className="flex flex-wrap gap-2">
+                            {vehicle.features.slice(0, 3).map((feature) => (
+                              <Badge key={feature} variant="outline">
+                                {feature}
+                              </Badge>
+                            ))}
+                          </div>
 
-              {/* Analytics Tab */}
-              <TabsContent value="analytics" className="space-y-6">
-                <AdvancedAnalytics userRole="investor" userId={currentInvestorId} />
-              </TabsContent>
-
-              {/* Chat Tab */}
-              <TabsContent value="chat" className="space-y-6">
-                <RealTimeChat currentUserId={currentInvestorId} currentUserRole="investor" />
-              </TabsContent>
-
-              {/* Notifications Tab */}
-              <TabsContent value="notifications" className="space-y-6">
-                <NotificationCenter userId={currentInvestorId} userRole="investor" />
-              </TabsContent>
-            </Tabs>
-          </div>
+                          <Button
+                            className="mt-auto bg-[#E57700] text-white hover:bg-[#E57700]/90"
+                            onClick={() => {
+                              setSelectedVehicle(vehicle as InvestmentVehicle)
+                              setIsInvestDialogOpen(true)
+                            }}
+                          >
+                            Invest now
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              )}
+            </section>
+          </main>
         </div>
       </div>
 
       <Dialog open={isInvestDialogOpen} onOpenChange={setIsInvestDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invest in {selectedVehicle?.name}</DialogTitle>
+            <DialogTitle>Invest in {selectedVehicle?.name || "vehicle"}</DialogTitle>
             <DialogDescription>
-              Enter the amount you would like to invest in this vehicle. The total funding goal is $
-              {selectedVehicle?.price.toLocaleString()}.
+              Enter your preferred amount. Available balance: {formatNaira(availableBalance)}.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="investment-amount">Investment Amount ($)</Label>
+
+          <div className="space-y-2 py-1">
+            <Label htmlFor="investment-amount">Investment amount (NGN)</Label>
             <Input
               id="investment-amount"
               type="number"
+              inputMode="decimal"
+              placeholder="100000"
               value={investmentAmount}
-              onChange={(e) => setInvestmentAmount(e.target.value)}
-              placeholder="e.g., 5000"
+              onChange={(event) => setInvestmentAmount(event.target.value)}
             />
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsInvestDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={submitInvestment} className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
-              Confirm Investment
+            <Button
+              onClick={submitInvestment}
+              disabled={isSubmittingInvestment}
+              className="bg-[#E57700] text-white hover:bg-[#E57700]/90"
+            >
+              {isSubmittingInvestment ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing
+                </>
+              ) : (
+                <>
+                  <ArrowUpRight className="mr-2 h-4 w-4" />
+                  Confirm investment
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
