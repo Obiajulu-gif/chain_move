@@ -11,7 +11,7 @@ export function HeroSection() {
     <section className="relative bg-gradient-to-br from-[#142841] via-[#1e3a5f] to-[#3A7CA5] dark:from-[#0a1420] dark:via-[#0f1d30] dark:to-[#1a2d45] text-white py-20 lg:py-32 overflow-hidden">
       {/* Background Image Overlay */}
       <div className="absolute inset-0">
-        <Image src="/images/hero-bg.jpg" alt="Hero background" fill className="object-cover opacity-20" priority />
+        <Image src="/images/Hero.png" alt="Hero background" fill className="object-cover opacity-20" priority />
         <div className="absolute inset-0 bg-gradient-to-br from-[#142841]/80 via-[#1e3a5f]/80 to-[#3A7CA5]/80 dark:from-[#0a1420]/90 dark:via-[#0f1d30]/90 dark:to-[#1a2d45]/90"></div>
       </div>
 
