@@ -1,495 +1,349 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
+import { useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
+import { ArrowRight, CheckCircle2, Loader2, Wallet } from "lucide-react"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
-import { Wallet, Shield, FileText, CheckCircle, AlertTriangle, DollarSign, TrendingUp, Clock, Zap } from "lucide-react"
-import Image from "next/image"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
+import { usePlatform, useInvestorData } from "@/contexts/platform-context"
+import { getUserDisplayName, useAuth } from "@/hooks/use-auth"
+import { useToast } from "@/hooks/use-toast"
+import { formatNaira, formatPercent } from "@/lib/currency"
+import { DashboardRouteLoading } from "@/components/dashboard/dashboard-route-loading"
 
-interface WalletConnection {
+type InvestmentVehicle = {
+  _id: string
   name: string
-  icon: string
-  connected: boolean
-  address?: string
+  type: string
+  year: number
+  price: number
+  roi: number
+  features: string[]
+  totalFundedAmount?: number
 }
 
-const mockWallets: WalletConnection[] = [
-  {
-    name: "MetaMask",
-    icon: "/placeholder.svg?height=40&width=40",
-    connected: false,
-  },
-  {
-    name: "WalletConnect",
-    icon: "/placeholder.svg?height=40&width=40",
-    connected: false,
-  },
-  {
-    name: "Coinbase Wallet",
-    icon: "/placeholder.svg?height=40&width=40",
-    connected: false,
-  },
-]
+const MIN_TICKET = 25000
 
-export default function InvestCTAPage() {
-  const [wallets, setWallets] = useState<WalletConnection[]>(mockWallets)
-  const [connectedWallet, setConnectedWallet] = useState<WalletConnection | null>(null)
-  const [investmentAmount, setInvestmentAmount] = useState([1000])
-  const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null)
-  const [step, setStep] = useState<"connect" | "select" | "invest" | "confirm">("connect")
+export default function InvestPage() {
+  const router = useRouter()
+  const { toast } = useToast()
+  const { state, fetchData } = usePlatform()
+  const { user: authUser, loading: authLoading } = useAuth()
 
-  const connectWallet = (walletName: string) => {
-    const updatedWallets = wallets.map((wallet) =>
-      wallet.name === walletName
-        ? { ...wallet, connected: true, address: "0x1234...5678" }
-        : { ...wallet, connected: false, address: undefined },
+  const investorId = authUser?.id || ""
+  const investorName = getUserDisplayName(authUser, "Investor")
+  const { availableVehicles } = useInvestorData(investorId)
+
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("")
+  const [amountInput, setAmountInput] = useState<string>("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const selectedVehicle = useMemo(() => {
+    return availableVehicles.find((vehicle) => vehicle._id === selectedVehicleId) as InvestmentVehicle | undefined
+  }, [availableVehicles, selectedVehicleId])
+
+  const amount = Number.parseFloat(amountInput)
+  const availableBalance = authUser?.availableBalance || 0
+  const amountIsValid = Number.isFinite(amount) && amount >= MIN_TICKET
+  const hasSufficientBalance = amountIsValid && amount <= availableBalance
+
+  const handleInvest = async () => {
+    if (!authUser?.id || !selectedVehicle) {
+      toast({
+        title: "Choose a vehicle",
+        description: "Select an opportunity before continuing.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!amountIsValid) {
+      toast({
+        title: "Invalid amount",
+        description: `Minimum ticket size is ${formatNaira(MIN_TICKET)}.`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!hasSufficientBalance) {
+      toast({
+        title: "Insufficient balance",
+        description: `You currently have ${formatNaira(availableBalance)} available.`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch("/api/invest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vehicleId: selectedVehicle._id,
+          investorId: authUser.id,
+          amount,
+        }),
+      })
+
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload.message || "Investment failed")
+      }
+
+      toast({
+        title: "Investment submitted",
+        description: `${formatNaira(amount)} deployed to ${selectedVehicle.name}.`,
+      })
+
+      setAmountInput("")
+      setSelectedVehicleId("")
+      await fetchData?.()
+      router.push("/dashboard/investor")
+    } catch (error) {
+      toast({
+        title: "Investment failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (authLoading) {
+    return <DashboardRouteLoading title="Loading invest flow" description="Preparing opportunities and wallet data." />
+  }
+
+  if (!authUser || authUser.role !== "investor") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Access denied</CardTitle>
+            <CardDescription>You need an investor account to use this page.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => router.push("/signin")} className="w-full">
+              Go to Sign in
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     )
-    setWallets(updatedWallets)
-    setConnectedWallet(updatedWallets.find((w) => w.name === walletName) || null)
-    setStep("select")
   }
-
-  const disconnectWallet = () => {
-    setWallets(mockWallets)
-    setConnectedWallet(null)
-    setStep("connect")
-  }
-
-  const featuredVehicles = [
-    {
-      id: "1",
-      name: "Tesla Model 3 2022",
-      image: "/placeholder.svg?height=200&width=300",
-      roi: 19.5,
-      amount: 35000,
-      funded: 85,
-      risk: "Low",
-      location: "Cape Town, South Africa",
-    },
-    {
-      id: "2",
-      name: "Toyota Corolla 2020",
-      image: "/placeholder.svg?height=200&width=300",
-      roi: 16.5,
-      amount: 15000,
-      funded: 75,
-      risk: "Low",
-      location: "Lagos, Nigeria",
-    },
-    {
-      id: "3",
-      name: "Honda Civic 2021",
-      image: "/placeholder.svg?height=200&width=300",
-      roi: 15.2,
-      amount: 18000,
-      funded: 60,
-      risk: "Low",
-      location: "Accra, Ghana",
-    },
-  ]
 
   return (
-    <div className="min-h-screen bg-[#1a2332]">
-      <Sidebar 
-        role="investor" 
-        className="md:w-64 lg:w-72"
-        mobileWidth="w-64"
-      />
+    <div className="min-h-screen bg-background">
+      <Sidebar role="investor" />
 
       <div className="md:ml-64 lg:ml-72">
-        <Header 
-          userName="Marcus" 
-          userStatus="Verified Investor"
-          className="md:pl-6 lg:pl-8"
-        />
+        <Header userStatus="Verified Investor" />
 
-        <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
-          {/* Hero Section */}
-          <div className="mb-6 sm:mb-8">
-            <div className="grid sm:grid-cols-2 gap-4 sm:gap-8 items-center">
-              <div className="relative">
-                <Image
-                  src="/images/dashboard-hero.png"
-                  alt="Invest CTA hero"
-                  width={600}
-                  height={400}
-                  className="rounded-lg sm:rounded-2xl object-cover w-full h-[200px] sm:h-[300px]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent rounded-lg sm:rounded-2xl" />
+        <main className="space-y-6 p-4 sm:p-6 lg:p-8">
+          <section className="rounded-2xl border bg-card p-5 sm:p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div className="space-y-2">
+                <Badge variant="secondary" className="w-fit">
+                  Capital deployment
+                </Badge>
+                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Invest with confidence, {investorName}</h1>
+                <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
+                  Pick an opportunity, choose an amount, and confirm in one flow. All investments route through your
+                  existing investor wallet.
+                </p>
               </div>
-              <div className="space-y-4 sm:space-y-6">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 sm:mb-4">Start Investing Today</h1>
-                  <p className="text-sm sm:text-lg text-muted-foreground leading-relaxed">
-                    Connect your wallet and sign smart contracts to begin investing in mobility assets. Secure,
-                    transparent, and decentralized.
-                  </p>
-                </div>
-                <div className="flex flex-wrap justify-start gap-2 sm:gap-3">
-                  <div className="w-2 h-2 bg-[#E57700] rounded-full"></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                </div>
-              </div>
+
+              <Card className="w-full md:max-w-xs">
+                <CardHeader className="pb-2">
+                  <CardDescription>Available wallet balance</CardDescription>
+                  <CardTitle className="text-xl">{formatNaira(availableBalance)}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-xs text-muted-foreground">
+                  Minimum ticket size: {formatNaira(MIN_TICKET)}
+                </CardContent>
+              </Card>
             </div>
-          </div>
+          </section>
 
-          {/* Investment Process Steps */}
-          <div className="grid md:grid-cols-4 gap-4 mb-8">
-            <Card
-              className={`${step === "connect" ? "bg-[#E57700]/20 border-[#E57700]" : "bg-[#2a3441]"} border-gray-700`}
-            >
-              <CardContent className="p-4 text-center">
-                <Wallet className={`h-8 w-8 mx-auto mb-2 ${step === "connect" ? "text-[#E57700]" : "text-gray-400"}`} />
-                <p className={`text-sm font-medium ${step === "connect" ? "text-[#E57700]" : "text-gray-400"}`}>
-                  Connect Wallet
-                </p>
-              </CardContent>
-            </Card>
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {[
+              {
+                title: "1. Select opportunity",
+                copy: "Review open vehicle listings and ROI profile.",
+              },
+              {
+                title: "2. Enter amount",
+                copy: "Set your ticket size based on wallet liquidity.",
+              },
+              {
+                title: "3. Confirm allocation",
+                copy: "Submit and track performance from your dashboard.",
+              },
+            ].map((item) => (
+              <Card key={item.title}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">{item.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">{item.copy}</CardContent>
+              </Card>
+            ))}
+          </section>
 
-            <Card
-              className={`${step === "select" ? "bg-[#E57700]/20 border-[#E57700]" : "bg-[#2a3441]"} border-gray-700`}
-            >
-              <CardContent className="p-4 text-center">
-                <TrendingUp
-                  className={`h-8 w-8 mx-auto mb-2 ${step === "select" ? "text-[#E57700]" : "text-gray-400"}`}
-                />
-                <p className={`text-sm font-medium ${step === "select" ? "text-[#E57700]" : "text-gray-400"}`}>
-                  Select Vehicle
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card
-              className={`${step === "invest" ? "bg-[#E57700]/20 border-[#E57700]" : "bg-[#2a3441]"} border-gray-700`}
-            >
-              <CardContent className="p-4 text-center">
-                <DollarSign
-                  className={`h-8 w-8 mx-auto mb-2 ${step === "invest" ? "text-[#E57700]" : "text-gray-400"}`}
-                />
-                <p className={`text-sm font-medium ${step === "invest" ? "text-[#E57700]" : "text-gray-400"}`}>
-                  Set Amount
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card
-              className={`${step === "confirm" ? "bg-[#E57700]/20 border-[#E57700]" : "bg-[#2a3441]"} border-gray-700`}
-            >
-              <CardContent className="p-4 text-center">
-                <FileText
-                  className={`h-8 w-8 mx-auto mb-2 ${step === "confirm" ? "text-[#E57700]" : "text-gray-400"}`}
-                />
-                <p className={`text-sm font-medium ${step === "confirm" ? "text-[#E57700]" : "text-gray-400"}`}>
-                  Sign Contract
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Step 1: Connect Wallet */}
-          {step === "connect" && (
-            <Card className="bg-[#2a3441] border-gray-700">
+          <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.35fr_1fr]">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <Wallet className="h-5 w-5 mr-2" />
-                  Connect Your Wallet
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Choose a wallet to connect and start investing
-                </CardDescription>
+                <CardTitle>Open opportunities</CardTitle>
+                <CardDescription>Select one listing to continue.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-3 gap-4">
-                  {wallets.map((wallet) => (
-                    <Card
-                      key={wallet.name}
-                      className="bg-[#1a2332] border-gray-600 hover:border-[#E57700] transition-colors cursor-pointer"
-                    >
-                      <CardContent className="p-6 text-center">
-                        <Image
-                          src={wallet.icon || "/placeholder.svg"}
-                          alt={wallet.name}
-                          width={40}
-                          height={40}
-                          className="mx-auto mb-3"
-                        />
-                        <h3 className="text-white font-medium mb-2">{wallet.name}</h3>
-                        <Button
-                          className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white"
-                          onClick={() => connectWallet(wallet.name)}
+                {state.isLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <div key={index} className="rounded-xl border p-4">
+                        <Skeleton className="mb-2 h-4 w-44" />
+                        <Skeleton className="mb-2 h-3 w-28" />
+                        <Skeleton className="h-2 w-full" />
+                      </div>
+                    ))}
+                  </div>
+                ) : availableVehicles.length === 0 ? (
+                  <div className="rounded-xl border border-dashed p-8 text-center">
+                    <h3 className="font-semibold">No opportunities available</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Current listings are fully funded. Check back soon.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {availableVehicles.map((vehicle) => {
+                      const fundedAmount = vehicle.totalFundedAmount || 0
+                      const progress = vehicle.price > 0 ? (fundedAmount / vehicle.price) * 100 : 0
+                      const isSelected = selectedVehicleId === vehicle._id
+
+                      return (
+                        <button
+                          key={vehicle._id}
+                          type="button"
+                          className={`w-full rounded-xl border p-4 text-left transition-colors ${
+                            isSelected ? "border-primary bg-primary/5" : "hover:bg-muted/40"
+                          }`}
+                          onClick={() => setSelectedVehicleId(vehicle._id)}
                         >
-                          Connect
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="font-medium">{vehicle.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {vehicle.year} • {vehicle.type}
+                              </p>
+                            </div>
+                            <Badge className="w-fit bg-emerald-600 text-white">{formatPercent(vehicle.roi)}</Badge>
+                          </div>
+
+                          <div className="mt-3 space-y-1">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>Funding progress</span>
+                              <span>{progress.toFixed(0)}%</span>
+                            </div>
+                            <Progress value={progress} className="h-2" />
+                          </div>
+
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {vehicle.features.slice(0, 3).map((feature) => (
+                              <Badge key={feature} variant="outline">
+                                {feature}
+                              </Badge>
+                            ))}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Investment summary</CardTitle>
+                <CardDescription>Confirm ticket size and deploy capital.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {selectedVehicle ? (
+                  <div className="rounded-xl border p-4">
+                    <p className="font-medium">{selectedVehicle.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Target raise: {formatNaira(selectedVehicle.price)}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Expected annual return: <span className="font-medium text-foreground">{formatPercent(selectedVehicle.roi)}</span>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                    Select an opportunity to continue.
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="invest-amount">Amount (NGN)</Label>
+                  <Input
+                    id="invest-amount"
+                    type="number"
+                    inputMode="decimal"
+                    value={amountInput}
+                    onChange={(event) => setAmountInput(event.target.value)}
+                    placeholder="25000"
+                  />
+                  <div className="space-y-1 text-xs">
+                    <p className={amountIsValid ? "text-muted-foreground" : "text-destructive"}>
+                      Minimum: {formatNaira(MIN_TICKET)}
+                    </p>
+                    <p className={hasSufficientBalance || !amountIsValid ? "text-muted-foreground" : "text-destructive"}>
+                      Wallet balance: {formatNaira(availableBalance)}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700 rounded-lg">
-                  <div className="flex items-start space-x-3">
-                    <Shield className="h-5 w-5 text-blue-400 mt-0.5" />
-                    <div>
-                      <h4 className="text-blue-400 font-medium">Secure Connection</h4>
-                      <p className="text-sm text-gray-400 mt-1">
-                        Your wallet connection is encrypted and secure. We never store your private keys.
-                      </p>
-                    </div>
-                  </div>
+                <Button
+                  onClick={handleInvest}
+                  className="w-full bg-[#E57700] text-white hover:bg-[#E57700]/90"
+                  disabled={isSubmitting || !selectedVehicle || !amountIsValid || !hasSufficientBalance}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing investment
+                    </>
+                  ) : (
+                    <>
+                      <Wallet className="mr-2 h-4 w-4" />
+                      Invest now
+                    </>
+                  )}
+                </Button>
+
+                <Button variant="outline" className="w-full" onClick={() => router.push("/dashboard/investor")}>
+                  Back to dashboard
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+
+                <div className="flex items-start gap-2 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                  Investments are submitted to the existing backend flow and immediately reflected on your dashboard.
                 </div>
               </CardContent>
             </Card>
-          )}
-
-          {/* Step 2: Select Vehicle */}
-          {step === "select" && connectedWallet && (
-            <div className="space-y-6">
-              <Card className="bg-[#2a3441] border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center justify-between">
-                    <div className="flex items-center">
-                      <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
-                      Wallet Connected
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={disconnectWallet}
-                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
-                    >
-                      Disconnect
-                    </Button>
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    {connectedWallet.name} • {connectedWallet.address}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="bg-[#2a3441] border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white">Select a Vehicle to Invest In</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Choose from our featured investment opportunities
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-3 gap-6">
-                    {featuredVehicles.map((vehicle) => (
-                      <Card
-                        key={vehicle.id}
-                        className={`${selectedVehicle === vehicle.id ? "border-[#E57700] bg-[#E57700]/10" : "border-gray-600"} bg-[#1a2332] cursor-pointer transition-colors`}
-                        onClick={() => setSelectedVehicle(vehicle.id)}
-                      >
-                        <div className="relative">
-                          <Image
-                            src={vehicle.image || "/placeholder.svg"}
-                            alt={vehicle.name}
-                            width={300}
-                            height={200}
-                            className="w-full h-32 object-cover rounded-t-lg"
-                          />
-                          <Badge className="absolute top-2 right-2 bg-[#E57700] text-white">{vehicle.roi}% ROI</Badge>
-                        </div>
-                        <CardContent className="p-4">
-                          <h3 className="text-white font-medium mb-2">{vehicle.name}</h3>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Amount</span>
-                              <span className="text-white">${vehicle.amount.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Funded</span>
-                              <span className="text-white">{vehicle.funded}%</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Risk</span>
-                              <Badge className="bg-green-600 text-white text-xs">{vehicle.risk}</Badge>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-
-                  {selectedVehicle && (
-                    <div className="mt-6 text-center">
-                      <Button
-                        className="bg-[#E57700] hover:bg-[#E57700]/90 text-white"
-                        onClick={() => setStep("invest")}
-                      >
-                        Continue with Selected Vehicle
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Step 3: Set Investment Amount */}
-          {step === "invest" && selectedVehicle && (
-            <div className="space-y-6">
-              <Card className="bg-[#2a3441] border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white">Set Investment Amount</CardTitle>
-                  <CardDescription className="text-gray-400">Choose how much you want to invest</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div>
-                      <label className="text-sm text-gray-400 mb-2 block">
-                        Investment Amount: ${investmentAmount[0].toLocaleString()}
-                      </label>
-                      <Slider
-                        value={investmentAmount}
-                        onValueChange={setInvestmentAmount}
-                        max={10000}
-                        min={100}
-                        step={100}
-                        className="mt-2"
-                      />
-                      <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>$100</span>
-                        <span>$10,000</span>
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div className="text-center p-4 bg-[#1a2332] rounded-lg">
-                        <TrendingUp className="h-6 w-6 text-[#E57700] mx-auto mb-2" />
-                        <p className="text-sm text-gray-400">Expected ROI</p>
-                        <p className="text-lg font-bold text-white">19.5%</p>
-                      </div>
-                      <div className="text-center p-4 bg-[#1a2332] rounded-lg">
-                        <DollarSign className="h-6 w-6 text-[#E57700] mx-auto mb-2" />
-                        <p className="text-sm text-gray-400">Monthly Return</p>
-                        <p className="text-lg font-bold text-white">
-                          ${Math.round((investmentAmount[0] * 0.195) / 12)}
-                        </p>
-                      </div>
-                      <div className="text-center p-4 bg-[#1a2332] rounded-lg">
-                        <Clock className="h-6 w-6 text-[#E57700] mx-auto mb-2" />
-                        <p className="text-sm text-gray-400">Term</p>
-                        <p className="text-lg font-bold text-white">60 months</p>
-                      </div>
-                    </div>
-
-                    <Button
-                      className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white"
-                      onClick={() => setStep("confirm")}
-                    >
-                      Proceed to Contract Signing
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Step 4: Confirm and Sign Contract */}
-          {step === "confirm" && (
-            <div className="space-y-6">
-              <Card className="bg-[#2a3441] border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <FileText className="h-5 w-5 mr-2" />
-                    Smart Contract Review
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Review and sign the investment smart contract
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {/* Contract Summary */}
-                    <div className="p-4 bg-[#1a2332] rounded-lg">
-                      <h3 className="text-white font-medium mb-3">Investment Summary</h3>
-                      <div className="grid md:grid-cols-2 gap-4 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Vehicle</span>
-                          <span className="text-white">Tesla Model 3 2022</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Investment Amount</span>
-                          <span className="text-white">${investmentAmount[0].toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Expected ROI</span>
-                          <span className="text-green-400">19.5%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Contract Term</span>
-                          <span className="text-white">60 months</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Monthly Return</span>
-                          <span className="text-white">${Math.round((investmentAmount[0] * 0.195) / 12)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Total Expected Return</span>
-                          <span className="text-green-400">
-                            ${Math.round(investmentAmount[0] * 1.195).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Contract Terms */}
-                    <div className="p-4 bg-[#1a2332] rounded-lg">
-                      <h3 className="text-white font-medium mb-3">Key Contract Terms</h3>
-                      <div className="space-y-2 text-sm text-gray-400">
-                        <div className="flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-400 mt-0.5" />
-                          <span>Automated monthly payments via smart contract</span>
-                        </div>
-                        <div className="flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-400 mt-0.5" />
-                          <span>Vehicle ownership as collateral</span>
-                        </div>
-                        <div className="flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-400 mt-0.5" />
-                          <span>Insurance coverage included</span>
-                        </div>
-                        <div className="flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-400 mt-0.5" />
-                          <span>Early repayment option available</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Risk Warning */}
-                    <div className="p-4 bg-yellow-900/20 border border-yellow-700 rounded-lg">
-                      <div className="flex items-start space-x-3">
-                        <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5" />
-                        <div>
-                          <h4 className="text-yellow-400 font-medium">Investment Risk Notice</h4>
-                          <p className="text-sm text-gray-400 mt-1">
-                            All investments carry risk. Past performance does not guarantee future results. Please
-                            ensure you understand the terms before proceeding.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Sign Contract Button */}
-                    <div className="text-center">
-                      <Button className="bg-[#E57700] hover:bg-[#E57700]/90 text-white px-8 py-3 text-lg">
-                        <Zap className="h-5 w-5 mr-2" />
-                        Sign Smart Contract
-                      </Button>
-                      <p className="text-xs text-gray-400 mt-2">This will open your wallet to sign the transaction</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
+          </section>
+        </main>
       </div>
     </div>
   )

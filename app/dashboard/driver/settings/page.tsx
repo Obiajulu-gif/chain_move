@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
+import { getUserDisplayName, useAuth } from "@/hooks/use-auth"
 import { User, Bell, Shield, CreditCard, AlertTriangle, Save, LogOut, Eye, EyeOff } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -29,15 +30,31 @@ export default function DriverSettingsPage() {
   const [isLogoutOpen, setIsLogoutOpen] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
+  const { user: authUser } = useAuth()
 
   const [profileData, setProfileData] = useState({
-    firstName: "Emmanuel",
-    lastName: "Adebayo",
-    email: "emmanuel@chainmove.com",
+    firstName: "",
+    lastName: "",
+    email: "",
     phone: "+234 801 234 5678",
     address: "123 Victoria Island, Lagos, Nigeria",
     bio: "Experienced driver with 5+ years in ride-hailing services.",
   })
+
+  useEffect(() => {
+    if (!authUser) return
+
+    const fullName = getUserDisplayName(authUser, "Driver").trim()
+    const [firstName, ...otherNames] = fullName.split(" ").filter(Boolean)
+    const lastName = otherNames.join(" ")
+
+    setProfileData((prev) => ({
+      ...prev,
+      firstName: firstName || prev.firstName || "Driver",
+      lastName: lastName || prev.lastName,
+      email: authUser.email || prev.email,
+    }))
+  }, [authUser])
 
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
@@ -149,7 +166,7 @@ export default function DriverSettingsPage() {
       <Sidebar role="driver" />
 
       <div className="md:ml-64">
-        <Header userName="Emmanuel" userStatus="Verified Driver" showBackButton />
+        <Header userStatus="Verified Driver" showBackButton />
 
         <div className="p-3 md:p-6 space-y-4 md:space-y-6">
           {/* Page Header */}

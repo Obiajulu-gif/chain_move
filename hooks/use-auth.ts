@@ -2,11 +2,33 @@
 
 import { useState, useEffect } from "react"
 
-interface AuthUser {
+export interface AuthUser {
   id: string
-  name: string
-  email: string
-  role: string
+  name?: string
+  email?: string
+  role?: string
+  availableBalance?: number
+  totalInvested?: number
+  totalReturns?: number
+}
+
+export function getUserDisplayName(
+  user: Pick<AuthUser, "name" | "email"> | null | undefined,
+  fallbackLabel = "User",
+): string {
+  if (!user) {
+    return fallbackLabel
+  }
+
+  if (user.name && user.name.trim().length > 0) {
+    return user.name.trim()
+  }
+
+  if (user.email && user.email.includes("@")) {
+    return user.email.split("@")[0]
+  }
+
+  return fallbackLabel
 }
 
 export function useAuth() {
