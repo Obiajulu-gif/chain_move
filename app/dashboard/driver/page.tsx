@@ -377,14 +377,14 @@ export default function DriverDashboard() {
                   className="w-full bg-[#E57700] text-white hover:bg-[#E57700]/90"
                   onClick={() => {
                     toast({
-                      title: "Support opened",
-                      description: "Redirecting you to the support center.",
+                      title: "Notifications opened",
+                      description: "Redirecting you to the alerts center.",
                     })
-                    router.push("/dashboard/driver/support")
+                    router.push("/dashboard/driver/notifications")
                   }}
                 >
                   <AlertTriangle className="mr-2 h-4 w-4" />
-                  Contact support
+                  Review alerts
                 </Button>
 
                 <Button variant="outline" className="w-full" onClick={() => router.push("/dashboard/driver/maintenance")}>

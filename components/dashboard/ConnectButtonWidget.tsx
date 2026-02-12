@@ -1,142 +1,105 @@
-"use client";
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Wallet } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useState, useEffect, useRef } from 'react';
-import { useAccount } from 'wagmi'
-import { useRouter } from "next/navigation"
+"use client"
+
+import { useEffect, useMemo } from "react"
+import { usePathname } from "next/navigation"
+import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { Wallet } from "lucide-react"
+import { useAccount } from "wagmi"
+import { Button } from "@/components/ui/button"
+import { getUserDisplayName, useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/components/ui/use-toast"
 
 export const ConnectButtonWidget = () => {
-  const { address } = useAccount();
-  const [status, setStatus] = useState("");
-  const router = useRouter();
-  const { toast } = useToast();
+  const { address } = useAccount()
+  const { user } = useAuth()
+  const pathname = usePathname()
+  const { toast } = useToast()
 
-  // Store openConnectModal in a ref so it can be used in handleLogout
-  const openConnectModalRef = useRef<(() => void) | null>(null);
+  const isDriverRoute = pathname?.startsWith("/dashboard/driver")
+  const driverLabel = useMemo(() => getUserDisplayName(user, "Driver"), [user])
 
   useEffect(() => {
     const registerWallet = async () => {
-      if (address) {
-        console.log("account connected", address);
-        setStatus("validating...");
-        try {
-          const res = await fetch('/api/auth/signup', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: address, walletaddress: address, role: "driver" }),
-          });
+      if (!address) return
 
-          const data = await res.json();
-          console.log("returned data", data);
-          if (data.success) {
-            console.log("validation successful");
-            setStatus("logging you in...");
-            // Try login after signup
-            try {
-              const loginRes = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ walletaddress: address }),
-              });
+      try {
+        const signupRes = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: address, walletaddress: address, role: "driver" }),
+        })
+        const signupData = await signupRes.json()
 
-              const loginData = await loginRes.json();
-              console.log("returned data", loginData);
-              if (loginData.token || loginData.success) {
-                console.log("login successful");
-                setStatus("login complete");
-                toast({ title: "Login Successful", description: `Welcome back, ${loginData.user.name}!` });
-                // Redirect based on role
-                // router.push(`/dashboard/${loginData.user.role}`);
-              } else {
-                console.log("login failed");
-                setStatus("login failed");
-              }
-            } catch (err) {
-              console.log("error", err);
-              setStatus("Error Signing In");
-            } finally {
-              console.log("case closed");
-              setStatus("");
-
-            }
-          } else {
-            console.log("validation failed");
-            setStatus("validation failed");
-          }
-        } catch (err) {
-          console.log("error", err);
-          setStatus("Error Signing In");
-        } finally {
-          console.log("case closed");
+        if (!signupData.success) {
+          return
         }
-      } else {
-        console.log("account not connected");
-      }
-    };
 
-    registerWallet();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address]);
+        const loginRes = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ walletaddress: address }),
+        })
+        const loginData = await loginRes.json()
 
+        if (loginData.token || loginData.success) {
+          toast({
+            title: "Wallet connected",
+            description: `Welcome back, ${loginData.user?.name || "Driver"}.`,
+          })
+          return
+        }
+      } catch {}
+    }
 
+    registerWallet()
+  }, [address, toast])
 
   return (
     <ConnectButton.Custom>
-      {({
-        account,
-        chain,
-        openAccountModal,
-        openChainModal,
-        openConnectModal,
-        mounted,
-      }) => {
-        // Store openConnectModal in ref for use in handleLogout
-        openConnectModalRef.current = openConnectModal;
-
-        const ready = mounted;
-        const connected = ready && account && chain;
+      {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
+        const ready = mounted
+        const connected = ready && account && chain
 
         return (
           <div
             {...(!ready && {
-              'aria-hidden': true,
-              'style': {
+              "aria-hidden": true,
+              style: {
                 opacity: 0,
-                pointerEvents: 'none',
-                userSelect: 'none',
+                pointerEvents: "none",
+                userSelect: "none",
               },
             })}
           >
-            {(() => {
-              if (!connected) {
-                return (
-                  <Button onClick={openConnectModal} type="button" className='w-full max-w-md mx-auto bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3 flex items-center justify-center'>
-                    <Wallet className="h-5 w-5 mr-2" />
-                    Connect Wallet
-                  </Button>
-                );
-              }
-              if (chain.unsupported) {
-                return (
-                  <Button onClick={openChainModal} type="button" className='w-full max-w-md mx-auto bg-[#E57700] hover:bg-[#E57700]/90 text-white py-3 flex items-center justify-center'>
-                    Wrong network
-                  </Button>
-                );
-              }
-              return (
-                <button onClick={openAccountModal} className='w-full max-w-md mx-auto flex items-center justify-center gap-2 bg-[#E57700] text-white py-2 px-4 rounded'>
-                  {account.displayName}
-                  {account.displayBalance
-                    ? ` (${account.displayBalance})`
-                    : ''}
-                </button>
-              );
-            })()}
+            {!connected ? (
+              <Button
+                onClick={openConnectModal}
+                type="button"
+                className="mx-auto flex w-full max-w-md items-center justify-center bg-[#E57700] py-3 text-white hover:bg-[#E57700]/90"
+              >
+                <Wallet className="mr-2 h-5 w-5" />
+                Connect Wallet
+              </Button>
+            ) : chain.unsupported ? (
+              <Button
+                onClick={openChainModal}
+                type="button"
+                className="mx-auto flex w-full max-w-md items-center justify-center bg-[#E57700] py-3 text-white hover:bg-[#E57700]/90"
+              >
+                Wrong network
+              </Button>
+            ) : (
+              <button
+                onClick={openAccountModal}
+                className="mx-auto flex w-full max-w-md items-center justify-center gap-2 rounded bg-[#E57700] px-4 py-2 text-white"
+              >
+                {isDriverRoute ? driverLabel : account.displayName}
+                {!isDriverRoute && account.displayBalance ? ` (${account.displayBalance})` : ""}
+              </button>
+            )}
           </div>
-        );
+        )
       }}
     </ConnectButton.Custom>
-  );
-};
+  )
+}
