@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/dialog"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
-import { RealTimeChat } from "@/components/dashboard/real-time-chat"
 import { AdvancedAnalytics } from "@/components/dashboard/advanced-analytics"
 import { NotificationCenter } from "@/components/dashboard/notification-center"
 import { usePlatform, useDriverData } from "@/contexts/platform-context"
@@ -657,7 +656,6 @@ export default function DriverDashboard() {
                 <TabsTrigger value="repayments">Repayments</TabsTrigger>
                 <TabsTrigger value="funding">Funding</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                <TabsTrigger value="chat">Chat</TabsTrigger>
                 <TabsTrigger value="notifications">Alerts</TabsTrigger>
               </TabsList>
               <TabsContent value="overview" className="space-y-6">
@@ -1285,10 +1283,6 @@ export default function DriverDashboard() {
               {/* Analytics Tab */}
               <TabsContent value="analytics" className="space-y-6">
                 <AdvancedAnalytics userRole="driver" userId={currentDriverId} />
-              </TabsContent>
-              {/* Chat Tab */}
-              <TabsContent value="chat" className="space-y-6">
-                <RealTimeChat currentUserId={currentDriverId} currentUserRole="driver" />
               </TabsContent>
               {/* Notifications Tab */}
               <TabsContent value="notifications" className="space-y-6">
