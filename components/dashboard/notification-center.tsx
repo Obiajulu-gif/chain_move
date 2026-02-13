@@ -1,371 +1,265 @@
 "use client"
 
-import { useState } from "react"
+import * as React from "react"
+import { useState, useMemo } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Bell, Search, Settings, CheckCircle, AlertTriangle, Info, Mail, XCircle, Clock, Filter } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { usePlatform } from "@/contexts/platform-context"
-import {
-  Bell,
-  Search,
-  Filter,
-  CheckCircle,
-  AlertTriangle,
-  Info,
-  DollarSign,
-  Car,
-  Users,
-  Settings,
-  Trash2,
-  BookMarkedIcon as MarkAsUnread,
-} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/hooks/use-toast"
+import { markNotificationsAsRead } from "@/actions/notification" // New Server Action
+
+interface Notification {
+  id: string
+  title: string
+  message: string
+  read: boolean
+  timestamp: string
+  link?: string
+}
 
 interface NotificationCenterProps {
   userId: string
   userRole: "driver" | "investor" | "admin"
+  notifications: Notification[] // Pass notifications as a prop
 }
 
-export function NotificationCenter({ userId, userRole }: NotificationCenterProps) {
-  const { state, dispatch } = usePlatform()
+export function NotificationCenter({ userId, userRole, notifications: initialNotifications }: NotificationCenterProps) {
+  const router = useRouter()
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "unread" | "high" | "medium" | "low">("all")
+  const [activeTab, setActiveTab] = useState("recent")
+  const [filterUnread, setFilterUnread] = useState(false)
+  const [filterHighPriority, setFilterHighPriority] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications) // Use internal state for read status
 
-  // Get user notifications
-  const userNotifications = state.notifications.filter(
-    (n) => n.userId === userId || (userRole === "admin" && (n.userId === "admin" || n.type === "system_alert")),
-  )
+  // Update internal state when initialNotifications prop changes
+  React.useEffect(() => {
+    setNotifications(initialNotifications)
+  }, [initialNotifications])
 
-  // Filter notifications
-  const filteredNotifications = userNotifications.filter((notification) => {
-    const matchesSearch =
-      notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      notification.message.toLowerCase().includes(searchTerm.toLowerCase())
+  // Fetch latest notifications from API for the given user
+  React.useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch(`/api/notifications?userId=${userId}`)
+        if (!res.ok) return
+        const data = await res.json()
+        const items = (data.notifications || []).map((n: any) => ({
+          id: n._id || n.id,
+          title: n.title,
+          message: n.message,
+          read: !!n.read,
+          timestamp: typeof n.timestamp === "string" ? n.timestamp : new Date(n.timestamp).toISOString(),
+          link: n.actionUrl || undefined,
+        }))
+        // Prefer server notifications; fall back to existing if empty
+        if (items.length > 0) {
+          setNotifications(items)
+        }
+      } catch (err) {
+        console.error("Failed to fetch notifications:", err)
+      }
+    }
+    if (userId) fetchNotifications()
+  }, [userId])
 
-    const matchesFilter =
-      selectedFilter === "all" ||
-      (selectedFilter === "unread" && !notification.read) ||
-      (selectedFilter !== "unread" && notification.priority === selectedFilter)
+  const filteredNotifications = useMemo(() => {
+    let filtered = notifications.filter(
+      (n) =>
+        n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        n.message.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
 
-    return matchesSearch && matchesFilter
-  })
+    if (filterUnread) {
+      filtered = filtered.filter((n) => !n.read)
+    }
 
-  const unreadCount = userNotifications.filter((n) => !n.read).length
-  const highPriorityCount = userNotifications.filter((n) => !n.read && n.priority === "high").length
+    // Placeholder for high priority logic (e.g., based on title keywords or a 'priority' field)
+    if (filterHighPriority) {
+      filtered = filtered.filter(
+        (n) => n.title.toLowerCase().includes("approved") || n.title.toLowerCase().includes("rejected"),
+      )
+    }
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "loan_approved":
-      case "fund_released":
-        return <CheckCircle className="h-5 w-5 text-green-500" />
-      case "payment_due":
-      case "system_alert":
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />
-      case "investment_return":
-        return <DollarSign className="h-5 w-5 text-green-500" />
-      case "vehicle_added":
-        return <Car className="h-5 w-5 text-blue-500" />
-      case "application_submitted":
-        return <Users className="h-5 w-5 text-purple-500" />
+    // Tab-based filtering
+    switch (activeTab) {
+      case "recent":
+        // Already sorted by timestamp by default from DB, or can sort here if needed
+        break
+      case "financial":
+        filtered = filtered.filter(
+          (n) =>
+            n.title.toLowerCase().includes("payment") ||
+            n.title.toLowerCase().includes("loan") ||
+            n.title.toLowerCase().includes("funds"),
+        )
+        break
+      case "system":
+        filtered = filtered.filter(
+          (n) =>
+            n.title.toLowerCase().includes("system") ||
+            n.title.toLowerCase().includes("update") ||
+            n.title.toLowerCase().includes("maintenance"),
+        )
+        break
+      case "archived":
+        // Assuming 'archived' means read notifications for now, or a separate 'archived' flag
+        filtered = filtered.filter((n) => n.read)
+        break
       default:
-        return <Info className="h-5 w-5 text-blue-500" />
+        break
+    }
+
+    // Sort by timestamp descending (most recent first)
+    return filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+  }, [notifications, searchTerm, filterUnread, filterHighPriority, activeTab])
+
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications])
+
+  const handleMarkAllRead = async () => {
+    try {
+      const unreadNotificationIds = notifications.filter((n) => !n.read).map((n) => n.id)
+      if (unreadNotificationIds.length === 0) {
+        toast({ title: "No unread notifications", description: "You are all caught up!" })
+        return
+      }
+      const res = await markNotificationsAsRead(userId, unreadNotificationIds)
+      if (res.success) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+        toast({ title: "Success", description: "All notifications marked as read." })
+        router.refresh() // Revalidate the page to ensure consistency
+      } else {
+        toast({
+          title: "Error",
+          description: res.message || "Failed to mark notifications as read.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error marking all read:", error)
+      toast({ title: "Error", description: "An unexpected error occurred.", variant: "destructive" })
     }
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-100 text-red-800 border-red-200"
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "low":
-        return "bg-green-100 text-green-800 border-green-200"
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+  const getNotificationIcon = (notification: Notification) => {
+    if (notification.title.toLowerCase().includes("approved") || notification.title.toLowerCase().includes("success")) {
+      return <CheckCircle className="h-5 w-5 text-green-500" />
     }
-  }
-
-  const markAsRead = (notificationId: string) => {
-    dispatch({ type: "MARK_NOTIFICATION_READ", payload: notificationId })
-  }
-
-  const markAllAsRead = () => {
-    userNotifications
-      .filter((n) => !n.read)
-      .forEach((notification) => {
-        dispatch({ type: "MARK_NOTIFICATION_READ", payload: notification.id })
-      })
-  }
-
-  const deleteNotification = (notificationId: string) => {
-    // In a real app, you'd have a DELETE_NOTIFICATION action
-    console.log("Delete notification:", notificationId)
+    if (notification.title.toLowerCase().includes("rejected") || notification.title.toLowerCase().includes("failed")) {
+      return <XCircle className="h-5 w-5 text-red-500" />
+    }
+    if (
+      notification.title.toLowerCase().includes("pending") ||
+      notification.title.toLowerCase().includes("review") ||
+      notification.title.toLowerCase().includes("scheduled")
+    ) {
+      return <Clock className="h-5 w-5 text-yellow-500" />
+    }
+    if (notification.title.toLowerCase().includes("error") || notification.title.toLowerCase().includes("issue")) {
+      return <AlertTriangle className="h-5 w-5 text-orange-500" />
+    }
+    if (notification.title.toLowerCase().includes("email") || notification.title.toLowerCase().includes("message")) {
+      return <Mail className="h-5 w-5 text-blue-500" />
+    }
+    return <Info className="h-5 w-5 text-muted-foreground" />
   }
 
   return (
-    <Card className="bg-card border-border">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-foreground flex items-center">
-              <Bell className="h-5 w-5 mr-2" />
-              Notification Center
-              {unreadCount > 0 && <Badge className="ml-2 bg-red-500 text-white">{unreadCount}</Badge>}
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Stay updated with real-time platform notifications
-              {highPriorityCount > 0 && (
-                <span className="ml-2 text-red-600 font-medium">{highPriorityCount} high priority</span>
-              )}
-            </CardDescription>
-          </div>
-          <div className="flex space-x-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={markAllAsRead}
-              disabled={unreadCount === 0}
-              className="border-border text-foreground"
-            >
-              Mark All Read
-            </Button>
-            <Button size="sm" variant="outline" className="border-border text-foreground">
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent>
-        {/* Search and Filter */}
-        <div className="flex space-x-4 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search notifications..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <div className="flex space-x-2">
-            <Button
-              size="sm"
-              variant={selectedFilter === "all" ? "default" : "outline"}
-              onClick={() => setSelectedFilter("all")}
-              className={selectedFilter === "all" ? "bg-[#E57700] text-white" : "border-border text-foreground"}
-            >
-              All
-            </Button>
-            <Button
-              size="sm"
-              variant={selectedFilter === "unread" ? "default" : "outline"}
-              onClick={() => setSelectedFilter("unread")}
-              className={selectedFilter === "unread" ? "bg-[#E57700] text-white" : "border-border text-foreground"}
-            >
-              Unread ({unreadCount})
-            </Button>
-            <Button
-              size="sm"
-              variant={selectedFilter === "high" ? "default" : "outline"}
-              onClick={() => setSelectedFilter("high")}
-              className={selectedFilter === "high" ? "bg-[#E57700] text-white" : "border-border text-foreground"}
-            >
-              <Filter className="h-4 w-4 mr-1" />
-              High Priority
-            </Button>
-          </div>
-        </div>
-
-        {/* Notifications Tabs */}
-        <Tabs defaultValue="recent" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 bg-muted">
-            <TabsTrigger value="recent" className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white">
-              Recent
-            </TabsTrigger>
-            <TabsTrigger value="financial" className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white">
-              Financial
-            </TabsTrigger>
-            <TabsTrigger value="system" className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white">
-              System
-            </TabsTrigger>
-            <TabsTrigger value="archived" className="data-[state=active]:bg-[#E57700] data-[state=active]:text-white">
-              Archived
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="recent" className="space-y-4">
-            <ScrollArea className="h-[500px]">
-              <div className="space-y-3">
-                {filteredNotifications.length > 0 ? (
-                  filteredNotifications
-                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                    .map((notification) => (
-                      <Card
-                        key={notification.id}
-                        className={`transition-all hover:shadow-md cursor-pointer ${
-                          !notification.read ? "bg-blue-50 border-blue-200" : "bg-muted border-border"
-                        }`}
-                        onClick={() => !notification.read && markAsRead(notification.id)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-start space-x-3">
-                            <div className="flex-shrink-0 mt-1">{getNotificationIcon(notification.type)}</div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <h4
-                                  className={`font-medium ${!notification.read ? "text-blue-900" : "text-foreground"}`}
-                                >
-                                  {notification.title}
-                                </h4>
-                                <div className="flex items-center space-x-2">
-                                  <Badge className={getPriorityColor(notification.priority)}>
-                                    {notification.priority}
-                                  </Badge>
-                                  {!notification.read && <div className="w-2 h-2 bg-blue-500 rounded-full"></div>}
-                                </div>
-                              </div>
-                              <p
-                                className={`text-sm ${!notification.read ? "text-blue-700" : "text-muted-foreground"}`}
-                              >
-                                {notification.message}
-                              </p>
-                              <div className="flex items-center justify-between mt-2">
-                                <p className="text-xs text-muted-foreground">
-                                  {new Date(notification.timestamp).toLocaleString()}
-                                </p>
-                                <div className="flex space-x-1">
-                                  {notification.read && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        // Mark as unread functionality
-                                      }}
-                                      className="h-6 w-6 p-0"
-                                    >
-                                      <MarkAsUnread className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      deleteNotification(notification.id)
-                                    }}
-                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                ) : (
-                  <div className="text-center py-12">
-                    <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-foreground mb-2">No notifications found</h3>
-                    <p className="text-muted-foreground">
-                      {searchTerm ? "Try adjusting your search terms" : "You're all caught up!"}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="financial" className="space-y-4">
-            <ScrollArea className="h-[500px]">
-              <div className="space-y-3">
-                {filteredNotifications
-                  .filter((n) =>
-                    ["investment_return", "fund_released", "loan_approved", "payment_due"].includes(n.type),
-                  )
-                  .map((notification) => (
-                    <Card
-                      key={notification.id}
-                      className={`transition-all hover:shadow-md cursor-pointer ${
-                        !notification.read ? "bg-green-50 border-green-200" : "bg-muted border-border"
-                      }`}
-                      onClick={() => !notification.read && markAsRead(notification.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0 mt-1">{getNotificationIcon(notification.type)}</div>
-                          <div className="flex-1">
-                            <h4 className={`font-medium ${!notification.read ? "text-green-900" : "text-foreground"}`}>
-                              {notification.title}
-                            </h4>
-                            <p className={`text-sm ${!notification.read ? "text-green-700" : "text-muted-foreground"}`}>
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(notification.timestamp).toLocaleString()}
-                            </p>
-                          </div>
-                          {!notification.read && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="system" className="space-y-4">
-            <ScrollArea className="h-[500px]">
-              <div className="space-y-3">
-                {filteredNotifications
-                  .filter((n) => ["system_alert", "vehicle_added"].includes(n.type))
-                  .map((notification) => (
-                    <Card
-                      key={notification.id}
-                      className={`transition-all hover:shadow-md cursor-pointer ${
-                        !notification.read ? "bg-yellow-50 border-yellow-200" : "bg-muted border-border"
-                      }`}
-                      onClick={() => !notification.read && markAsRead(notification.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0 mt-1">{getNotificationIcon(notification.type)}</div>
-                          <div className="flex-1">
-                            <h4 className={`font-medium ${!notification.read ? "text-yellow-900" : "text-foreground"}`}>
-                              {notification.title}
-                            </h4>
-                            <p
-                              className={`text-sm ${!notification.read ? "text-yellow-700" : "text-muted-foreground"}`}
-                            >
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(notification.timestamp).toLocaleString()}
-                            </p>
-                          </div>
-                          {!notification.read && <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="archived" className="space-y-4">
-            <div className="text-center py-12">
-              <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No archived notifications</h3>
-              <p className="text-muted-foreground">Archived notifications will appear here</p>
+    <div className="space-y-6">
+      <Card className="bg-card border-border">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Bell className="h-5 w-5" />
+              <CardTitle className="text-foreground">Notifications</CardTitle>
+              {unreadCount > 0 && <Badge>{unreadCount} unread</Badge>}
             </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm" onClick={handleMarkAllRead}>
+                Mark all as read
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => router.refresh()}>
+                Refresh
+              </Button>
+            </div>
+          </div>
+          <CardDescription className="text-muted-foreground">
+            Stay updated with your loan, payments, and system events.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search notifications..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <Button
+              variant={filterUnread ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterUnread((v) => !v)}
+              className="flex items-center space-x-1"
+            >
+              <Filter className="h-4 w-4" /> <span>Unread</span>
+            </Button>
+            <Button
+              variant={filterHighPriority ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterHighPriority((v) => !v)}
+              className="flex items-center space-x-1"
+            >
+              <Filter className="h-4 w-4" /> <span>High Priority</span>
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+            {filteredNotifications.length === 0 ? (
+              <div className="text-center text-muted-foreground py-6">No notifications found.</div>
+            ) : (
+              filteredNotifications.map((notification) => (
+                <div key={notification.id} className="flex items-start space-x-3 p-3 rounded-lg border bg-background">
+                  {getNotificationIcon(notification)}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{notification.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(notification.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      {!notification.read && <Badge variant="secondary">New</Badge>}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+                    {notification.link && (
+                      <Link href={notification.link} className="text-xs text-primary hover:underline mt-2 inline-block">
+                        View details
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="recent" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="recent">Recent</TabsTrigger>
+          <TabsTrigger value="financial">Financial</TabsTrigger>
+          <TabsTrigger value="system">System</TabsTrigger>
+          <TabsTrigger value="archived">Archived</TabsTrigger>
+        </TabsList>
+      </Tabs>
+    </div>
   )
 }

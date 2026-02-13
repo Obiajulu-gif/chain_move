@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+<url><loc>https://chainmove.xyz/about</loc><lastmod>2025-07-13T18:06:53.813Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/announcements</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/auth/admin</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/auth</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/driver/documents</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/driver/kyc</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/driver/kyc/status</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/driver/loan-terms</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/driver/maintenance</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/driver/notifications</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/driver</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/driver/repayment</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/driver/settings</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/investor/dao</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/investor/invest</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/investor/investments</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/investor</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/investor/tokens</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/marketplace</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/marketplace/vehicles</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/signin</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/admin/drivers</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/admin/governance</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/admin/issues</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/admin</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/admin/reports</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/admin/users</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/admin/vehicles</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://chainmove.xyz/dashboard/investor/settings</loc><lastmod>2025-07-13T18:06:53.814Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+</urlset>

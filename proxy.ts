@@ -16,7 +16,17 @@ export async function proxy(request: NextRequest) {
 
     try {
       // Verify the token
-      await jwtVerify(tokenCookie, secret);
+      const { payload } = await jwtVerify(tokenCookie, secret);
+      const userRole = payload.role as string;
+
+      // Check admin route access
+      if (pathname.startsWith('/dashboard/admin')) {
+        if (userRole !== 'admin') {
+          // Non-admin users trying to access admin routes
+          return NextResponse.redirect(new URL(`/dashboard/${userRole}`, request.url));
+        }
+      }
+
       // Token is valid, allow the request to proceed
       return NextResponse.next();
     } catch (error) {

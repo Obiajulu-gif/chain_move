@@ -1,0 +1,23 @@
+[package]
+name = "chainmove"
+version = "0.1.0"
+description = "Solana program for ChainMove platform: Enabling fractional vehicle ownership, asset tokenization, co-investment in mobility assets, shared returns, and governance via secure blockchain smart contracts. Built with Anchor for scalability and security."
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "chainmove"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+anchor-spl = { version = "0.31.1", features = ["token"] }
+mpl-token-metadata = "5.1.1"
+spl-token = { version = "8.0.0", features = ["no-entrypoint"] }

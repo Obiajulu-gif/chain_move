@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,20 +10,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Header } from "@/components/dashboard/header"
 import { Search, MapPin, Star, DollarSign, Eye, Heart } from "lucide-react"
 import Image from "next/image"
+import { Navigation } from "@/components/landing/navigation"
+
 
 export default function MarketplacePage() {
   const [activeTab, setActiveTab] = useState("featured")
   const [searchTerm, setSearchTerm] = useState("")
   const [locationFilter, setLocationFilter] = useState("all")
   const [categoryFilter, setCategoryFilter] = useState("all")
+  const [randomVehicles, setRandomVehicles] = useState<any[]>([])
 
-  const featuredVehicles = [
+  const allVehicles = [
     {
       id: "featured1",
       name: "Tricycle (Keke NAPEP) 2024",
       type: "Tricycle",
       price: 2500,
-      image: "/images/tricycle-keke.jpg",
+      image: "/assets/keke-nigeria.png",
       roi: 22.5,
       location: "Lagos, Nigeria",
       rating: 4.9,
@@ -34,24 +37,24 @@ export default function MarketplacePage() {
     },
     {
       id: "featured2",
-      name: "Toyota Hilux Carter 2023",
-      type: "Pickup Truck",
+      name: "Suzuki Every Mini Bus",
+      type: "Shuttle Bus",
       price: 28000,
-      image: "/images/toyota-carter.jpg",
+      image: "/assets/mOlcqsJ5-Suzuki-Every-Mini-Bus-Price-In-Nigeria-Korope-For-Business.jpg",
       roi: 17.8,
       location: "Accra, Ghana",
       rating: 4.8,
       demand: "High",
       fundingProgress: 78,
-      description: "Heavy-duty pickup truck for construction and cargo transport with excellent reliability.",
-      features: ["Heavy Duty", "Cargo Transport", "Construction", "Reliable"],
+      description: "Versatile mini bus suitable for shuttle services and small group transport.",
+      features: ["Compact", "Reliable", "Commercial Use"],
     },
     {
       id: "featured3",
-      name: "Bajaj Okada 2024",
+      name: "Daylong Motorcycle 2024",
       type: "Motorcycle",
       price: 1800,
-      image: "/images/okada-motorcycle.jpg",
+      image: "/assets/daylong-motorcycle-price-in-nigeria.jpg",
       roi: 25.0,
       location: "Abuja, Nigeria",
       rating: 4.9,
@@ -62,54 +65,87 @@ export default function MarketplacePage() {
     },
     {
       id: "featured4",
-      name: "Toyota Hiace Mini Bus 2023",
-      type: "Mini Bus",
+      name: "Commuter Bus",
+      type: "Bus",
       price: 35000,
-      image: "/images/mini-bus.jpg",
+      image: "/assets/commuter bus.webp",
       roi: 18.5,
       location: "Nairobi, Kenya",
       rating: 4.7,
       demand: "Medium",
       fundingProgress: 65,
-      description: "Reliable mini bus perfect for passenger transport and commercial operations.",
+      description: "Reliable commuter bus perfect for passenger transport and commercial operations.",
       features: ["High Capacity", "Durable", "Commercial Use", "Inter-city Transport"],
     },
     {
       id: "featured5",
-      name: "Coaster 18-Seater Bus 2022",
-      type: "18-Seater Bus",
-      price: 45000,
-      image: "/images/18-seater-bus.jpg",
-      roi: 19.2,
-      location: "Cape Town, South Africa",
-      rating: 4.6,
-      demand: "Medium",
-      fundingProgress: 45,
-      description: "High-capacity bus ideal for school transport and group travel services.",
-      features: ["High Passenger Capacity", "Long Distance", "Comfortable", "School/Church Transport"],
+      name: "Another Tricycle",
+      type: "Tricycle",
+      price: 2600,
+      image: "/assets/keke-nigeria.png",
+      roi: 23.5,
+      location: "Kano, Nigeria",
+      rating: 4.8,
+      demand: "High",
+      fundingProgress: 70,
+      description: "A very reliable tricycle for your transportation business.",
+      features: ["Fuel Efficient", "Durable", "Urban Transport"],
     },
     {
       id: "featured6",
-      name: "Mazda BT-50 Carter 2023",
-      type: "Pickup Truck",
-      price: 26000,
-      image: "/images/mazda-carter.jpg",
-      roi: 17.5,
+      name: "Second Shuttle Bus",
+      type: "Shuttle Bus",
+      price: 30000,
+      image: "/assets/mOlcqsJ5-Suzuki-Every-Mini-Bus-Price-In-Nigeria-Korope-For-Business.jpg",
+      roi: 18.2,
       location: "Kumasi, Ghana",
       rating: 4.7,
+      demand: "High",
+      fundingProgress: 60,
+      description: "A comfortable shuttle bus for your passengers.",
+      features: ["Compact", "Comfortable", "Commercial Use"],
+    },
+    {
+      id: "featured7",
+      name: "Speedy Motorcycle",
+      type: "Motorcycle",
+      price: 1900,
+      image: "/assets/daylong-motorcycle-price-in-nigeria.jpg",
+      roi: 25.5,
+      location: "Ibadan, Nigeria",
+      rating: 4.9,
+      demand: "High",
+      fundingProgress: 95,
+      description: "A fast and reliable motorcycle for your delivery needs.",
+      features: ["High Speed", "Low Maintenance", "Quick Delivery"],
+    },
+    {
+      id: "featured8",
+      name: "Large Commuter Bus",
+      type: "Bus",
+      price: 40000,
+      image: "/assets/commuter bus.webp",
+      roi: 19.0,
+      location: "Mombasa, Kenya",
+      rating: 4.6,
       demand: "Medium",
-      fundingProgress: 55,
-      description: "Fuel-efficient pickup truck with excellent cargo capacity for commercial operations.",
-      features: ["Fuel Efficient", "Cargo Capacity", "Durable", "Commercial Use"],
+      fundingProgress: 50,
+      description: "A spacious commuter bus for long routes.",
+      features: ["Very High Capacity", "Durable", "Long Distance"],
     },
   ]
+
+  useEffect(() => {
+    const shuffled = [...allVehicles].sort(() => 0.5 - Math.random())
+    setRandomVehicles(shuffled.slice(0, 6))
+  }, [])
 
   const vehicleCategories = [
     {
       id: "tricycle",
       name: "Tricycle (Keke)",
       description: "Urban transport solution",
-      image: "/images/tricycle-keke.jpg",
+      image: "/assets/keke-nigeria.png",
       count: 45,
       avgROI: 23.2,
       priceRange: "$2,500 - $3,000",
@@ -118,37 +154,28 @@ export default function MarketplacePage() {
       id: "motorcycle",
       name: "Motorcycle (Okada)",
       description: "Fast delivery & mobility",
-      image: "/images/okada-motorcycle.jpg",
+      image: "/assets/daylong-motorcycle-price-in-nigeria.jpg",
       count: 38,
       avgROI: 24.8,
       priceRange: "$1,800 - $2,500",
     },
     {
-      id: "minibus",
-      name: "Mini Bus",
+      id: "shuttle-bus",
+      name: "Shuttle Bus (Korope)",
       description: "Passenger transport",
-      image: "/images/mini-bus.jpg",
+      image: "/assets/mOlcqsJ5-Suzuki-Every-Mini-Bus-Price-In-Nigeria-Korope-For-Business.jpg",
       count: 22,
       avgROI: 18.5,
-      priceRange: "$30,000 - $40,000",
+      priceRange: "$28,000 - $40,000",
     },
     {
       id: "bus",
-      name: "18-Seater Bus",
+      name: "Commuter Bus",
       description: "Group & school transport",
-      image: "/images/18-seater-bus.jpg",
+      image: "/assets/commuter bus.webp",
       count: 15,
       avgROI: 19.2,
-      priceRange: "$40,000 - $50,000",
-    },
-    {
-      id: "pickup",
-      name: "Pickup Truck (Carter)",
-      description: "Cargo & construction",
-      image: "/images/toyota-carter.jpg",
-      count: 28,
-      avgROI: 17.6,
-      priceRange: "$24,000 - $30,000",
+      priceRange: "$35,000 - $50,000",
     },
   ]
 
@@ -165,7 +192,7 @@ export default function MarketplacePage() {
     }
   }
 
-  const filteredVehicles = featuredVehicles.filter((vehicle) => {
+  const filteredVehicles = randomVehicles.filter((vehicle) => {
     const matchesSearch =
       vehicle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vehicle.type.toLowerCase().includes(searchTerm.toLowerCase())
@@ -177,47 +204,92 @@ export default function MarketplacePage() {
     return matchesSearch && matchesLocation && matchesCategory
   })
 
+  // Animated Stat Card component with fade-in and count-up
+  function StatCard({ value, label, color = "text-foreground" }: { value: number | string; label: string; color?: string }) {
+    const ref = useRef<HTMLDivElement>(null)
+    const [visible, setVisible] = useState(false)
+    const [display, setDisplay] = useState<typeof value>(typeof value === "number" ? 0 : value)
+
+    // Observe when the card enters the viewport
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setVisible(true)
+              observer.disconnect()
+            }
+          })
+        },
+        { threshold: 0.3 }
+      )
+      if (ref.current) observer.observe(ref.current)
+      return () => observer.disconnect()
+    }, [])
+
+    // Animate number counting up once visible (only for numeric values)
+    useEffect(() => {
+      if (!visible || typeof value !== "number") return
+      let current = 0
+      const end = value
+      const duration = 1000 // ms
+      const stepTime = 16
+      const steps = duration / stepTime
+      const increment = end / steps
+
+      const id = setInterval(() => {
+        current += increment
+        if (current >= end) {
+          setDisplay(end)
+          clearInterval(id)
+        } else {
+          setDisplay(Math.round(current))
+        }
+      }, stepTime)
+      return () => clearInterval(id)
+    }, [visible, value])
+
+    return (
+      <div
+        ref={ref}
+        className={`bg-card rounded-2xl p-6 border border-border hover:border-[#E57700]/50 transition-all duration-500 transform ${
+          visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+        }`}
+      >
+        <div className={`text-3xl md:text-4xl font-bold ${color} mb-2`}>{display}</div>
+        <div className="text-sm text-gray-400 uppercase tracking-wider font-medium">{label}</div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <Header userName="Guest" userStatus="Browse Marketplace" />
+      {/* <Header userName="Guest" userStatus="Browse Marketplace" /> */}
+      <Navigation />
 
       <div className="p-6">
         {/* Hero Section */}
-        <div className="mb-8">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-4">African Vehicle Marketplace</h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Discover financing opportunities for African market vehicles. From tricycles (keke) to pickup trucks
-              (carter), find the perfect vehicle investment that matches your goals.
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">
+            African Vehicle Marketplace
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+            Discover financing opportunities for African market vehicles. From tricycles 
+            (keke) to pickup trucks (carter), find the perfect vehicle investment that matches 
+            your goals.
             </p>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <Card className="bg-card border-border text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-foreground">148</div>
-                <div className="text-sm text-muted-foreground">Available Vehicles</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-500">21.2%</div>
-                <div className="text-sm text-muted-foreground">Average ROI</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-foreground">5</div>
-                <div className="text-sm text-muted-foreground">Vehicle Types</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border text-center">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-foreground">12</div>
-                <div className="text-sm text-muted-foreground">Countries</div>
-              </CardContent>
-            </Card>
+        {/* Stats Section with animation */}
+        <div className="mb-16">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+            <StatCard value={148} label="Available Vehicles" />
+            <StatCard value="21.2%" label="Average ROI" color="text-[#22C55E]" />
+            <StatCard value={5} label="Vehicle Types" />
+            <StatCard value={12} label="Countries" />
+          </div>
+          <div className="text-center mt-8">
+            <p className="text-gray-400 text-sm">Empowering African transportation through decentralized vehicle financing</p>
           </div>
         </div>
 
@@ -257,89 +329,72 @@ export default function MarketplacePage() {
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {featuredVehicles.map((vehicle) => (
-                    <Card key={vehicle.id} className="bg-muted border-border hover:border-[#E57700] transition-colors">
+                  {randomVehicles.map((vehicle) => (
+                    <Card key={vehicle.id} className="bg-card border-border hover:border-[#E57700] hover:border-2 transition-all duration-300 transform hover:scale-105 rounded-3xl overflow-hidden shadow-lg">
                       <div className="relative">
                         <Image
                           src={vehicle.image || "/placeholder.svg"}
                           alt={vehicle.name}
                           width={300}
                           height={200}
-                          className="w-full h-48 object-cover rounded-t-lg"
+                          className="w-full h-48 object-cover"
                         />
-                        <div className="absolute top-3 right-3 flex flex-col space-y-1">
-                          <Badge className={`${getDemandColor(vehicle.demand)} text-white text-xs`}>
-                            {vehicle.demand}
+                        {/* Demand & ROI badges */}
+                        <div className="absolute top-4 right-4 space-y-1 text-right">
+                          <Badge className={`${getDemandColor(vehicle.demand)} text-white text-[10px] px-2.5 py-0.5 rounded-full font-semibold`}>{vehicle.demand}</Badge>
+                          <Badge className="bg-[#E57700] text-white text-[10px] px-2.5 py-0.5 rounded-full font-semibold">
+                            {vehicle.roi}% ROI
                           </Badge>
-                          <Badge className="bg-[#E57700] text-white text-xs">{vehicle.roi}% ROI</Badge>
                         </div>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="absolute top-3 left-3 text-white hover:bg-black/20"
+                          className="absolute top-4 left-4 text-white hover:bg-black/20 w-8 h-8 rounded-full p-0"
                         >
                           <Heart className="h-4 w-4" />
                         </Button>
                       </div>
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
+                      <CardContent className="p-6">
+                        <div className="space-y-4">
+                          {/* Title & Type */}
                           <div>
-                            <h3 className="font-semibold text-foreground">{vehicle.name}</h3>
-                            <p className="text-sm text-muted-foreground">{vehicle.type}</p>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <span className="text-2xl font-bold text-foreground">
-                              ${vehicle.price.toLocaleString()}
-                            </span>
-                            <div className="flex items-center space-x-1">
-                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                              <span className="text-sm text-foreground">{vehicle.rating}</span>
+                            <h3 className="font-bold text-foreground text-lg">{vehicle.name}</h3>
+                            <div className="flex justify-between items-center mt-1 text-sm text-gray-400">
+                              <span>{vehicle.type}</span>
+                              <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{vehicle.location}</span>
                             </div>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{vehicle.location}</span>
+                          {/* Price & Rating */}
+                          <div className="flex justify-between items-center">
+                            <span className="text-2xl font-semibold text-foreground">${vehicle.price.toLocaleString()}</span>
+                            <div className="flex items-center text-[#FACC15] text-sm font-medium">
+                              <Star className="h-4 w-4 mr-1 fill-current" /> {vehicle.rating}
+                            </div>
                           </div>
 
                           {/* Funding Progress */}
                           <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-sm text-muted-foreground">Funding Progress</span>
-                              <span className="text-sm text-foreground">{vehicle.fundingProgress}%</span>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs text-gray-400">{vehicle.fundingProgress}% tokenized</span>
+                              <span className="text-xs text-gray-400">{100 - vehicle.fundingProgress}% available</span>
                             </div>
-                            <div className="w-full bg-gray-600 rounded-full h-2">
+                            <div className="w-full bg-gray-700 rounded-full h-2">
                               <div
-                                className="bg-[#E57700] h-2 rounded-full transition-all duration-300"
+                                className="bg-[#E57700] h-2 rounded-full"
                                 style={{ width: `${vehicle.fundingProgress}%` }}
                               />
                             </div>
                           </div>
 
-                          <p className="text-sm text-muted-foreground line-clamp-2">{vehicle.description}</p>
+                          {/* Description */}
+                          <p className="text-xs text-gray-300 line-clamp-2 mt-2">{vehicle.description}</p>
 
-                          <div className="flex flex-wrap gap-1">
-                            {vehicle.features.slice(0, 2).map((feature) => (
-                              <Badge key={feature} variant="secondary" className="text-xs">
-                                {feature}
-                              </Badge>
-                            ))}
-                          </div>
-
-                          <div className="flex space-x-2">
-                            <Button className="flex-1 bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                          {/* Action Button */}
+                          <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white rounded-xl py-3 font-semibold mt-4">
                               <DollarSign className="h-4 w-4 mr-2" />
-                              Invest Now
+                            Buy Tokens
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-border text-foreground hover:bg-muted"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -362,7 +417,7 @@ export default function MarketplacePage() {
                   {vehicleCategories.map((category) => (
                     <Card
                       key={category.id}
-                      className="bg-muted border-border hover:border-[#E57700] transition-colors cursor-pointer"
+                      className="bg-card border-border hover:border-[#E57700] hover:border-2 transition-all duration-300 transform hover:scale-105 rounded-3xl overflow-hidden shadow-lg cursor-pointer"
                     >
                       <div className="relative">
                         <Image
@@ -370,30 +425,30 @@ export default function MarketplacePage() {
                           alt={category.name}
                           width={300}
                           height={150}
-                          className="w-full h-32 object-cover rounded-t-lg"
+                          className="w-full h-40 object-cover"
                         />
-                        <div className="absolute top-3 right-3">
-                          <Badge className="bg-[#E57700] text-white">{category.avgROI}% Avg ROI</Badge>
+                        <div className="absolute top-4 right-4">
+                          <Badge className="bg-[#E57700] text-white text-xs px-3 py-1 rounded-full font-semibold">{category.avgROI}% Avg ROI</Badge>
                         </div>
                       </div>
-                      <CardContent className="p-4">
+                      <CardContent className="p-6">
                         <div className="space-y-3">
                           <div>
-                            <h3 className="font-semibold text-foreground">{category.name}</h3>
-                            <p className="text-sm text-muted-foreground">{category.description}</p>
+                            <h3 className="font-bold text-foreground text-lg">{category.name}</h3>
+                            <p className="text-sm text-gray-400">{category.description}</p>
                           </div>
 
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Available:</span>
+                            <span className="text-gray-400">Available:</span>
                             <span className="font-medium text-foreground">{category.count} vehicles</span>
                           </div>
 
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Price Range:</span>
-                            <span className="font-medium text-foreground">{category.priceRange}</span>
+                            <span className="text-gray-400">Price Range:</span>
+                            <span className="font-medium text-white">{category.priceRange}</span>
                           </div>
 
-                          <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                          <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white rounded-xl py-3 font-semibold mt-4">
                             Browse {category.name}
                           </Button>
                         </div>
@@ -458,55 +513,67 @@ export default function MarketplacePage() {
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredVehicles.map((vehicle) => (
-                    <Card key={vehicle.id} className="bg-muted border-border hover:border-[#E57700] transition-colors">
+                    <Card key={vehicle.id} className="bg-card border-border hover:border-[#E57700] hover:border-2 transition-all duration-300 transform hover:scale-105 rounded-3xl overflow-hidden shadow-lg">
                       <div className="relative">
                         <Image
                           src={vehicle.image || "/placeholder.svg"}
-                          alt={vehicle.name}
+                          alt={`${vehicle.name} - ${vehicle.type} vehicle in ${vehicle.location} with ${vehicle.roi}% ROI`}
                           width={300}
                           height={200}
-                          className="w-full h-40 object-cover rounded-t-lg"
+                          className="w-full h-48 object-cover"
+                          priority={vehicle.id.includes("featured")}
                         />
-                        <div className="absolute top-3 right-3 flex space-x-2">
-                          <Badge className={`${getDemandColor(vehicle.demand)} text-white text-xs`}>
-                            {vehicle.demand}
+                        <div className="absolute top-4 right-4">
+                          <Badge className="bg-[#E57700] text-white text-xs px-3 py-1 rounded-full font-semibold">
+                            {vehicle.roi}% ROI
                           </Badge>
-                          <Badge className="bg-[#E57700] text-white text-xs">{vehicle.roi}% ROI</Badge>
                         </div>
                       </div>
-                      <CardContent className="p-4">
+                      <CardContent className="p-6">
                         <div className="space-y-3">
                           <div>
-                            <h3 className="font-semibold text-foreground">{vehicle.name}</h3>
-                            <p className="text-sm text-muted-foreground">{vehicle.type}</p>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <span className="text-xl font-bold text-foreground">${vehicle.price.toLocaleString()}</span>
-                            <div className="flex items-center space-x-1">
-                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                              <span className="text-sm text-foreground">{vehicle.rating}</span>
+                            <h3 className="font-bold text-foreground text-lg">{vehicle.name}</h3>
+                            <div className="flex justify-between items-center mt-1 text-sm text-gray-400">
+                              <span>{vehicle.type}</span>
+                              <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{vehicle.location}</span>
                             </div>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{vehicle.location}</span>
+                          {/* Price, Location, Stats */}
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-400">Total Value</span>
+                              <span className="text-sm text-foreground font-semibold">${vehicle.price.toLocaleString()}</span>
+                            </div>
+
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-400">Token Price</span>
+                              <span className="text-sm text-foreground font-semibold">${Math.round(vehicle.price / 100)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-400">Co-Owners</span>
+                              <span className="text-sm text-foreground font-semibold">{Math.floor(Math.random() * 20) + 5}</span>
+                            </div>
                           </div>
 
-                          <div className="flex space-x-2">
-                            <Button className="flex-1 bg-[#E57700] hover:bg-[#E57700]/90 text-white">
+                          {/* Funding Progress */}
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs text-gray-400">{vehicle.fundingProgress}% tokenized</span>
+                              <span className="text-xs text-gray-400">{100 - vehicle.fundingProgress}% available</span>
+                            </div>
+                            <div className="w-full bg-gray-700 rounded-full h-2">
+                              <div
+                                className="bg-[#E57700] h-2 rounded-full"
+                                style={{ width: `${vehicle.fundingProgress}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          <Button className="w-full bg-[#E57700] hover:bg-[#E57700]/90 text-white rounded-xl py-3 font-semibold mt-4">
                               <DollarSign className="h-4 w-4 mr-2" />
                               Invest
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-border text-foreground hover:bg-muted"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
                         </div>
                       </CardContent>
                     </Card>

@@ -85,6 +85,7 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="hidden sm:block">
             <Badge
               variant={isVerified ? "default" : "secondary"}
@@ -99,6 +100,7 @@ export function Header({
 
           <ThemeToggle className="hidden sm:inline-flex" />
 
+          <ThemeToggle className="hidden sm:inline-flex" />
           <Button
             variant="ghost"
             size="icon"
@@ -121,7 +123,6 @@ export function Header({
               <p className="max-w-[140px] truncate text-sm font-medium text-foreground">{resolvedUserName}</p>
             </div>
           </div>
-
           <div className="hidden md:block">
             <ConnectButtonWidget />
           </div>
