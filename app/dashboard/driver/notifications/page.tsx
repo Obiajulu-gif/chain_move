@@ -209,6 +209,6 @@ export default function NotificationsPage() {
           </Tabs>
         </main>
       </div>
-    </>
+    </div>
   )
 }

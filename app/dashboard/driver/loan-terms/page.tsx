@@ -127,30 +127,6 @@ export default function LoanTermsPage() {
                   </Button>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-between items-center p-6 bg-secondary/20 rounded-b-lg">
-                <div className="text-sm text-muted-foreground">
-                  {selectedCurrency === 'NGN' && (
-                    <p>Payment: {formatCurrency(downPaymentAmountUSD)} (≈ ${downPaymentAmountUSD.toLocaleString()})</p>
-                  )}
-                </div>
-                <Button
-                  onClick={handleMakeDownPayment}
-                  disabled={isMakingPayment || isLoadingRate}
-                  className="bg-[#E57700] hover:bg-[#E57700]/90 text-white text-lg px-8 py-3"
-                >
-                  {isMakingPayment ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processing Payment...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Pay {formatCurrency(downPaymentAmountUSD)}
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
             </Card>
 
             <Card>
@@ -176,6 +152,6 @@ export default function LoanTermsPage() {
           </section>
         </main>
       </div>
-    </>
+    </div>
   )
 }
