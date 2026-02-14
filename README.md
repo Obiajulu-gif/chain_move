@@ -1,115 +1,172 @@
-# 🚗 ChainMove - Decentralized Vehicle Financing Platform
+# ChainMove
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/your-org/chain-move?style=social)](https://github.com/your-org/chain-move/stargazers)
-[![Discord](https://img.shields.io/discord/your-discord-invite?logo=discord)](https://discord.gg/your-invite)
+ChainMove — Asset-backed mobility co-ownership and pay-to-own rails built on Stellar.
 
-ChainMove is a revolutionary blockchain-based platform that enables decentralized vehicle financing, connecting investors with drivers in emerging markets. Our platform leverages smart contracts to create transparent, secure, and efficient vehicle financing solutions.
+## Why ChainMove
 
-## 🌟 Features
+Informal transport financing in many markets is still fragmented and opaque. Drivers often face daily settlement pressure, investors lack transparent ownership rails, and operators have limited tools to verify payouts, performance, and trust at scale.
 
-- **Tokenized Vehicle Ownership** - Fractional ownership of vehicles through blockchain tokens
-- **Smart Contract Automation** - Automated payments, revenue sharing, and compliance
-- **Decentralized Identity** - Secure KYC/AML verification
-- **Real-time Analytics** - Track vehicle performance and investment returns
-- **Multi-chain Support** - Built on Ethereum with Lisk L2 for low fees
-- **Mobile-First** - Responsive design for all devices
+ChainMove addresses this by structuring mobility financing around verifiable ownership, predictable pay-to-own operations, and transparent records.
 
-## 🏗️ Architecture
+## What It Does
 
-```mermaid
-graph TD
-    A[Frontend] -->|API Calls| B[Backend API]
-    B --> C[Blockchain Network]
-    B --> D[Database]
-    C --> E[Smart Contracts]
-    D --> F[(MongoDB)]
-    E --> G[IPFS Storage]
+- **For investors**
+  - Fractional ownership of real vehicles
+  - Structured participation in mobility asset performance
+  - Transparent payout and ownership records
+- **For drivers**
+  - Pay-to-own path to vehicle ownership
+  - Clear repayment expectations and progress visibility
+  - High-level onboarding and verification flow
+- **For the platform**
+  - Monitoring dashboard for operations and repayment activity
+  - Unified rails for ownership records, settlements, and reporting
+  - Extensible modules for compliance, payout orchestration, and analytics
+
+## Built on Stellar
+
+ChainMove is designed to leverage **Stellar** for core ownership and payout rails.
+
+- Uses Stellar to support transparent ownership and payout transaction rails.
+- Leverages Stellar’s fast, low-fee settlement model for recurring micro/weekly payments.
+- Planned asset representation modules include Stellar Assets for vehicle-share tokenization.
+- Uses on-chain proofs and auditable transaction records to improve trust and dispute resolution.
+
+Note: Stellar modules are being developed with a staged rollout approach (testnet-first), and this repository documents the product and contributor path for that integration.
+
+## How ChainMove Helps the Stellar Ecosystem
+
+- **Real-world utility / RWA**: applies Stellar rails to real asset-backed mobility financing and ownership proofs.
+- **Payment volume & on-chain activity**: recurring driver payments and investor distributions can generate consistent transaction throughput.
+- **Wallet adoption**: encourages practical Stellar wallet usage for drivers and investors, including stable-value settlement flows.
+- **On/Off-ramp synergy**: aligns with local fiat ramp workflows for real-world usage and adoption.
+- **Developer ecosystem**: opens contributor tracks for Stellar payment, asset issuance, payout, and analytics modules.
+- **Trust & transparency**: auditable payout trails reduce disputes and increase confidence in tokenized RWAs.
+
+## Architecture Overview
+
+```text
+[Next.js App Router Frontend]
+        Investor + Driver portals
+                 |
+                 v
+[API Layer (Next.js route handlers)]
+      |                      |
+      v                      v
+[MongoDB / Storage]   [Stellar Integration Layer*]
+                           |
+                           v
+                [Assets, Payments, Payout Receipts]
+
+*Stellar integration is planned/in-progress and targeted for testnet-first rollout.
 ```
 
-## 🚀 Quick Start
+Current codebase includes a Next.js frontend, API route handlers, and MongoDB-backed models. Stellar modules are architected as integration components to be layered into payout and ownership flows.
 
-### Prerequisites
+## Getting Started (Local Setup)
 
-- Node.js 18+
-- npm 9+
-- MongoDB 
-- Hardhat (for smart contract development)
-- MetaMask or Web3 wallet
-
-### Installation
+This repo includes `pnpm-lock.yaml`, so `pnpm` is the recommended package manager.
 
 1. Clone the repository:
    ```bash
    git clone https://github.com/Obaijulu-gif/chain_move.git
-   cd chain-move
+   cd chain_move
    ```
-
 2. Install dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
-
-3. Set up environment variables:
+3. Create `.env.local` and set required variables:
    ```bash
-   cp .env.example .env.local
-   # Update the environment variables in .env.local
+   MONGODB_URI=<your_mongodb_connection_string>
+   JWT_SECRET=<your_jwt_secret>
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
+   NEXT_PUBLIC_BASE_URL=http://localhost:3000
+   PAYSTACK_SECRET_KEY=<optional_if_testing_payments>
+   RESEND_API_KEY=<optional_if_testing_emails>
    ```
-
-4. Run the development server:
+4. Start local development:
    ```bash
-   npm run dev
+   pnpm dev
    ```
+5. Open `http://localhost:3000`.
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+## Contribution Guide (Drip Wave Ready)
 
-## 📚 Documentation
+This repository is structured for contributor-program onboarding with scoped tasks, modular component patterns, roadmap visibility, and issue-label based triage.
 
-- [Getting Started](docs/user-guide/getting-started.md) - Quick start guide
-- [API Reference](docs/api/README.md) - Detailed API documentation
-- [Smart Contracts](docs/technical/developer-guide.md) - Contract architecture and usage
-- [Technical Documentation](docs/technical/setup.md) - Production deployment instructions
-- [Contributing](CONTRIBUTING.md) - How to contribute to the project
+### How to contribute
 
-## 🔧 Tech Stack
+1. Pick an issue (or propose one) aligned to roadmap priorities.
+2. Create a branch: `feat/<short-name>` or `fix/<short-name>`.
+3. Implement scoped changes with clear commit messages.
+4. Run checks before opening PR:
+   ```bash
+   pnpm lint
+   ```
+5. Open a PR with:
+   - Problem statement and approach
+   - Screenshots/video for UI changes
+   - Test notes and known limitations
 
-- **Frontend**: Next.js 15+, React 18+, TypeScript, Tailwind CSS
-- **Backend**: Node.js, Next.js API Routes
-- **Blockchain**: Solidity, Hardhat, ethers.js
-- **Database**: MongoDb
-- **Storage**: IPFS
-- **Auth**: JWT
+### Repo hygiene and modular contribution expectations
 
+- Keep PRs focused and small.
+- Prefer reusable components over one-off page logic.
+- Document assumptions and TODOs in PR descriptions.
+- Add/update issue labels for clear triage and ownership.
 
-## 🤝 Contributing
+Recommended labels:
+- `good first issue`
+- `help wanted`
+- `stellar`
+- `frontend`
+- `backend`
+- `a11y`
+- `performance`
+- `docs`
 
-We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started.
+### Good first issues
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+- UI improvements for onboarding and auth flows
+- Accessibility passes for forms and dashboard interactions
+- Stellar integration scaffolding (transaction client wiring)
+- Dashboard performance improvements
+- Documentation and contributor onboarding updates
 
-## 📄 License
+### Contributor Tracks (Stellar-focused)
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- **Track A: Stellar payments module** (driver settlements)
+- **Track B: Stellar asset model** (vehicle share representation)
+- **Track C: Payout distribution + reporting**
+- **Track D: Indexing/analytics** (explorer links, receipts)
 
-## 🙏 Acknowledgments
+### Code of Conduct
 
-- [OpenZeppelin](https://openzeppelin.com/) for battle-tested smart contracts
-- [Hardhat](https://hardhat.org/) for Ethereum development environment
-- [Next.js](https://nextjs.org/) for the React framework
-- [Tailwind CSS](https://tailwindcss.com/) for styling
+Contributors are expected to collaborate respectfully, provide constructive review feedback, and prioritize user safety, transparency, and data integrity.
 
-## 📬 Contact
+## Roadmap
 
-- Email: okoyeemmanuel998@gmail.com
-- Twitter: [@ChainMove1](https://twitter.com/ChainMove1)
-- Telegram: [Join our community](https://discord.gg/your-invite)
+### Near-term
 
----
+- Auth and onboarding UX hardening
+- Stellar testnet integration baseline
+- Transaction receipt surfaces in driver/investor dashboards
+- Initial payout flow instrumentation and logs
 
-<p align="center">
-  Made with ❤️ by the ChainMove Team
-</p>
+### Mid-term
+
+- Stellar asset issuance model for vehicle-share representation
+- Payout automation for recurring settlement cycles
+- Explorer-linked reporting and auditable receipts
+- Expanded analytics for repayment reliability and investor transparency
+
+## License
+
+TBD. Recommended options: **MIT** or **Apache-2.0**.
+
+## Contact
+
+- Email: [okoyeemmanuelobiajulu@gmail.com](mailto:okoyeemmanuelobiajulu@gmail.com)
+- X: [https://x.com/chainmove1](https://x.com/chainmove1)
+- LinkedIn: [https://www.linkedin.com/company/chainmove/](https://www.linkedin.com/company/chainmove/)
