@@ -1,7 +1,6 @@
 "use client"
 
-import Link from "next/link"
-import { CalendarClock, FileText, Wallet } from "lucide-react"
+import { CalendarClock, CreditCard, FileText, Wallet } from "lucide-react"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
 import { Badge } from "@/components/ui/badge"
@@ -96,15 +95,9 @@ export default function DriverRepaymentPage() {
                     <Wallet className="mr-2 h-4 w-4" />
                     Make payment
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full sm:w-auto hover:bg-muted/50 transition-colors duration-200"
-                    asChild
-                  >
-                    <Link href="/dashboard/driver/payments">
-                      <FileText className="h-4 w-4 mr-2" />
-                      View Payment History
-                    </Link>
+                  <Button variant="outline">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Change method
                   </Button>
                 </div>
                 <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">

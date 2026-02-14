@@ -7,8 +7,6 @@ export interface AuthUser {
   name?: string
   email?: string
   role?: string
-  kycStatus?: "none" | "pending" | "approved" | "rejected"
-  kycDocuments?: string[]
   availableBalance?: number
   totalInvested?: number
   totalReturns?: number

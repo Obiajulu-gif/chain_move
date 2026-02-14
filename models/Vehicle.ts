@@ -5,7 +5,7 @@ export interface IVehicle extends Document {
   type: string;
   year: number;
   price: number;
-  roi?: number; // Make optional since it will be set by first investor
+  roi: number;
   features: string[];
   image?: string;
   status: 'Available' | 'Financed' | 'Reserved' | 'Maintenance';
@@ -20,11 +20,8 @@ export interface IVehicle extends Document {
   addedDate: Date;
   popularity: number;
   driverId?: Schema.Types.ObjectId;
-  fundingStatus: 'Open' | 'Funded' | 'Active';
+  fundingStatus: 'Open' | 'Funded' | 'Active'; // Tracks the investment state
   totalFundedAmount: number;
-  // New fields for dynamic ROI
-  investmentTerm?: number; // Term in months set by first investor
-  isTermSet: boolean; // Whether the term has been set by first investor
 }
 
 const VehicleSchema: Schema = new Schema({
@@ -32,7 +29,7 @@ const VehicleSchema: Schema = new Schema({
   type: { type: String, required: true },
   year: { type: Number, required: true },
   price: { type: Number, required: true },
-  roi: { type: Number, required: false }, // Not required initially
+  roi: { type: Number, required: true },
   features: { type: [String], default: [] },
   image: { type: String },
   status: {
@@ -54,12 +51,9 @@ const VehicleSchema: Schema = new Schema({
   fundingStatus: {
     type: String,
     enum: ['Open', 'Funded', 'Active'],
-    default: 'Open',
+    default: 'Open', // Starts as open for investment
   },
   totalFundedAmount: { type: Number, default: 0 },
-  // New fields
-  investmentTerm: { type: Number, required: false },
-  isTermSet: { type: Boolean, default: false },
 });
 
 export default mongoose.models.Vehicle || mongoose.model<IVehicle>('Vehicle', VehicleSchema);

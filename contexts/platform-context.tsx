@@ -38,7 +38,6 @@ export interface Vehicle {
   addedDate: string
   popularity: number
   driverId?: string
-  fundingStatus?: "Open" | "Funded" | "Active"
 }
 
 export interface LoanApplication {
@@ -46,7 +45,6 @@ export interface LoanApplication {
   driverId: string
   vehicleId: string
   requestedAmount: number
-  totalAmountToPayBack: number
   loanTerm: number
   monthlyPayment: number
   interestRate: number
@@ -64,7 +62,6 @@ export interface LoanApplication {
   fundingProgress?: number
   totalFunded?: number
   remainingAmount?: number
-  downPaymentMade: boolean
 }
 
 export interface InvestorApproval {
@@ -79,7 +76,6 @@ export interface Investment {
   id: string
   investorId: string
   loanId: string
-  vehicleId?: string
   amount: number
   expectedROI: number
   monthlyReturn: number
@@ -193,7 +189,6 @@ type PlatformAction =
   | { type: "UPDATE_USER_BALANCE"; payload: { userId: string; balance: number } }
   | { type: "APPROVE_LOAN"; payload: { loanId: string; investorId: string; amount: number } }
   | { type: "RELEASE_FUNDS"; payload: { loanId: string; investorId: string } }
-  | { type: "MARK_LOAN_AS_ACTIVE"; payload: { loanId: string } }
   | { type: "SYNC_DATA"; payload: { timestamp: string } }
 
 // Initial State
@@ -296,7 +291,7 @@ function platformReducer(state: PlatformState, action: PlatformAction): Platform
       return {
         ...state,
         loanApplications: state.loanApplications.map((loan) =>
-          (loan.id === loanId || loan._id === loanId)
+          loan.id === loanId
             ? {
                 ...loan,
                 status,
@@ -314,7 +309,7 @@ function platformReducer(state: PlatformState, action: PlatformAction): Platform
       return {
         ...state,
         loanApplications: state.loanApplications.map((loan) =>
-          (loan.id === approveLoanId || loan._id === approveLoanId)
+          loan.id === approveLoanId
             ? {
                 ...loan,
                 investorApprovals: [
@@ -346,7 +341,7 @@ function platformReducer(state: PlatformState, action: PlatformAction): Platform
       return {
         ...state,
         loanApplications: state.loanApplications.map((loan) =>
-          (loan.id === releaseLoanId || loan._id === releaseLoanId)
+          loan.id === releaseLoanId
             ? {
                 ...loan,
                 investorApprovals: loan.investorApprovals?.map((approval) =>
@@ -354,22 +349,6 @@ function platformReducer(state: PlatformState, action: PlatformAction): Platform
                     ? { ...approval, status: "Released" as const, releaseDate: new Date().toISOString() }
                     : approval,
                 ),
-              }
-            : loan,
-        ),
-        lastUpdated: new Date().toISOString(),
-      }
-
-    case "MARK_LOAN_AS_ACTIVE":
-      const { loanId: activeLoanId } = action.payload
-      return {
-        ...state,
-        loanApplications: state.loanApplications.map((loan) =>
-          (loan.id === activeLoanId || loan._id === activeLoanId)
-            ? {
-                ...loan,
-                status: "Active" as const,
-                downPaymentMade: true,
               }
             : loan,
         ),
@@ -479,10 +458,10 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   const fetchInitialData = async () => {
     dispatch({ type: "SET_LOADING", payload: true })
     try {
-      // Fetch users and vehicles only - loans are fetched per user in their respective dashboards
+      // Fetch users and vehicles
       const [vehiclesRes, usersRes] = await Promise.all([
         fetch("/api/vehicles"),
-        fetch("/api/users"),
+        fetch("/api/users"), // Add the fetch call for users
       ])
 
       if (!vehiclesRes.ok || !usersRes.ok) {
@@ -572,24 +551,11 @@ export const useDriverData = (driverId: string) => {
 
   return {
     driver: state.users.find((u: User) => (u._id === driverId || u.id === driverId) && u.role === "driver"),
-    loans: state.loanApplications.filter((l: LoanApplication) => {
-      // Handle both string and ObjectId formats for driverId comparison
-      const loanDriverId = typeof l.driverId === 'object' && l.driverId._id 
-        ? l.driverId._id.toString() 
-        : l.driverId.toString()
-      return loanDriverId === driverId.toString()
-    }),
-    vehicles: state.vehicles.filter((v: Vehicle) => {
-      // Handle both string and ObjectId formats for driverId comparison
-      const vehicleDriverId = typeof v.driverId === 'object' && v.driverId._id 
-        ? v.driverId._id.toString() 
-        : v.driverId?.toString()
-      return vehicleDriverId === driverId.toString()
-    }),
+    loans: state.loanApplications.filter((l: LoanApplication) => l.driverId === driverId),
+    vehicles: state.vehicles.filter((v: Vehicle) => v.driverId === driverId),
     transactions: state.transactions.filter((t: Transaction) => t.userId === driverId),
     notifications: state.notifications.filter((n: Notification) => n.userId === driverId),
-    availableVehicles: state.vehicles.filter((v: Vehicle) => v.fundingStatus === "Open"),
-    repayments: [], // Remove mock data, use empty array for now
+    availableVehicles: state.vehicles.filter((v: Vehicle) => v.status === "Available"),
   }
 }
 
@@ -602,7 +568,7 @@ export const useInvestorData = (investorId: string) => {
     availableLoans: state.loanApplications.filter(
       (l: LoanApplication) => l.status === "Under Review" || l.status === "Pending",
     ),
-    availableVehicles: state.vehicles.filter((v: Vehicle) => v.fundingStatus === "Open"),
+    availableVehicles: state.vehicles.filter((v: Vehicle) => v.status === "Available"),
     transactions: state.transactions.filter((t: Transaction) => t.userId === investorId),
     notifications: state.notifications.filter((n: Notification) => n.userId === investorId),
     pendingReleases: state.loanApplications.filter((loan: LoanApplication) =>

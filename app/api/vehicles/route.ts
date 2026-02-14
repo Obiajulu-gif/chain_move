@@ -18,9 +18,7 @@ export async function GET() {
 export async function POST(request: Request) {
     await dbConnect();
     try {
-        console.log("saving vehicle to DB")
         const body: IVehicle = await request.json();
-        console.log("vehicle data", body);
         const newVehicle = await Vehicle.create(body);
         return NextResponse.json({ success: true, data: newVehicle }, { status: 201 });
     } catch (error) {

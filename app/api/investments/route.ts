@@ -13,10 +13,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Investor ID is required" }, { status: 400 })
     }
 
-    const investments = await Investment.find({ investorId })
-      .populate('vehicleId', 'name image type year price status roi features specifications')
-      .populate('loanId')
-      .sort({ startDate: -1 })
+    const investments = await Investment.find({ investorId }).sort({ startDate: -1 })
 
     return NextResponse.json({
       success: true,
