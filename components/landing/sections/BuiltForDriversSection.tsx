@@ -1,6 +1,6 @@
 import { landingAssets } from "@/components/landing/assets";
 import { Container } from "@/components/landing/Container";
-import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export function BuiltForDriversSection() {
@@ -39,9 +39,10 @@ export function BuiltForDriversSection() {
 
 						<Link
 							href="/auth?role=driver"
-							className="mt-8 inline-flex rounded-full bg-cm-orange px-8 py-3.5 text-[16px] sm:text-[18px] font-semibold text-white transition-colors hover:bg-[#de6805]"
+							className="mt-8 inline-flex items-center rounded-full bg-cm-orange px-8 py-3.5 text-[16px] sm:text-[18px] font-semibold text-white transition-colors hover:bg-[#de6805]"
 						>
 							Apply Now!
+							<ArrowRight className="ml-2 h-5 w-5" />
 						</Link>
 					</div>
 				</div>

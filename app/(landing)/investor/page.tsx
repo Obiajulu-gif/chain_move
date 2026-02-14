@@ -1,14 +1,33 @@
+import type { Metadata } from "next"
+import dynamic from "next/dynamic"
 import { Hero } from "@/components/landing/Hero"
 import { AboutChainMoveSection } from "@/components/landing/sections/AboutChainMoveSection"
-import { FAQSection } from "@/components/landing/sections/FAQSection"
 import { HowItWorksSection } from "@/components/landing/sections/HowItWorksSection"
 import { MonitorPerformanceSection } from "@/components/landing/sections/MonitorPerformanceSection"
-import { PartnersSection } from "@/components/landing/sections/PartnersSection"
 import { ReadyToJoinSection } from "@/components/landing/sections/ReadyToJoinSection"
 import { RiskAwarenessSection } from "@/components/landing/sections/RiskAwarenessSection"
 import { VehicleOptionsSection } from "@/components/landing/sections/VehicleOptionsSection"
 import { WhoIsThisForSection } from "@/components/landing/sections/WhoIsThisForSection"
 import { WhyInvestSection } from "@/components/landing/sections/WhyInvestSection"
+
+const FAQSection = dynamic(() => import("@/components/landing/sections/FAQSection").then((mod) => mod.FAQSection))
+const PartnersSection = dynamic(() => import("@/components/landing/sections/PartnersSection").then((mod) => mod.PartnersSection))
+
+export const metadata: Metadata = {
+  title: "Investor",
+  description:
+    "Invest in insured mobility assets with transparent tracking, structured payouts, and real-world vehicle financing opportunities.",
+  openGraph: {
+    title: "ChainMove | Investor",
+    description:
+      "Invest in insured mobility assets with transparent tracking, structured payouts, and real-world vehicle financing opportunities.",
+  },
+  twitter: {
+    title: "ChainMove | Investor",
+    description:
+      "Invest in insured mobility assets with transparent tracking, structured payouts, and real-world vehicle financing opportunities.",
+  },
+}
 
 export default function InvestorLandingPage() {
   return (

@@ -1,5 +1,5 @@
 import { Container } from "@/components/landing/Container"
-import { ArrowRight, BadgeCheck, BriefcaseBusiness, Eye, Wallet } from "lucide-react"
+import { BadgeCheck, BriefcaseBusiness, ChevronRight, Eye, Wallet } from "lucide-react"
 import Link from "next/link"
 
 const benefits = [
@@ -48,7 +48,7 @@ export function WhyInvestSection() {
               className="inline-flex items-center justify-center rounded-full border border-white/70 px-7 py-3.5 text-[16px] sm:text-[18px] font-medium text-cm-text transition-colors hover:bg-white/10"
             >
               Explore Ownership Benefits
-              <ArrowRight className="ml-2.5 h-5 w-5" />
+              <ChevronRight className="ml-2.5 h-5 w-5" />
             </Link>
           </div>
 

@@ -3,7 +3,7 @@
 import { landingAssets } from "@/components/landing/assets";
 import { Container } from "@/components/landing/Container";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -53,9 +53,10 @@ export function VehicleOptionsSection() {
 
 						<Link
 							href="/auth?role=driver"
-							className="mt-10 inline-flex rounded-full bg-cm-orange px-8 py-3.5 text-[16px] sm:text-[18px] font-semibold text-white transition-colors hover:bg-[#de6805]"
+							className="mt-10 inline-flex items-center rounded-full bg-cm-orange px-8 py-3.5 text-[16px] sm:text-[18px] font-semibold text-white transition-colors hover:bg-[#de6805]"
 						>
 							Apply Now!
+							<ArrowRight className="ml-2 h-5 w-5" />
 						</Link>
 					</div>
 

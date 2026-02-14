@@ -10,7 +10,13 @@ export function AboutChainMoveSection() {
       <Container>
         <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.05fr] lg:gap-16">
           <div className="relative h-[380px] overflow-hidden rounded-3xl bg-[#d8d8d8] sm:h-[430px] lg:h-[520px]">
-            <Image src={landingAssets.about.sectionImage} alt="About ChainMove" fill className="object-cover" />
+            <Image
+              src={landingAssets.about.sectionImage}
+              alt="About ChainMove"
+              fill
+              className="object-cover"
+              sizes="(min-width: 1024px) 46vw, 100vw"
+            />
           </div>
 
           <div className="max-w-[630px]">

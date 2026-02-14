@@ -34,7 +34,13 @@ export function WhyDriveSection() {
       <Container>
         <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
           <div className="relative h-[360px] overflow-hidden rounded-3xl border border-cm-border-light bg-[#d8d8d8] sm:h-[440px] lg:h-[560px]">
-            <Image src={landingAssets.whyDrive} alt="Why drive with ChainMove" fill className="object-cover" />
+            <Image
+              src={landingAssets.whyDrive}
+              alt="Why drive with ChainMove"
+              fill
+              className="object-cover"
+              sizes="(min-width: 1024px) 46vw, 100vw"
+            />
           </div>
 
           <div>

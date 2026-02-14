@@ -11,9 +11,30 @@ import { Providers } from "./Providers"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "ChainMove - Decentralized Vehicle Financing Platform",
-  description: "Empowering drivers and investors through blockchain-powered vehicle financing",
-  generator: 'v0.dev'
+  title: {
+    default: "ChainMove",
+    template: "ChainMove | %s",
+  },
+  description:
+    "ChainMove is a blockchain-powered mobility financing platform connecting disciplined investors with verified drivers through structured vehicle ownership.",
+  openGraph: {
+    title: "ChainMove",
+    description:
+      "ChainMove is a blockchain-powered mobility financing platform connecting disciplined investors with verified drivers through structured vehicle ownership.",
+    siteName: "ChainMove",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ChainMove",
+    description:
+      "ChainMove is a blockchain-powered mobility financing platform connecting disciplined investors with verified drivers through structured vehicle ownership.",
+  },
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 }
 
 export default function RootLayout({

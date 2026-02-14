@@ -1,6 +1,6 @@
 import { landingAssets } from "@/components/landing/assets"
 import { Container } from "@/components/landing/Container"
-import { ArrowRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -38,12 +38,18 @@ export function RiskAwarenessSection() {
               className="mt-9 inline-flex items-center rounded-full border border-[#3a3a3a] px-7 py-3.5 text-[16px] sm:text-[18px] font-semibold text-[#232323] transition-colors hover:bg-black/5"
             >
               Review Risk Framework
-              <ArrowRight className="ml-2.5 h-6 w-6" />
+              <ChevronRight className="ml-2.5 h-6 w-6" />
             </Link>
           </div>
 
           <div className="relative h-[360px] overflow-hidden rounded-3xl border border-cm-border-light bg-[#d8d8d8] sm:h-[440px] lg:h-[560px]">
-            <Image src={landingAssets.riskAwareness} alt="Risk framework visual" fill className="object-cover" />
+            <Image
+              src={landingAssets.riskAwareness}
+              alt="Risk framework visual"
+              fill
+              className="object-cover"
+              sizes="(min-width: 1024px) 46vw, 100vw"
+            />
           </div>
         </div>
       </Container>

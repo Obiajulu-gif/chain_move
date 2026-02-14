@@ -10,7 +10,13 @@ export function WhyWeExistStorySection() {
       <Container>
         <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.05fr] lg:gap-16">
           <div className="relative h-[380px] overflow-hidden rounded-3xl border border-cm-border-light bg-[#d8d8d8] sm:h-[430px] lg:h-[520px]">
-            <Image src={landingAssets.about.storyImage} alt="Our story" fill className="object-cover" />
+            <Image
+              src={landingAssets.about.storyImage}
+              alt="Our story"
+              fill
+              className="object-cover"
+              sizes="(min-width: 1024px) 46vw, 100vw"
+            />
           </div>
 
           <div>

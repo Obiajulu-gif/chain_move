@@ -1,6 +1,6 @@
 import { landingAssets } from "@/components/landing/assets"
 import { Container } from "@/components/landing/Container"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -30,11 +30,13 @@ export function ReadyToJoinSection() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
               <Link
-                href="#"
+                href="https://calendly.com/okoyeemmanuelobiajulu/replas"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-full border border-[#333] px-6 py-3.5 text-[16px] font-semibold text-[#1f1f1f] transition-colors hover:bg-black/5"
               >
                 Schedule a Private Call
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ChevronRight className="ml-2 h-5 w-5" />
               </Link>
             </div>
           </div>

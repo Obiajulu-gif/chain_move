@@ -1,6 +1,6 @@
 import { landingAssets } from "@/components/landing/assets"
 import { Container } from "@/components/landing/Container"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -17,6 +17,8 @@ interface HeroProps {
   secondaryCtaHref: string
 }
 
+const isExternalLink = (href: string) => href.startsWith("https://") || href.startsWith("http://")
+
 export function Hero({
   variant,
   titlePrimary,
@@ -29,12 +31,14 @@ export function Hero({
 }: HeroProps) {
   const isAbout = variant === "about"
   const videoSrc = variant === "investor" ? landingAssets.heroVideos.investor : landingAssets.heroVideos.driver
+  const primaryExternal = isExternalLink(primaryCtaHref)
+  const secondaryExternal = isExternalLink(secondaryCtaHref)
 
   return (
     <section className="relative isolate min-h-[85vh] overflow-hidden bg-cm-dark">
       <div className="absolute inset-0">
         {isAbout ? (
-          <Image src={landingAssets.heroImages.about} alt="About hero" fill priority className="object-cover" />
+          <Image src={landingAssets.heroImages.about} alt="About hero" fill priority className="object-cover" sizes="100vw" />
         ) : (
           <video autoPlay muted loop playsInline className="h-full w-full object-cover" preload="metadata">
             <source src={videoSrc} type="video/mp4" />
@@ -57,6 +61,8 @@ export function Hero({
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link
               href={primaryCtaHref}
+              target={primaryExternal ? "_blank" : undefined}
+              rel={primaryExternal ? "noopener noreferrer" : undefined}
               className="inline-flex items-center justify-center rounded-full bg-cm-orange px-7 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-[#de6805] sm:px-8 sm:text-[16px]"
             >
               {primaryCtaLabel}
@@ -65,10 +71,12 @@ export function Hero({
 
             <Link
               href={secondaryCtaHref}
+              target={secondaryExternal ? "_blank" : undefined}
+              rel={secondaryExternal ? "noopener noreferrer" : undefined}
               className="inline-flex items-center justify-center rounded-full border border-white/70 bg-black/20 px-7 py-3 text-[14px] font-semibold text-cm-text backdrop-blur-sm transition-colors hover:bg-black/35 sm:px-8 sm:text-[16px]"
             >
               {secondaryCtaLabel}
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ChevronRight className="ml-2 h-4 w-4" />
             </Link>
           </div>
         </div>

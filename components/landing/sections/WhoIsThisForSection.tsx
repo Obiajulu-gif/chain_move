@@ -1,6 +1,6 @@
 import { landingAssets } from "@/components/landing/assets"
 import { Container } from "@/components/landing/Container"
-import { ArrowRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -17,7 +17,13 @@ export function WhoIsThisForSection() {
       <Container>
         <div className="grid items-center gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
           <div className="relative h-[360px] overflow-hidden rounded-3xl border border-cm-border-light bg-[#d8d8d8] sm:h-[440px] lg:h-[560px]">
-            <Image src={landingAssets.whoIsThisFor} alt="Target audiences" fill className="object-cover" />
+            <Image
+              src={landingAssets.whoIsThisFor}
+              alt="Target audiences"
+              fill
+              className="object-cover"
+              sizes="(min-width: 1024px) 46vw, 100vw"
+            />
           </div>
 
           <div className="max-w-[650px]">
@@ -44,7 +50,7 @@ export function WhoIsThisForSection() {
               className="mt-9 inline-flex items-center rounded-full border border-[#2b2b2b] px-7 py-3.5 text-[16px] sm:text-[18px] font-semibold text-[#232323] transition-colors hover:bg-black/5"
             >
               Check Eligibility
-              <ArrowRight className="ml-2.5 h-6 w-6" />
+              <ChevronRight className="ml-2.5 h-6 w-6" />
             </Link>
           </div>
         </div>

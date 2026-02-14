@@ -26,6 +26,16 @@ const testimonials = [
   },
 ]
 
+function normalizeTestimonialText(text: string) {
+  return text
+    .normalize("NFC")
+    .replaceAll("â€™", "’")
+    .replaceAll("â€œ", "“")
+    .replaceAll("\u00e2\u20ac\u009d", "”")
+    .replaceAll("â€“", "–")
+    .replaceAll("â€”", "—")
+}
+
 export function TestimonialsSection() {
   return (
     <section className="bg-white py-20 md:py-24">
@@ -47,7 +57,7 @@ export function TestimonialsSection() {
             >
               <div className="flex items-center gap-4">
                 <div className="relative h-16 w-16 overflow-hidden rounded-full bg-[#d8d8d8]">
-                  <Image src={testimonial.image} alt={testimonial.name} fill className="object-cover" />
+                  <Image src={testimonial.image} alt={testimonial.name} fill className="object-cover" sizes="64px" />
                 </div>
                 <div>
                   <p className="text-[16px] sm:text-[19px] font-semibold leading-none text-[#2a2a2a]">{testimonial.name}</p>
@@ -55,7 +65,9 @@ export function TestimonialsSection() {
                 </div>
               </div>
 
-              <p className="mt-6 text-[16px] sm:text-[19px] leading-[1.2] text-[#5f5f5f]">\"{testimonial.quote}\"</p>
+              <p className="mt-6 break-words text-[16px] leading-[1.35] text-[#5f5f5f] sm:text-[19px]">
+                “{normalizeTestimonialText(testimonial.quote)}”
+              </p>
             </article>
           ))}
         </div>

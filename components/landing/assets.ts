@@ -10,8 +10,10 @@ export const landingAssets = {
 	about: {
 		sectionImage: "/images/about.png",
 		storyImage: "/images/about.png",
+		cacCertificate: "/images/CERTIFICATE.jpg",
 	},
 	dashboard: "/images/Dashboard_image.png",
+	monitorDashboard: "/images/monitor-dashboard.png",
 	riskAwareness: "/images/investor-dashboard.jpg",
 	whoIsThisFor: "/images/mechanic.jpg",
 	builtForDrivers: "/images/driver_display.mp4",
