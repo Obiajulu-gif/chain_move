@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useFundWallet, usePrivy, useWallets } from "@privy-io/react-auth"
-import { ChevronRight, Copy, Loader2, Wallet } from "lucide-react"
+import { usePrivy, useWallets } from "@privy-io/react-auth"
+import { ChevronRight, Copy, Wallet } from "lucide-react"
 import { formatEther } from "viem"
 import { liskSepolia } from "viem/chains"
 
@@ -51,11 +51,9 @@ async function resolveOnchainBalance(address: string) {
 export const ConnectButtonWidget = () => {
   const { user: authUser } = useAuth()
   const { toast } = useToast()
-  const { authenticated, login } = usePrivy()
+  const { authenticated, login, connectWallet } = usePrivy()
   const { wallets } = useWallets()
-  const { fundWallet } = useFundWallet()
 
-  const [isFunding, setIsFunding] = useState(false)
   const [onchainBalance, setOnchainBalance] = useState<string | null>(null)
   const [isBalanceLoading, setIsBalanceLoading] = useState(false)
 
@@ -106,7 +104,7 @@ export const ConnectButtonWidget = () => {
     })
   }
 
-  const handleFundWithPrivy = async () => {
+  const handleOpenWalletView = () => {
     if (!walletAddress) {
       toast({
         title: "No wallet address",
@@ -116,23 +114,11 @@ export const ConnectButtonWidget = () => {
       return
     }
 
-    setIsFunding(true)
-    try {
-      await fundWallet({
-        address: walletAddress,
-      })
-      toast({
-        title: "Funding flow opened",
-        description: "Complete the Privy wallet funding steps in the modal.",
-      })
-    } catch (error) {
-      toast({
-        title: "Privy funding unavailable",
-        description: "Use Paystack funding from the Overview wallet section.",
-      })
-    } finally {
-      setIsFunding(false)
-    }
+    connectWallet()
+    toast({
+      title: "Wallet view opened",
+      description: "Use your address to receive funds, or continue with Paystack for NGN wallet funding.",
+    })
   }
 
   if (authUser?.role !== "investor") return null
@@ -187,22 +173,9 @@ export const ConnectButtonWidget = () => {
 
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-default">
-          <Button
-            onClick={handleFundWithPrivy}
-            disabled={isFunding || !walletAddress}
-            className="h-8 w-full bg-[#E57700] text-white hover:bg-[#E57700]/90"
-          >
-            {isFunding ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Opening...
-              </>
-            ) : (
-              <>
-                Fund with Privy
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </>
-            )}
+          <Button onClick={handleOpenWalletView} disabled={!walletAddress} className="h-8 w-full bg-[#E57700] text-white hover:bg-[#E57700]/90">
+            Open wallet / receive
+            <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

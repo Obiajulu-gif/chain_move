@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { usePrivy, useToken } from "@privy-io/react-auth"
+import { useIdentityToken, usePrivy } from "@privy-io/react-auth"
 import { AlertCircle, ArrowRight, Car, Loader2, TrendingUp, User } from "lucide-react"
 
 import { AuthInput } from "@/components/auth/AuthInput"
@@ -44,7 +44,7 @@ export default function AuthPage() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const { login, ready, authenticated } = usePrivy()
-  const { getAccessToken } = useToken()
+  const { identityToken } = useIdentityToken()
 
   const roleParam = searchParams.get("role")
   const selectedRole: UserRole = roleParam === "driver" ? "driver" : "investor"
@@ -66,9 +66,9 @@ export default function AuthPage() {
       setFormError("")
 
       try {
-        const privyToken = await getAccessToken()
+        const privyToken = identityToken
         if (!privyToken) {
-          throw new Error("Unable to retrieve Privy token.")
+          throw new Error("Privy token is not ready yet. Please try again.")
         }
 
         const response = await fetch("/api/auth/privy/sync", {
@@ -101,7 +101,7 @@ export default function AuthPage() {
         isSyncInFlightRef.current = false
       }
     },
-    [getAccessToken, router, toast],
+    [identityToken, router, toast],
   )
 
   const handleStartSignup = async (event: FormEvent<HTMLFormElement>) => {
@@ -118,6 +118,10 @@ export default function AuthPage() {
     saveSignupDraft(draft)
 
     if (ready && authenticated) {
+      if (!identityToken) {
+        setFormError("Privy token is still initializing. Please click again in a moment.")
+        return
+      }
       void syncPrivyUser(draft)
       return
     }
@@ -140,7 +144,7 @@ export default function AuthPage() {
     if (!draft) return
 
     void syncPrivyUser(draft)
-  }, [authenticated, ready, syncPrivyUser])
+  }, [authenticated, identityToken, ready, syncPrivyUser])
 
   return (
     <AuthLayout

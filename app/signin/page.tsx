@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { usePrivy, useToken } from "@privy-io/react-auth"
+import { useIdentityToken, usePrivy } from "@privy-io/react-auth"
 import { AlertCircle, ArrowRight, Loader2 } from "lucide-react"
 
 import { AuthLayout } from "@/components/auth/AuthLayout"
@@ -14,7 +14,7 @@ export default function SignInPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { login, ready, authenticated } = usePrivy()
-  const { getAccessToken } = useToken()
+  const { identityToken } = useIdentityToken()
 
   const [isLaunchingPrivy, setIsLaunchingPrivy] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -28,9 +28,9 @@ export default function SignInPage() {
     setError("")
 
     try {
-      const privyToken = await getAccessToken()
+      const privyToken = identityToken
       if (!privyToken) {
-        throw new Error("Unable to retrieve Privy token.")
+        throw new Error("Privy token is not ready yet. Please try again.")
       }
 
       const response = await fetch("/api/auth/privy/sync", {
@@ -61,7 +61,7 @@ export default function SignInPage() {
       setIsLaunchingPrivy(false)
       syncInFlightRef.current = false
     }
-  }, [getAccessToken, router, toast])
+  }, [identityToken, router, toast])
 
   const handlePrivySignIn = () => {
     setError("")
@@ -79,7 +79,7 @@ export default function SignInPage() {
   useEffect(() => {
     if (!ready || !authenticated) return
     void syncUser()
-  }, [authenticated, ready, syncUser])
+  }, [authenticated, identityToken, ready, syncUser])
 
   return (
     <AuthLayout

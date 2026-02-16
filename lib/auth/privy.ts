@@ -1,6 +1,6 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose"
 
-const PRIVY_ISSUER = "privy.io"
+const PRIVY_ISSUERS = ["privy.io", "https://auth.privy.io"]
 
 type RawLinkedAccount = {
   type?: string
@@ -58,7 +58,7 @@ export function extractPrivyTokenFromRequest(request: Request) {
 
 export async function verifyPrivyToken(token: string) {
   const { payload } = await jwtVerify(token, privyJwks, {
-    issuer: PRIVY_ISSUER,
+    issuer: PRIVY_ISSUERS,
     audience: getPrivyAudience(),
   })
 

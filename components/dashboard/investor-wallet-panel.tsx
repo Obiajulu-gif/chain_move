@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useFundWallet, useWallets } from "@privy-io/react-auth"
+import { usePrivy, useWallets } from "@privy-io/react-auth"
 import { formatEther } from "viem"
 import { liskSepolia } from "viem/chains"
 import {
@@ -99,8 +99,8 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const { user: authUser, refetch: refetchAuth } = useAuth()
+  const { connectWallet } = usePrivy()
   const { wallets } = useWallets()
-  const { fundWallet } = useFundWallet()
 
   const [walletSummary, setWalletSummary] = useState<WalletSummaryPayload | null>(null)
   const [isSummaryLoading, setIsSummaryLoading] = useState(true)
@@ -187,7 +187,7 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
     [clearReferenceQuery, loadWalletSummary, refetchAuth, toast],
   )
 
-  const handlePrivyFunding = async () => {
+  const handlePrivyFunding = () => {
     if (!walletAddress) {
       toast({
         title: "Wallet unavailable",
@@ -198,22 +198,12 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
     }
 
     setIsPrivyFunding(true)
-    try {
-      await fundWallet({
-        address: walletAddress,
-      })
-      toast({
-        title: "Privy funding flow opened",
-        description: "Complete the funding steps in the Privy modal.",
-      })
-    } catch {
-      toast({
-        title: "Privy funding not available",
-        description: "Use the wallet address or Paystack flow to fund your internal balance.",
-      })
-    } finally {
-      setIsPrivyFunding(false)
-    }
+    connectWallet()
+    toast({
+      title: "Wallet view opened",
+      description: "Use your wallet address to receive onchain funds, or use Paystack for NGN funding.",
+    })
+    window.setTimeout(() => setIsPrivyFunding(false), 300)
   }
 
   const handlePaystackFunding = async () => {
