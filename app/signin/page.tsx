@@ -9,6 +9,7 @@ import { AlertCircle, ArrowRight, Loader2 } from "lucide-react"
 import { AuthLayout } from "@/components/auth/AuthLayout"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
+import { resolvePrivyIdentityToken } from "@/lib/auth/privy-client"
 
 export default function SignInPage() {
   const router = useRouter()
@@ -28,9 +29,9 @@ export default function SignInPage() {
     setError("")
 
     try {
-      const privyToken = identityToken
+      const privyToken = await resolvePrivyIdentityToken(identityToken)
       if (!privyToken) {
-        throw new Error("Privy token is not ready yet. Please try again.")
+        throw new Error("Unable to retrieve your Privy token. Please try again.")
       }
 
       const response = await fetch("/api/auth/privy/sync", {
@@ -77,9 +78,9 @@ export default function SignInPage() {
   }
 
   useEffect(() => {
-    if (!ready || !authenticated || !identityToken) return
+    if (!ready || !authenticated) return
     void syncUser()
-  }, [authenticated, identityToken, ready, syncUser])
+  }, [authenticated, ready, syncUser])
 
   return (
     <AuthLayout

@@ -10,6 +10,7 @@ import { AuthInput } from "@/components/auth/AuthInput"
 import { AuthLayout } from "@/components/auth/AuthLayout"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
+import { resolvePrivyIdentityToken } from "@/lib/auth/privy-client"
 
 type UserRole = "driver" | "investor"
 
@@ -66,9 +67,9 @@ export default function AuthPage() {
       setFormError("")
 
       try {
-        const privyToken = identityToken
+        const privyToken = await resolvePrivyIdentityToken(identityToken)
         if (!privyToken) {
-          throw new Error("Privy token is not ready yet. Please try again.")
+          throw new Error("Unable to retrieve your Privy token. Please try again.")
         }
 
         const response = await fetch("/api/auth/privy/sync", {
@@ -118,10 +119,6 @@ export default function AuthPage() {
     saveSignupDraft(draft)
 
     if (ready && authenticated) {
-      if (!identityToken) {
-        setFormError("Privy token is still initializing. Please click again in a moment.")
-        return
-      }
       void syncPrivyUser(draft)
       return
     }
@@ -138,13 +135,13 @@ export default function AuthPage() {
   }
 
   useEffect(() => {
-    if (!ready || !authenticated || !identityToken) return
+    if (!ready || !authenticated) return
 
     const draft = safeReadSignupDraft()
     if (!draft) return
 
     void syncPrivyUser(draft)
-  }, [authenticated, identityToken, ready, syncPrivyUser])
+  }, [authenticated, ready, syncPrivyUser])
 
   return (
     <AuthLayout

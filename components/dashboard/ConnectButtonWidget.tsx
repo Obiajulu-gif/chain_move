@@ -54,8 +54,10 @@ export const ConnectButtonWidget = () => {
   const { authenticated, login } = usePrivy()
   const { wallets } = useWallets()
 
-  const [onchainBalance, setOnchainBalance] = useState<string | null>(null)
-  const [isBalanceLoading, setIsBalanceLoading] = useState(false)
+  const [onchainBalance, setOnchainBalance] = useState<{ address: string; value: string | null }>({
+    address: "",
+    value: null,
+  })
 
   const embeddedWallet = useMemo(() => {
     return wallets.find((wallet) => wallet.walletClientType === "privy" || wallet.walletClientType === "privy-v2")
@@ -63,30 +65,24 @@ export const ConnectButtonWidget = () => {
 
   const walletAddress = embeddedWallet?.address || authUser?.walletAddress || ""
   const internalBalance = authUser?.availableBalance || 0
+  const isBalanceLoading = Boolean(walletAddress) && onchainBalance.address !== walletAddress
 
   useEffect(() => {
     if (!walletAddress) {
-      setOnchainBalance(null)
       return
     }
 
     let isMounted = true
-    setIsBalanceLoading(true)
 
     resolveOnchainBalance(walletAddress)
       .then((balance) => {
         if (isMounted) {
-          setOnchainBalance(balance)
+          setOnchainBalance({ address: walletAddress, value: balance })
         }
       })
       .catch(() => {
         if (isMounted) {
-          setOnchainBalance(null)
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsBalanceLoading(false)
+          setOnchainBalance({ address: walletAddress, value: null })
         }
       })
 
@@ -157,7 +153,7 @@ export const ConnectButtonWidget = () => {
           <div className="rounded-md border bg-muted/30 p-2">
             <p className="text-muted-foreground">Onchain balance</p>
             <p className="text-sm font-semibold">
-              {isBalanceLoading ? "Loading..." : onchainBalance || "Unavailable"}
+              {!walletAddress ? "Unavailable" : isBalanceLoading ? "Loading..." : onchainBalance.value || "Unavailable"}
             </p>
           </div>
         </div>
