@@ -14,9 +14,9 @@ export interface SessionPayload {
 }
 
 function getJwtSecret() {
-  const secret = process.env.JWT_SECRET
+  const secret = process.env.JWT_SECRET || process.env.AUTH_SESSION_SECRET || process.env.PRIVY_APP_SECRET
   if (!secret) {
-    throw new Error("JWT_SECRET is required for session signing")
+    throw new Error("JWT secret is required for session signing (JWT_SECRET or AUTH_SESSION_SECRET)")
   }
 
   return new TextEncoder().encode(secret)

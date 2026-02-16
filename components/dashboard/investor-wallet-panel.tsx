@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { usePrivy, useWallets } from "@privy-io/react-auth"
+import { useWallets } from "@privy-io/react-auth"
 import { formatEther } from "viem"
 import { liskSepolia } from "viem/chains"
 import {
@@ -99,7 +99,6 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const { user: authUser, refetch: refetchAuth } = useAuth()
-  const { connectWallet } = usePrivy()
   const { wallets } = useWallets()
 
   const [walletSummary, setWalletSummary] = useState<WalletSummaryPayload | null>(null)
@@ -198,9 +197,9 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
     }
 
     setIsPrivyFunding(true)
-    connectWallet()
+    window.open(`https://sepolia-blockscout.lisk.com/address/${walletAddress}`, "_blank", "noopener,noreferrer")
     toast({
-      title: "Wallet view opened",
+      title: "Wallet address ready",
       description: "Use your wallet address to receive onchain funds, or use Paystack for NGN funding.",
     })
     window.setTimeout(() => setIsPrivyFunding(false), 300)

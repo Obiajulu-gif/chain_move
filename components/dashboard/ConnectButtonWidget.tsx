@@ -51,7 +51,7 @@ async function resolveOnchainBalance(address: string) {
 export const ConnectButtonWidget = () => {
   const { user: authUser } = useAuth()
   const { toast } = useToast()
-  const { authenticated, login, connectWallet } = usePrivy()
+  const { authenticated, login } = usePrivy()
   const { wallets } = useWallets()
 
   const [onchainBalance, setOnchainBalance] = useState<string | null>(null)
@@ -114,9 +114,9 @@ export const ConnectButtonWidget = () => {
       return
     }
 
-    connectWallet()
+    window.open(`https://sepolia-blockscout.lisk.com/address/${walletAddress}`, "_blank", "noopener,noreferrer")
     toast({
-      title: "Wallet view opened",
+      title: "Wallet address ready",
       description: "Use your address to receive funds, or continue with Paystack for NGN wallet funding.",
     })
   }

@@ -138,7 +138,7 @@ export default function AuthPage() {
   }
 
   useEffect(() => {
-    if (!ready || !authenticated) return
+    if (!ready || !authenticated || !identityToken) return
 
     const draft = safeReadSignupDraft()
     if (!draft) return
