@@ -1,15 +1,14 @@
 "use client"
 
 import { ThemeProvider } from "./providers"
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false)
-
-  // Prevent hydration mismatch by only rendering on the client
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  )
 
   if (!mounted) {
     return null

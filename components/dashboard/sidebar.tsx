@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useLogout } from "@privy-io/react-auth"
 import { cn } from "../../lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -26,9 +27,9 @@ import {
   FileText,
   Calendar,
   Bell,
-  Search,
   Coins,
   Wallet,
+  Layers,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -49,11 +50,12 @@ const navigationItems = {
     { name: "Documents", href: "/dashboard/driver/documents", icon: FileText },
   ],
   investor: [
-    { name: "Discover Vehicles", href: "/dashboard/investor", icon: Search },
+    { name: "Overview", href: "/dashboard/investor", icon: BarChart3 },
+    { name: "Open opportunities", href: "/dashboard/investor/opportunities", icon: Layers },
+    { name: "Wallet", href: "/dashboard/investor/wallet", icon: Wallet },
     { name: "My Investments", href: "/dashboard/investor/investments", icon: TrendingUp },
     { name: "Governance Tokens", href: "/dashboard/investor/tokens", icon: Coins },
     { name: "DAO Zone", href: "/dashboard/investor/dao", icon: Vote },
-    { name: "Invest CTA", href: "/dashboard/investor/invest", icon: Wallet },
   ],
   admin: [
     { name: "KYC Management", href: "/dashboard/admin", icon: UserCheck },
@@ -72,14 +74,17 @@ export function Sidebar({ role, className, mobileWidth = "w-64" }: SidebarProps)
   const pathname = usePathname()
   const router = useRouter() // Initialize router
   const { toast } = useToast() // Initialize toast
+  const { logout } = useLogout()
   const items = navigationItems[role]
 
  
   const handleLogout = async () => {
     try {
-      const res = await fetch('/api/auth/logout', {
+      const res = await fetch("/api/auth/logout", {
         method: 'POST',
       });
+
+      await logout().catch(() => undefined)
 
       if (res.ok) {
         toast({ title: "Logged Out", description: "You have been successfully logged out." });

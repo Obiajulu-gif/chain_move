@@ -1,22 +1,11 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import {
-  AlertCircle,
-  ArrowRight,
-  Car,
-  Eye,
-  EyeOff,
-  Loader2,
-  Lock,
-  Mail,
-  TrendingUp,
-  User,
-} from "lucide-react"
+import { usePrivy, useToken } from "@privy-io/react-auth"
+import { AlertCircle, ArrowRight, Car, Loader2, TrendingUp, User } from "lucide-react"
 
-import { CustomConnectWallet } from "@/app/CustomConnectWallet"
 import { AuthInput } from "@/components/auth/AuthInput"
 import { AuthLayout } from "@/components/auth/AuthLayout"
 import { Button } from "@/components/ui/button"
@@ -24,126 +13,146 @@ import { useToast } from "@/components/ui/use-toast"
 
 type UserRole = "driver" | "investor"
 
-interface SignUpFieldErrors {
-  name?: string
-  email?: string
-  password?: string
-  confirmPassword?: string
+const SIGNUP_DRAFT_KEY = "chainmove_signup_draft"
+
+function safeReadSignupDraft() {
+  if (typeof window === "undefined") return null as { fullName: string; role: UserRole } | null
+
+  try {
+    const raw = window.sessionStorage.getItem(SIGNUP_DRAFT_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { fullName?: string; role?: UserRole }
+    if (!parsed.fullName || !parsed.role) return null
+    return { fullName: parsed.fullName, role: parsed.role }
+  } catch {
+    return null
+  }
 }
 
-const roleOptions: Array<{ value: UserRole; label: string; description: string; icon: typeof Car }> = [
-  {
-    value: "driver",
-    label: "Driver",
-    description: "Pay-to-own and grow your route earnings.",
-    icon: Car,
-  },
-  {
-    value: "investor",
-    label: "Investor",
-    description: "Back verified mobility assets transparently.",
-    icon: TrendingUp,
-  },
-]
+function saveSignupDraft(draft: { fullName: string; role: UserRole }) {
+  if (typeof window === "undefined") return
+  window.sessionStorage.setItem(SIGNUP_DRAFT_KEY, JSON.stringify(draft))
+}
+
+function clearSignupDraft() {
+  if (typeof window === "undefined") return
+  window.sessionStorage.removeItem(SIGNUP_DRAFT_KEY)
+}
 
 export default function AuthPage() {
-  const searchParams = useSearchParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { login, ready, authenticated } = usePrivy()
+  const { getAccessToken } = useToken()
 
   const roleParam = searchParams.get("role")
-  const initialRole: UserRole = roleParam === "investor" ? "investor" : "driver"
+  const selectedRole: UserRole = roleParam === "driver" ? "driver" : "investor"
+  const roleLabel = useMemo(() => (selectedRole === "driver" ? "Driver" : "Investor"), [selectedRole])
+  const RoleIcon = selectedRole === "driver" ? Car : TrendingUp
 
-  const [selectedRole, setSelectedRole] = useState<UserRole>(initialRole)
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [fieldErrors, setFieldErrors] = useState<SignUpFieldErrors>({})
+  const [fullName, setFullName] = useState("")
   const [formError, setFormError] = useState("")
+  const [isLaunchingPrivy, setIsLaunchingPrivy] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
 
-  const validate = () => {
-    const errors: SignUpFieldErrors = {}
+  const isSyncInFlightRef = useRef(false)
 
-    if (!name.trim()) {
-      errors.name = "Full name is required."
-    }
+  const syncPrivyUser = useCallback(
+    async (payload: { fullName?: string; role?: UserRole }) => {
+      if (isSyncInFlightRef.current) return
+      isSyncInFlightRef.current = true
+      setIsSyncing(true)
+      setFormError("")
 
-    if (!email.trim()) {
-      errors.email = "Email is required."
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      errors.email = "Enter a valid email address."
-    }
+      try {
+        const privyToken = await getAccessToken()
+        if (!privyToken) {
+          throw new Error("Unable to retrieve Privy token.")
+        }
 
-    if (!password) {
-      errors.password = "Password is required."
-    }
+        const response = await fetch("/api/auth/privy/sync", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${privyToken}`,
+          },
+          body: JSON.stringify(payload),
+        })
 
-    if (!confirmPassword) {
-      errors.confirmPassword = "Please confirm your password."
-    } else if (password !== confirmPassword) {
-      errors.confirmPassword = "Passwords do not match."
-    }
+        const result = await response.json()
+        if (!response.ok) {
+          throw new Error(result.message || "Unable to sync account.")
+        }
 
-    setFieldErrors(errors)
-    return Object.keys(errors).length === 0
-  }
+        clearSignupDraft()
+        toast({
+          title: "Account ready",
+          description: "Your ChainMove account was created successfully.",
+        })
 
-  const handleEmailSignup = async (event: FormEvent<HTMLFormElement>) => {
+        const role = result.user?.role || payload.role || "investor"
+        router.replace(`/dashboard/${role}`)
+      } catch (error) {
+        setFormError(error instanceof Error ? error.message : "Unable to complete sign up.")
+      } finally {
+        setIsSyncing(false)
+        setIsLaunchingPrivy(false)
+        isSyncInFlightRef.current = false
+      }
+    },
+    [getAccessToken, router, toast],
+  )
+
+  const handleStartSignup = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormError("")
 
-    if (!validate()) {
+    const trimmedName = fullName.trim()
+    if (!trimmedName) {
+      setFormError("Full name is required.")
       return
     }
 
-    setIsLoading(true)
+    const draft = { fullName: trimmedName, role: selectedRole }
+    saveSignupDraft(draft)
 
+    if (ready && authenticated) {
+      void syncPrivyUser(draft)
+      return
+    }
+
+    setIsLaunchingPrivy(true)
     try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          password,
-          role: selectedRole,
-        }),
+      login({
+        loginMethods: ["email", "sms"],
       })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        toast({
-          title: "Account created",
-          description: "Your account is ready. Please sign in.",
-        })
-        router.push("/signin")
-        return
-      }
-
-      setFormError(data.message || "Unable to create account right now. Please try again.")
-    } catch {
-      setFormError("A network error occurred. Please try again later.")
-    } finally {
-      setIsLoading(false)
+    } catch (error) {
+      setIsLaunchingPrivy(false)
+      setFormError("Unable to open Privy authentication. Please try again.")
     }
   }
+
+  useEffect(() => {
+    if (!ready || !authenticated) return
+
+    const draft = safeReadSignupDraft()
+    if (!draft) return
+
+    void syncPrivyUser(draft)
+  }, [authenticated, ready, syncPrivyUser])
 
   return (
     <AuthLayout
       title="Create your ChainMove account"
-      description="Set up your account to start participating in transparent mobility ownership and payouts."
-      badge={selectedRole === "driver" ? "Driver sign up" : "Investor sign up"}
+      description="Start with your full name, then complete secure signup with Privy."
+      badge={`${roleLabel} sign up`}
       sideTitle="Built for drivers, investors, and operators"
-      sideDescription="ChainMove connects real vehicles with structured pay-to-own operations and clear ownership records."
+      sideDescription="ChainMove connects real mobility assets to transparent financing and ownership tracking."
       sidePoints={[
-        "Fractional ownership and transparent records",
-        "Recurring payout rails designed for accountability",
-        "Onboarding flow for verified ecosystem participants",
+        "Fractional mobility ownership with transparent records",
+        "Wallet-first funding and investment experience",
+        "Fast onboarding with embedded Privy wallets",
       ]}
       footer={
         <p className="text-sm text-[#666666]">
@@ -157,123 +166,26 @@ export default function AuthPage() {
         </p>
       }
     >
-      <form onSubmit={handleEmailSignup} noValidate className="space-y-4">
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium text-[#1F1F1F]">Join as</legend>
-          <div className="grid grid-cols-2 gap-2">
-            {roleOptions.map((option) => {
-              const isActive = selectedRole === option.value
-              const Icon = option.icon
+      <div className="mb-4 rounded-xl border border-[#F4D4BC] bg-[#FFF6EE] px-3 py-2 text-sm text-[#8A4B19]">
+        <p className="inline-flex items-center gap-2 font-medium">
+          <RoleIcon className="h-4 w-4" />
+          Signing up as {roleLabel}
+        </p>
+      </div>
 
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setSelectedRole(option.value)}
-                  aria-pressed={isActive}
-                  className={`rounded-xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F2780E] ${
-                    isActive
-                      ? "border-[#F2780E] bg-[#FFF3E8]"
-                      : "border-[#D9D9D9] bg-white hover:border-[#F8BA8A]"
-                  }`}
-                >
-                  <span className="inline-flex items-center gap-2 text-sm font-medium text-[#1F1F1F]">
-                    <Icon className="h-4 w-4 text-[#F2780E]" />
-                    {option.label}
-                  </span>
-                  <span className="mt-1 block text-xs leading-5 text-[#666666]">{option.description}</span>
-                </button>
-              )
-            })}
-          </div>
-        </fieldset>
-
+      <form onSubmit={handleStartSignup} noValidate className="space-y-4">
         <AuthInput
-          id="name"
+          id="full-name"
           label="Full name"
           icon={User}
           type="text"
-          placeholder="Enter your full name"
           autoComplete="name"
-          value={name}
+          placeholder="Enter your full name"
+          value={fullName}
           onChange={(event) => {
-            setName(event.target.value)
-            if (fieldErrors.name) {
-              setFieldErrors((prev) => ({ ...prev, name: undefined }))
-            }
+            setFullName(event.target.value)
+            if (formError) setFormError("")
           }}
-          error={fieldErrors.name}
-        />
-
-        <AuthInput
-          id="email"
-          label="Email address"
-          icon={Mail}
-          type="email"
-          placeholder="you@example.com"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => {
-            setEmail(event.target.value)
-            if (fieldErrors.email) {
-              setFieldErrors((prev) => ({ ...prev, email: undefined }))
-            }
-          }}
-          error={fieldErrors.email}
-        />
-
-        <AuthInput
-          id="password"
-          label="Password"
-          icon={Lock}
-          type={showPassword ? "text" : "password"}
-          placeholder="Create a secure password"
-          autoComplete="new-password"
-          value={password}
-          onChange={(event) => {
-            setPassword(event.target.value)
-            if (fieldErrors.password) {
-              setFieldErrors((prev) => ({ ...prev, password: undefined }))
-            }
-          }}
-          error={fieldErrors.password}
-          trailing={
-            <button
-              type="button"
-              onClick={() => setShowPassword((prev) => !prev)}
-              className="rounded p-1 text-[#666666] hover:text-[#1F1F1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F2780E]"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          }
-        />
-
-        <AuthInput
-          id="confirmPassword"
-          label="Confirm password"
-          icon={Lock}
-          type={showConfirmPassword ? "text" : "password"}
-          placeholder="Re-enter your password"
-          autoComplete="new-password"
-          value={confirmPassword}
-          onChange={(event) => {
-            setConfirmPassword(event.target.value)
-            if (fieldErrors.confirmPassword) {
-              setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }))
-            }
-          }}
-          error={fieldErrors.confirmPassword}
-          trailing={
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword((prev) => !prev)}
-              className="rounded p-1 text-[#666666] hover:text-[#1F1F1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F2780E]"
-              aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
-            >
-              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          }
         />
 
         {formError ? (
@@ -288,34 +200,22 @@ export default function AuthPage() {
 
         <Button
           type="submit"
-          disabled={isLoading}
+          disabled={isLaunchingPrivy || isSyncing}
           className="h-12 w-full rounded-xl bg-[#F2780E] text-white hover:bg-[#DF6D0A] focus-visible:ring-[#F2780E]"
         >
-          {isLoading ? (
+          {isLaunchingPrivy || isSyncing ? (
             <span className="inline-flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Creating account...
+              {isSyncing ? "Finalizing account..." : "Opening Privy..."}
             </span>
           ) : (
             <span className="inline-flex items-center gap-2">
-              Create account
+              Continue with Privy
               <ArrowRight className="h-4 w-4" />
             </span>
           )}
         </Button>
       </form>
-
-      {selectedRole === "driver" ? (
-        <div className="mt-6 border-t border-[#F0F0F0] pt-5">
-          <p className="text-sm font-medium text-[#1F1F1F]">Or continue with wallet</p>
-          <p className="mt-1 text-xs text-[#777777]">
-            Wallet sign up currently provisions driver accounts.
-          </p>
-          <div className="mt-3">
-            <CustomConnectWallet />
-          </div>
-        </div>
-      ) : null}
     </AuthLayout>
   )
 }

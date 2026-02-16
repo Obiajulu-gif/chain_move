@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         email: user.email,
         amount: amountInKobo,
-        callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/driver/loan-terms?payment=success`,
+        callback_url: `${process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin}/dashboard/driver/loan-terms?payment=success`,
         metadata: {
           loanId: loanId,
           paymentType: 'down_payment',

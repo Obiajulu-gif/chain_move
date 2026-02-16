@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
-import { useAccount } from "wagmi"
+import { usePrivy, useWallets } from "@privy-io/react-auth"
 import {
   AlertCircle,
   CheckCircle2,
@@ -112,9 +111,16 @@ export default function DaoPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { user: authUser, loading: authLoading } = useAuth()
-  const { address, chain, isConnected } = useAccount()
+  const { authenticated, login } = usePrivy()
+  const { wallets } = useWallets()
 
   const investorName = getUserDisplayName(authUser, "Investor")
+  const embeddedWallet = useMemo(
+    () => wallets.find((wallet) => wallet.walletClientType === "privy" || wallet.walletClientType === "privy-v2"),
+    [wallets],
+  )
+  const walletAddress = embeddedWallet?.address || authUser?.walletAddress
+  const canVote = Boolean(authenticated && walletAddress)
 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -180,10 +186,10 @@ export default function DaoPage() {
   const handleVote = async (choice: VoteChoice) => {
     if (!selectedProposal) return
 
-    if (!isConnected) {
+    if (!canVote) {
       toast({
-        title: "Wallet not connected",
-        description: "Connect your wallet to vote on proposals.",
+        title: "Wallet required",
+        description: "Sign in with Privy and activate your embedded wallet to vote.",
         variant: "destructive",
       })
       return
@@ -278,27 +284,38 @@ export default function DaoPage() {
                 </Badge>
                 <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Governance center for {investorName}</h1>
                 <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-                  Review proposals, monitor treasury health, and vote using your connected wallet.
+                  Review proposals, monitor treasury health, and vote using your embedded Privy wallet.
                 </p>
               </div>
 
               <Card className="w-full lg:max-w-sm">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Wallet status</CardTitle>
-                  <CardDescription>Voting requires an active wallet connection.</CardDescription>
+                  <CardDescription>Voting requires an active embedded wallet.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="rounded-xl border p-3 text-sm">
-                    <p className="font-medium">{isConnected ? "Connected" : "Not connected"}</p>
+                    <p className="font-medium">{canVote ? "Connected" : "Not connected"}</p>
                     <p className="text-muted-foreground">
-                      {isConnected ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : "Connect to enable voting"}
+                      {walletAddress
+                        ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                        : "Sign in with Privy to enable voting"}
                     </p>
-                    {chain ? <p className="mt-1 text-xs text-muted-foreground">Network: {chain.name}</p> : null}
+                    <p className="mt-1 text-xs text-muted-foreground">Network: Lisk Sepolia</p>
                   </div>
 
-                  <div className="w-fit">
-                    <ConnectButton />
-                  </div>
+                  {canVote ? (
+                    <Button variant="outline" className="w-full" onClick={() => router.push("/dashboard/investor/wallet")}>
+                      Manage wallet
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full bg-[#E57700] text-white hover:bg-[#E57700]/90"
+                      onClick={() => login({ loginMethods: ["email", "sms"] })}
+                    >
+                      Continue with Privy
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -460,9 +477,9 @@ export default function DaoPage() {
 
                     <div className="space-y-2 rounded-xl border p-4">
                       <p className="text-sm font-medium">Cast vote</p>
-                      {!isConnected ? (
+                      {!canVote ? (
                         <div className="rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground">
-                          Connect wallet to enable voting.
+                          Activate your Privy wallet to enable voting.
                         </div>
                       ) : null}
 
@@ -480,7 +497,7 @@ export default function DaoPage() {
                             variant={choice === "for" ? "default" : "outline"}
                             className={choice === "for" ? "bg-[#E57700] text-white hover:bg-[#E57700]/90" : ""}
                             disabled={
-                              !isConnected ||
+                              !canVote ||
                               selectedProposal.status !== "active" ||
                               Boolean(selectedProposal.userVote) ||
                               isVoting
@@ -503,7 +520,7 @@ export default function DaoPage() {
                     <div className="flex items-start gap-2 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
                       <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
                       <p>
-                        Votes are wallet-gated and tracked in UI state until production contract wiring is configured.
+                        Votes are wallet-gated and currently tracked in app state until production contract wiring is configured.
                       </p>
                     </div>
                   </div>
@@ -519,7 +536,7 @@ export default function DaoPage() {
                 <CardDescription>Increase participation by expanding your active investment base.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" onClick={() => router.push("/dashboard/investor/invest")}>
+                <Button variant="outline" onClick={() => router.push("/dashboard/investor/opportunities")}>
                   <Wallet className="mr-2 h-4 w-4" />
                   Go to invest flow
                 </Button>

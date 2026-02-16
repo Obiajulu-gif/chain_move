@@ -1,41 +1,69 @@
 import { NextResponse } from "next/server"
-import { jwtVerify } from "jose"
-import { cookies } from "next/headers"
 import dbConnect from "@/lib/dbConnect"
 import User from "@/models/User"
+import { extractPrivyTokenFromRequest, getPrivyProfileFromPayload, verifyPrivyToken } from "@/lib/auth/privy"
+import { getSessionFromCookies, setSessionCookie, signSessionToken } from "@/lib/auth/session"
 
-export async function GET() {
+function toAuthResponse(user: any) {
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    fullName: user.fullName || user.name,
+    email: user.email,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+    walletAddress: user.walletAddress || user.walletaddress,
+    availableBalance: user.availableBalance || 0,
+    totalInvested: user.totalInvested || 0,
+    totalReturns: user.totalReturns || 0,
+  }
+}
+
+export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies()
-    const tokenCookie = cookieStore.get("token")?.value
+    await dbConnect()
 
-    if (!tokenCookie) {
-      return NextResponse.json({ error: "No token found" }, { status: 401 })
+    const session = await getSessionFromCookies()
+    if (session?.userId) {
+      const user = await User.findById(session.userId).select(
+        "name fullName email phoneNumber role walletAddress walletaddress availableBalance totalInvested totalReturns privyUserId",
+      )
+
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 })
+      }
+
+      return NextResponse.json(toAuthResponse(user))
     }
 
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
-    const { payload } = await jwtVerify(tokenCookie, secret)
+    // Fallback path: verify Privy JWT directly if provided.
+    const privyToken = extractPrivyTokenFromRequest(request)
+    if (!privyToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-    await dbConnect()
-    const user = await User.findById(payload.userId).select(
-      "name email role availableBalance totalInvested totalReturns",
-    )
+    const privyPayload = await verifyPrivyToken(privyToken)
+    const profile = getPrivyProfileFromPayload(privyPayload)
+
+    const user = await User.findOne({
+      $or: [{ privyUserId: profile.privyUserId }, ...(profile.email ? [{ email: profile.email.toLowerCase() }] : [])],
+    }).select("name fullName email phoneNumber role walletAddress walletaddress availableBalance totalInvested totalReturns privyUserId")
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    return NextResponse.json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
+    const response = NextResponse.json(toAuthResponse(user))
+    const sessionToken = await signSessionToken({
+      userId: user._id.toString(),
       role: user.role,
-      availableBalance: user.availableBalance,
-      totalInvested: user.totalInvested,
-      totalReturns: user.totalReturns,
+      name: user.name,
+      privyUserId: user.privyUserId,
     })
+    setSessionCookie(response, sessionToken)
+    return response
   } catch (error) {
-    console.error("Auth error:", error)
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+    console.error("AUTH_ME_ERROR", error)
+    return NextResponse.json({ error: "Invalid authentication state" }, { status: 401 })
   }
 }

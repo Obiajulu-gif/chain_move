@@ -35,21 +35,35 @@ export function Hero({
   const secondaryExternal = isExternalLink(secondaryCtaHref)
 
   return (
-    <section className="relative isolate min-h-[85vh] overflow-hidden bg-cm-dark">
+    <section className="relative isolate min-h-screen overflow-hidden bg-cm-dark">
       <div className="absolute inset-0">
         {isAbout ? (
-          <Image src={landingAssets.heroImages.about} alt="About hero" fill priority className="object-cover" sizes="100vw" />
+          <Image
+            src={landingAssets.heroImages.about}
+            alt="About hero"
+            fill
+            priority
+            className="absolute inset-0 h-full w-full object-cover"
+            sizes="100vw"
+          />
         ) : (
-          <video autoPlay muted loop playsInline className="h-full w-full object-cover" preload="metadata">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 h-full w-full object-cover"
+            preload="metadata"
+          >
             <source src={videoSrc} type="video/mp4" />
           </video>
         )}
       </div>
 
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(15,15,15,0.88)_0%,rgba(15,15,15,0.66)_42%,rgba(15,15,15,0.5)_100%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.2)_0%,rgba(0,0,0,0.58)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(15,15,15,0.92)_0%,rgba(15,15,15,0.68)_45%,rgba(15,15,15,0.52)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.3)_0%,rgba(0,0,0,0.68)_100%)]" />
 
-      <Container className="relative z-10 flex min-h-[85vh] items-end pb-20 pt-36 md:pb-24">
+      <Container className="relative z-10 flex min-h-screen items-center pb-16 pt-32 md:pb-20 md:pt-36">
         <div className="max-w-[700px]">
           <h1 className="text-balance text-[34px] font-bold leading-[1] tracking-[-0.03em] text-cm-text sm:text-[48px] md:text-[60px] lg:text-[72px]">
             <span className="block">{titlePrimary}</span>

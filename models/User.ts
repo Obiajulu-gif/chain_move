@@ -1,42 +1,74 @@
-import mongoose from "mongoose";
+import mongoose from "mongoose"
 
-const UserSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, "Please provide your name."],
-  },
-  email: {
-    type: String,
-    required: function (this: any) {
-      return !this.walletaddress;
+const UserSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Please provide your name."],
+      trim: true,
     },
-    unique: true,
-    match: [/.+\@.+\..+/, "Please fill a valid email address"],
-  },
-  password: {
-    type: String,
-    required: function (this: any) {
-      return !this.walletaddress;
+    fullName: {
+      type: String,
+      trim: true,
     },
-    minlength: 8,
-  },
-  walletaddress: {
-    type: String,
-    required: function (this: any) {
-      return !this.email && !this.password;
+    email: {
+      type: String,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+      trim: true,
+      match: [/.+\@.+\..+/, "Please fill a valid email address"],
     },
-    unique: true,
-    sparse: true,
+    password: {
+      type: String,
+      minlength: 8,
+    },
+    phoneNumber: {
+      type: String,
+      sparse: true,
+      trim: true,
+    },
+    privyUserId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    walletaddress: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
+    walletAddress: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
+    role: {
+      type: String,
+      enum: ["driver", "investor", "admin"],
+      required: [true, "Please specify a role."],
+      default: "investor",
+    },
+    availableBalance: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalInvested: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalReturns: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
-  role: {
-    type: String,
-    enum: ["driver", "investor", "admin"],
-    required: [true, "Please specify a role."],
-  },
-  availableBalance: {
-    type: Number,
-    default: 0,
-  },
-}, { timestamps: true });
+  { timestamps: true },
+)
 
-export default mongoose.models.User || mongoose.model("User", UserSchema);
+export default mongoose.models.User || mongoose.model("User", UserSchema)

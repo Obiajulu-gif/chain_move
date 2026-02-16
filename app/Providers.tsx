@@ -1,38 +1,30 @@
-"use client";
-import type { ReactNode, FC } from "react";
-import '@rainbow-me/rainbowkit/styles.css';
-import {
-  getDefaultConfig,
-  RainbowKitProvider,
-} from '@rainbow-me/rainbowkit';
-import { WagmiProvider } from 'wagmi';
-import {
-  mainnet,
-  liskSepolia
-} from 'wagmi/chains';
-import {
-  QueryClientProvider,
-  QueryClient,
-} from "@tanstack/react-query";
+"use client"
 
-const config = getDefaultConfig({
-  appName: 'Chain Move',
-  projectId: 'YOUR_PROJECT_ID',
-  chains: [liskSepolia, mainnet],
-  ssr: true,
-});
+import type { FC, ReactNode } from "react"
+import { PrivyProvider } from "@privy-io/react-auth"
 
-const queryClient = new QueryClient();
+const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID
 
 export const Providers: FC<{ children: ReactNode }> = ({ children }) => {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
-          {children}
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
-  );
-};
-
+    <PrivyProvider
+      appId={privyAppId ?? ""}
+      config={{
+        loginMethods: ["email", "sms"],
+        embeddedWallets: {
+          ethereum: {
+            createOnLogin: "users-without-wallets",
+          },
+          showWalletUIs: true,
+        },
+        appearance: {
+          theme: "light",
+          accentColor: "#F2780E",
+          logo: "/images/chainmovelogo.png",
+        },
+      }}
+    >
+      {children}
+    </PrivyProvider>
+  )
+}

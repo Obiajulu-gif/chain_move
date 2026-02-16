@@ -5,19 +5,26 @@ import { useState, useEffect, useCallback } from "react"
 export interface AuthUser {
   id: string
   name?: string
+  fullName?: string
   email?: string
+  phoneNumber?: string
   role?: string
+  walletAddress?: string
   availableBalance?: number
   totalInvested?: number
   totalReturns?: number
 }
 
 export function getUserDisplayName(
-  user: Pick<AuthUser, "name" | "email"> | null | undefined,
+  user: Pick<AuthUser, "name" | "fullName" | "email"> | null | undefined,
   fallbackLabel = "User",
 ): string {
   if (!user) {
     return fallbackLabel
+  }
+
+  if (user.fullName && user.fullName.trim().length > 0) {
+    return user.fullName.trim()
   }
 
   if (user.name && user.name.trim().length > 0) {

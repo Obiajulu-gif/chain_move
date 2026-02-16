@@ -122,7 +122,7 @@ export function Header({
             </div>
           </div>
 
-          <div className="hidden md:block">
+          <div>
             <ConnectButtonWidget />
           </div>
         </div>
