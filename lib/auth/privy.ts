@@ -1,6 +1,6 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose"
 
-const PRIVY_ISSUERS = ["privy.io", "https://auth.privy.io"]
+const PRIVY_ISSUERS = ["privy.io", "https://auth.privy.io", "https://auth.privy.io/"]
 
 type RawLinkedAccount = {
   type?: string
@@ -24,18 +24,30 @@ export interface ParsedPrivyProfile {
   walletAddress?: string
 }
 
+function getPrivyAppId() {
+  const configuredId = process.env.PRIVY_APP_ID || process.env.NEXT_PUBLIC_PRIVY_APP_ID
+  if (configuredId) return configuredId
+
+  const jwksUrl = process.env.PRIVY_JWKS_URL
+  if (!jwksUrl) return null
+
+  const match = jwksUrl.match(/\/apps\/([^/]+)\/jwks\.json$/)
+  return match?.[1] ?? null
+}
+
 function getPrivyJwksUrl() {
   if (process.env.PRIVY_JWKS_URL) return process.env.PRIVY_JWKS_URL
-  if (!process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
-    throw new Error("Missing PRIVY_JWKS_URL or NEXT_PUBLIC_PRIVY_APP_ID")
+  const appId = getPrivyAppId()
+  if (!appId) {
+    throw new Error("Missing PRIVY_JWKS_URL and Privy App ID (PRIVY_APP_ID or NEXT_PUBLIC_PRIVY_APP_ID)")
   }
 
-  return `https://auth.privy.io/api/v1/apps/${process.env.NEXT_PUBLIC_PRIVY_APP_ID}/jwks.json`
+  return `https://auth.privy.io/api/v1/apps/${appId}/jwks.json`
 }
 
 function getPrivyAudience() {
-  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID
-  if (!appId) throw new Error("NEXT_PUBLIC_PRIVY_APP_ID is required")
+  const appId = getPrivyAppId()
+  if (!appId) throw new Error("Privy App ID is required (PRIVY_APP_ID or NEXT_PUBLIC_PRIVY_APP_ID)")
   return appId
 }
 
@@ -95,6 +107,6 @@ export function getPrivyProfileFromPayload(payload: PrivyIdentityPayload): Parse
     privyUserId: payload.sub,
     email: payload.email || emailAccount?.email,
     phoneNumber: payload.phone_number || phoneAccount?.phoneNumber || phoneAccount?.phone_number,
-    walletAddress: walletAccount?.address,
+    walletAddress: walletAccount?.address?.toLowerCase(),
   }
 }
