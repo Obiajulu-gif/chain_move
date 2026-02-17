@@ -138,6 +138,7 @@ const SIDEBAR_SECTIONS: Record<DashboardRole, SidebarSectionConfig[]> = {
       defaultExpanded: true,
       items: [
         { label: "Users", href: "/dashboard/admin/users", icon: Users },
+        { label: "Investors", href: "/dashboard/admin/investors", icon: Coins },
         { label: "Drivers", href: "/dashboard/admin/drivers", icon: Car },
         { label: "Vehicles", href: "/dashboard/admin/vehicles", icon: Car },
       ],

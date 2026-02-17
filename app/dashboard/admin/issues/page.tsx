@@ -1,423 +1,267 @@
-"use client"
+import Link from "next/link"
+import { revalidatePath } from "next/cache"
+import { Eye, Plus, Search } from "lucide-react"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageHeader } from "@/components/dashboard/admin/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sidebar } from "@/components/dashboard/sidebar"
-import { Header } from "@/components/dashboard/header"
-import {
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Eye,
-  MoreHorizontal,
-  Search,
-  Filter,
-  MessageSquare,
-  User,
-  Phone,
-  Mail,
-  FileText,
-  Download,
-} from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import dbConnect from "@/lib/dbConnect"
+import Issue from "@/models/Issue"
+import User from "@/models/User"
+import { requireAdminAccess } from "@/src/server/admin/require-admin"
 
-const issueStats = {
-  totalIssues: 156,
-  openIssues: 23,
-  inProgress: 45,
-  resolved: 88,
-  averageResolutionTime: "2.4 days",
-  satisfactionRate: 92.5,
+export const dynamic = "force-dynamic"
+
+interface IssuesPageProps {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-const issues = [
-  {
-    id: 1,
-    title: "Payment Processing Delay",
-    description:
-      "Driver reporting technical issues with payment processing system. Unable to receive daily earnings for the past 3 days.",
-    priority: "High",
+function getParam(value: string | string[] | undefined, fallback = "") {
+  if (Array.isArray(value)) return value[0] ?? fallback
+  return value ?? fallback
+}
+
+async function createIssueAction(formData: FormData) {
+  "use server"
+
+  const admin = await requireAdminAccess()
+  await dbConnect()
+
+  const title = String(formData.get("title") || "").trim()
+  const issueType = String(formData.get("issueType") || "").trim()
+  const severity = String(formData.get("severity") || "Medium").trim()
+  const description = String(formData.get("description") || "").trim()
+  const reportedBy = String(formData.get("reportedBy") || "").trim()
+
+  if (!title || !["Payment", "KYC", "Vehicle", "Pool", "Withdrawal"].includes(issueType) || !description) {
+    return
+  }
+
+  let reportedByUserId: string | undefined
+  let reportedByLabel = reportedBy || "System"
+
+  if (reportedBy) {
+    const linkedUser = await User.findOne({
+      $or: [{ email: reportedBy.toLowerCase() }, { _id: reportedBy }],
+    })
+      .select("_id name fullName email")
+      .lean()
+      .catch(() => null)
+
+    if (linkedUser) {
+      reportedByUserId = linkedUser._id.toString()
+      reportedByLabel = linkedUser.fullName || linkedUser.name || linkedUser.email || reportedByLabel
+    }
+  }
+
+  await Issue.create({
+    title,
+    issueType,
+    severity,
     status: "Open",
-    type: "Payment",
-    reportedBy: "Emmanuel Okafor",
-    reporterEmail: "emmanuel.o@email.com",
-    reporterPhone: "+234 801 234 5678",
-    assignee: "Support Team A",
-    createdDate: "2025-01-12",
-    lastUpdate: "2025-01-12",
-    vehicleId: "TOY-COR-2020-001",
-    category: "Technical",
-    urgency: "Critical",
-    estimatedResolution: "24 hours",
-  },
-  {
-    id: 2,
-    title: "Vehicle Maintenance Dispute",
-    description:
-      "Disagreement between driver and investor regarding maintenance cost responsibility. Driver claims investor should cover major repairs.",
-    priority: "Medium",
-    status: "In Progress",
-    type: "Dispute",
-    reportedBy: "Amina Hassan",
-    reporterEmail: "amina.h@email.com",
-    reporterPhone: "+234 802 345 6789",
-    assignee: "Support Team B",
-    createdDate: "2025-01-11",
-    lastUpdate: "2025-01-12",
-    vehicleId: "HON-CIV-2021-002",
-    category: "Financial",
-    urgency: "Medium",
-    estimatedResolution: "3-5 days",
-  },
-  {
-    id: 3,
-    title: "KYC Document Verification Issue",
-    description:
-      "User unable to upload required documents due to file size limitations. System keeps rejecting valid documents.",
-    priority: "Medium",
-    status: "Open",
-    type: "KYC",
-    reportedBy: "Chidi Okwu",
-    reporterEmail: "chidi.o@email.com",
-    reporterPhone: "+234 803 456 7890",
-    assignee: "Support Team C",
-    createdDate: "2025-01-10",
-    lastUpdate: "2025-01-11",
-    vehicleId: null,
-    category: "Technical",
-    urgency: "Low",
-    estimatedResolution: "1-2 days",
-  },
-  {
-    id: 4,
-    title: "Investment Return Calculation Error",
-    description:
-      "Investor reporting discrepancies in monthly return calculations. Claims actual returns are lower than projected.",
-    priority: "High",
-    status: "Resolved",
-    type: "Investment",
-    reportedBy: "Marcus Chen",
-    reporterEmail: "marcus.c@email.com",
-    reporterPhone: "+234 804 567 8901",
-    assignee: "Finance Team",
-    createdDate: "2025-01-08",
-    lastUpdate: "2025-01-10",
-    vehicleId: "FOR-TRA-2019-003",
-    category: "Financial",
-    urgency: "High",
-    estimatedResolution: "Completed",
-  },
-]
-
-export default function AdminIssueResolution() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [priorityFilter, setPriorityFilter] = useState("all")
-  const [typeFilter, setTypeFilter] = useState("all")
-
-  const filteredIssues = issues.filter((issue) => {
-    const matchesSearch =
-      issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      issue.reportedBy.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      issue.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || issue.status.toLowerCase() === statusFilter.toLowerCase()
-    const matchesPriority = priorityFilter === "all" || issue.priority.toLowerCase() === priorityFilter.toLowerCase()
-    const matchesType = typeFilter === "all" || issue.type.toLowerCase() === typeFilter.toLowerCase()
-
-    return matchesSearch && matchesStatus && matchesPriority && matchesType
+    description,
+    reportedByUserId,
+    reportedByLabel,
+    notes: [
+      {
+        body: `Issue opened by ${admin.name}.`,
+        authorUserId: admin.id,
+        createdAt: new Date(),
+      },
+    ],
   })
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "resolved":
-        return "bg-green-600 text-white"
-      case "in progress":
-        return "bg-blue-600 text-white"
-      case "open":
-        return "bg-red-600 text-white"
-      default:
-        return "bg-gray-600 text-white"
-    }
+  revalidatePath("/dashboard/admin/issues")
+}
+
+function badgeClassForSeverity(severity: string) {
+  if (severity === "High") return "bg-red-600 text-white hover:bg-red-600"
+  if (severity === "Medium") return "bg-amber-600 text-white hover:bg-amber-600"
+  return "bg-emerald-600 text-white hover:bg-emerald-600"
+}
+
+function badgeClassForStatus(status: string) {
+  if (status === "Open") return "bg-red-600 text-white hover:bg-red-600"
+  if (status === "In Progress") return "bg-blue-600 text-white hover:bg-blue-600"
+  return "bg-emerald-600 text-white hover:bg-emerald-600"
+}
+
+export default async function AdminIssuesPage({ searchParams }: IssuesPageProps) {
+  await requireAdminAccess()
+  await dbConnect()
+
+  const resolvedSearchParams = (await searchParams) || {}
+  const q = getParam(resolvedSearchParams.q).trim()
+  const status = getParam(resolvedSearchParams.status, "all")
+  const issueType = getParam(resolvedSearchParams.type, "all")
+
+  const query: Record<string, unknown> = {}
+  if (status !== "all") query.status = status
+  if (issueType !== "all") query.issueType = issueType
+  if (q) {
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+    query.$or = [{ title: regex }, { description: regex }, { reportedByLabel: regex }]
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case "high":
-        return "bg-red-100 text-red-800"
-      case "medium":
-        return "bg-yellow-100 text-yellow-800"
-      case "low":
-        return "bg-green-100 text-green-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency.toLowerCase()) {
-      case "critical":
-        return "bg-red-600 text-white"
-      case "high":
-        return "bg-orange-600 text-white"
-      case "medium":
-        return "bg-yellow-600 text-white"
-      case "low":
-        return "bg-green-600 text-white"
-      default:
-        return "bg-gray-600 text-white"
-    }
-  }
+  const issues = await Issue.find(query)
+    .populate("reportedByUserId", "name fullName email")
+    .sort({ createdAt: -1 })
+    .limit(100)
+    .lean()
 
   return (
-    <div className="min-h-screen bg-[#1a2332]">
-      <Sidebar role="admin" />
+    <div className="space-y-5">
+      <PageHeader
+        title="Issues"
+        subtitle="Operational issues and support flags."
+        actions={
+          <form action="/dashboard/admin/issues" className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <div className="relative min-w-[220px] flex-1 sm:w-[280px] sm:flex-none">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input name="q" defaultValue={q} placeholder="Search issues" className="h-9 pl-9" />
+            </div>
+            <select
+              name="type"
+              defaultValue={issueType}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            >
+              <option value="all">All types</option>
+              <option value="Payment">Payment</option>
+              <option value="KYC">KYC</option>
+              <option value="Vehicle">Vehicle</option>
+              <option value="Pool">Pool</option>
+              <option value="Withdrawal">Withdrawal</option>
+            </select>
+            <select
+              name="status"
+              defaultValue={status}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            >
+              <option value="all">All status</option>
+              <option value="Open">Open</option>
+              <option value="In Progress">In progress</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+            <Button type="submit" variant="outline" className="h-9">
+              Filter
+            </Button>
+          </form>
+        }
+      />
 
-      <div className="md:ml-64">
-        <Header userName="Admin" userStatus="System Administrator" />
+      <Card className="border-border/70">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Plus className="h-4 w-4" />
+            Create Issue
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form action={createIssueAction} className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Input name="title" placeholder="Issue title" required />
+            <select
+              name="issueType"
+              required
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            >
+              <option value="">Issue type</option>
+              <option value="Payment">Payment</option>
+              <option value="KYC">KYC</option>
+              <option value="Vehicle">Vehicle</option>
+              <option value="Pool">Pool</option>
+              <option value="Withdrawal">Withdrawal</option>
+            </select>
+            <select
+              name="severity"
+              defaultValue="Medium"
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            >
+              <option value="Low">Low severity</option>
+              <option value="Medium">Medium severity</option>
+              <option value="High">High severity</option>
+            </select>
+            <Input name="reportedBy" placeholder="Reporter email or user id (optional)" />
+            <Textarea
+              name="description"
+              placeholder="Describe the issue for internal tracking"
+              required
+              className="md:col-span-2"
+              rows={3}
+            />
+            <div className="md:col-span-2">
+              <Button type="submit">Create issue</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
-        <div className="p-6">
-          {/* Page Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Issue & Dispute Resolution</h1>
-            <p className="text-gray-400">Manage and resolve platform issues, disputes, and user support requests</p>
-          </div>
+      <section className="rounded-xl border border-border/70 bg-card shadow-sm">
+        <div className="max-h-[calc(100vh-430px)] overflow-auto">
+          <table className="w-full min-w-[940px] border-collapse text-sm">
+            <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur supports-[backdrop-filter]:bg-muted/65">
+              <tr className="border-b border-border/70 text-left">
+                <th className="px-4 py-3 font-medium text-muted-foreground">Issue Type</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Title</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Severity</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Reported By</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Created</th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {issues.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                    No issues logged yet.
+                  </td>
+                </tr>
+              ) : (
+                issues.map((issue: any) => {
+                  const reporter = issue.reportedByUserId
+                    ? issue.reportedByUserId.fullName || issue.reportedByUserId.name || issue.reportedByUserId.email
+                    : issue.reportedByLabel || "Unknown"
 
-          {/* Issue Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-[#2a3441] border-gray-700">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-300">Total Issues</CardTitle>
-                <FileText className="h-4 w-4 text-[#E57700]" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-white">{issueStats.totalIssues}</div>
-                <p className="text-xs text-gray-400">All time reports</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-[#2a3441] border-gray-700">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-300">Open Issues</CardTitle>
-                <AlertTriangle className="h-4 w-4 text-[#E57700]" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-white">{issueStats.openIssues}</div>
-                <p className="text-xs text-red-400">Requires attention</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-[#2a3441] border-gray-700">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-300">In Progress</CardTitle>
-                <Clock className="h-4 w-4 text-[#E57700]" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-white">{issueStats.inProgress}</div>
-                <p className="text-xs text-blue-400">Being resolved</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-[#2a3441] border-gray-700">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-300">Satisfaction Rate</CardTitle>
-                <CheckCircle className="h-4 w-4 text-[#E57700]" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-white">{issueStats.satisfactionRate}%</div>
-                <p className="text-xs text-green-400">User satisfaction</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Filters and Search */}
-          <Card className="bg-[#2a3441] border-gray-700 mb-6">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <Filter className="h-5 w-5 mr-2" />
-                Filter & Search Issues
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search issues..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-[#1a2332] border-gray-600 text-white"
-                  />
-                </div>
-
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="bg-[#1a2332] border-gray-600 text-white">
-                    <SelectValue placeholder="Filter by Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="in progress">In Progress</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                  <SelectTrigger className="bg-[#1a2332] border-gray-600 text-white">
-                    <SelectValue placeholder="Filter by Priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Priorities</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="bg-[#1a2332] border-gray-600 text-white">
-                    <SelectValue placeholder="Filter by Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="payment">Payment</SelectItem>
-                    <SelectItem value="dispute">Dispute</SelectItem>
-                    <SelectItem value="kyc">KYC</SelectItem>
-                    <SelectItem value="investment">Investment</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Report
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Issues List */}
-          <Card className="bg-[#2a3441] border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Issues & Disputes ({filteredIssues.length})</CardTitle>
-              <CardDescription className="text-gray-400">
-                Manage and resolve platform issues and user disputes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {filteredIssues.map((issue) => (
-                  <div key={issue.id} className="p-6 bg-[#1a2332] rounded-lg border border-gray-600">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-lg font-semibold text-white">{issue.title}</h3>
-                          <Badge className={getPriorityColor(issue.priority)}>{issue.priority}</Badge>
-                          <Badge className={getUrgencyColor(issue.urgency)}>{issue.urgency}</Badge>
-                          <Badge variant="outline" className="border-gray-600 text-gray-300">
-                            {issue.type}
-                          </Badge>
-                        </div>
-                        <p className="text-gray-400 mb-3 leading-relaxed">{issue.description}</p>
-                      </div>
-
-                      <div className="text-right ml-4">
-                        <Badge className={getStatusColor(issue.status)}>{issue.status}</Badge>
-                        <p className="text-xs text-gray-400 mt-1">Created: {issue.createdDate}</p>
-                        <p className="text-xs text-gray-400">Updated: {issue.lastUpdate}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-gray-400 mb-1">Reported By</p>
-                        <div className="flex items-center space-x-2">
-                          <User className="h-4 w-4 text-[#E57700]" />
-                          <div>
-                            <p className="font-semibold text-white text-sm">{issue.reportedBy}</p>
-                            <div className="flex items-center space-x-2 text-xs text-gray-400">
-                              <Mail className="h-3 w-3" />
-                              <span>{issue.reporterEmail}</span>
-                            </div>
-                            <div className="flex items-center space-x-2 text-xs text-gray-400">
-                              <Phone className="h-3 w-3" />
-                              <span>{issue.reporterPhone}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-gray-400 mb-1">Assignment</p>
-                        <p className="font-semibold text-white">{issue.assignee}</p>
-                        <p className="text-xs text-gray-400">Category: {issue.category}</p>
-                        {issue.vehicleId && <p className="text-xs text-gray-400">Vehicle: {issue.vehicleId}</p>}
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-gray-400 mb-1">Resolution</p>
-                        <p className="font-semibold text-white">{issue.estimatedResolution}</p>
-                        <p className="text-xs text-gray-400">Estimated timeline</p>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <Button size="sm" className="bg-[#E57700] hover:bg-[#E57700]/90 text-white">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-blue-600 text-blue-400 hover:bg-blue-900/20"
-                      >
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Add Comment
-                      </Button>
-                      {issue.status !== "Resolved" && (
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Mark Resolved
+                  return (
+                    <tr key={issue._id.toString()} className="border-b border-border/60">
+                      <td className="px-4 py-3 text-foreground">{issue.issueType}</td>
+                      <td className="px-4 py-3">
+                        <p className="max-w-[320px] truncate font-medium text-foreground">{issue.title}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge className={badgeClassForSeverity(issue.severity)}>{issue.severity}</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge className={badgeClassForStatus(issue.status)}>{issue.status}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{reporter}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {new Date(issue.createdAt).toLocaleDateString("en-NG", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button asChild variant="ghost" size="sm" className="h-8">
+                          <Link href={`/dashboard/admin/issues/${issue._id.toString()}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                          </Link>
                         </Button>
-                      )}
-                      <Button size="sm" variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700">
-                        <User className="h-4 w-4 mr-2" />
-                        Reassign
-                      </Button>
-                      <Button size="sm" variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {filteredIssues.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="text-gray-400 mb-4">
-                    <Search className="h-16 w-16 mx-auto" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No issues found</h3>
-                  <p className="text-gray-500 mb-4">Try adjusting your search criteria or filters</p>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSearchTerm("")
-                      setStatusFilter("all")
-                      setPriorityFilter("all")
-                      setTypeFilter("all")
-                    }}
-                    className="border-gray-600 text-gray-300 hover:bg-gray-700"
-                  >
-                    Clear All Filters
-                  </Button>
-                </div>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
-            </CardContent>
-          </Card>
+            </tbody>
+          </table>
         </div>
-      </div>
+      </section>
     </div>
   )
 }
+

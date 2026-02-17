@@ -2,13 +2,14 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IVehicle extends Document {
   name: string;
+  identifier?: string;
   type: string;
   year: number;
   price: number;
   roi: number;
   features: string[];
   image?: string;
-  status: 'Available' | 'Financed' | 'Reserved' | 'Maintenance';
+  status: 'Available' | 'Financed' | 'Reserved' | 'Maintenance' | 'Retired';
   specifications: {
     engine: string;
     fuelType: string;
@@ -26,6 +27,7 @@ export interface IVehicle extends Document {
 
 const VehicleSchema: Schema = new Schema({
   name: { type: String, required: true },
+  identifier: { type: String, trim: true, unique: true, sparse: true },
   type: { type: String, required: true },
   year: { type: Number, required: true },
   price: { type: Number, required: true },
@@ -34,7 +36,7 @@ const VehicleSchema: Schema = new Schema({
   image: { type: String },
   status: {
     type: String,
-    enum: ['Available', 'Financed', 'Reserved', 'Maintenance'],
+    enum: ['Available', 'Financed', 'Reserved', 'Maintenance', 'Retired'],
     default: 'Available',
   },
   specifications: {

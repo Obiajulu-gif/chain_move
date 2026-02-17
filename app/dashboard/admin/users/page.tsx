@@ -1,405 +1,250 @@
-"use client"
+import Link from "next/link"
+import { Download, Eye, Search } from "lucide-react"
 
-import { useState, useEffect } from "react"
-import { useToast } from "@/hooks/use-toast"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
+import { CopyButton } from "@/components/dashboard/admin/copy-button"
+import { PageHeader } from "@/components/dashboard/admin/page-header"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { MoreHorizontal, Shield, UserIcon, Trash2, Users, RefreshCw, AlertTriangle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
+import dbConnect from "@/lib/dbConnect"
+import User from "@/models/User"
+import { requireAdminAccess } from "@/src/server/admin/require-admin"
 
-import { Sidebar } from "@/components/dashboard/sidebar"
-import { Header } from "@/components/dashboard/header"
+export const dynamic = "force-dynamic"
 
-// Define a User type for clarity
-interface User {
-  _id: string
-  name: string
-  email: string
-  role: "admin" | "driver" | "investor"
-  createdAt: string
+interface UsersPageProps {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-async function getUsers(): Promise<User[]> {
-  const res = await fetch("/api/users")
-  if (!res.ok) {
-    throw new Error("Failed to fetch users")
-  }
-  const data = await res.json()
-  return data.users
+const PAGE_SIZE = 20
+
+function getParam(value: string | string[] | undefined, fallback = "") {
+  if (Array.isArray(value)) return value[0] ?? fallback
+  return value ?? fallback
 }
 
-export default function UserManagementPage() {
-  const [users, setUsers] = useState<User[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
-  const { toast } = useToast()
+function toInt(value: string, fallback: number) {
+  const parsed = Number.parseInt(value, 10)
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback
+  return parsed
+}
 
-  const fetchUsers = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      const fetchedUsers = await getUsers()
-      setUsers(fetchedUsers)
-      setLastUpdated(new Date())
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Could not load users"
-      setError(errorMessage)
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+function buildUsersHref({
+  page,
+  q,
+  role,
+}: {
+  page: number
+  q: string
+  role: string
+}) {
+  const params = new URLSearchParams()
+  if (page > 1) params.set("page", String(page))
+  if (q) params.set("q", q)
+  if (role && role !== "all") params.set("role", role)
+  const query = params.toString()
+  return query ? `/dashboard/admin/users?${query}` : "/dashboard/admin/users"
+}
+
+function resolveUserName(user: any) {
+  return user.fullName || user.name || user.email || "Unnamed user"
+}
+
+function deriveUserStatus(user: any) {
+  const normalizedKyc = typeof user.kycStatus === "string" ? user.kycStatus.toLowerCase() : ""
+  const isKycApproved =
+    user.isKycVerified === true ||
+    user.kycVerified === true ||
+    ["approved", "approved_stage2", "verified", "completed", "complete"].includes(normalizedKyc)
+
+  if (user.role === "admin") return "Active"
+  return isKycApproved ? "Active" : "KYC Pending"
+}
+
+function truncate(value: string, max = 24) {
+  if (!value) return value
+  if (value.length <= max) return value
+  return `${value.slice(0, max - 3)}...`
+}
+
+export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
+  await requireAdminAccess()
+  await dbConnect()
+
+  const resolvedSearchParams = (await searchParams) || {}
+  const q = getParam(resolvedSearchParams.q).trim()
+  const role = getParam(resolvedSearchParams.role, "all")
+  const page = toInt(getParam(resolvedSearchParams.page, "1"), 1)
+
+  const userQuery: Record<string, unknown> = {}
+
+  if (role !== "all" && ["admin", "driver", "investor"].includes(role)) {
+    userQuery.role = role
   }
 
-  useEffect(() => {
-    fetchUsers()
-  }, [])
-
-  const handleRoleChange = async (userId: string, newRole: "admin" | "driver" | "investor") => {
-    try {
-      const res = await fetch(`/api/users/${userId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: newRole }),
-      })
-
-      if (res.ok) {
-        toast({
-          title: "Success",
-          description: "User role updated successfully.",
-        })
-        fetchUsers() // Refresh users list
-      } else {
-        const data = await res.json()
-        toast({
-          title: "Update Failed",
-          description: data.message || "Could not update user role.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
-        variant: "destructive",
-      })
-    }
+  if (q) {
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+    userQuery.$or = [{ name: regex }, { fullName: regex }, { email: regex }, { privyUserId: regex }]
   }
 
-  const handleDeleteUser = async (userId: string) => {
-    try {
-      const res = await fetch(`/api/users/${userId}`, {
-        method: "DELETE",
-      })
+  const totalCount = await User.countDocuments(userQuery)
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
 
-      const data = await res.json()
+  const users = await User.find(userQuery)
+    .select("name fullName email privyUserId role kycStatus isKycVerified kycVerified createdAt")
+    .sort({ createdAt: -1 })
+    .skip((currentPage - 1) * PAGE_SIZE)
+    .limit(PAGE_SIZE)
+    .lean()
 
-      if (res.ok) {
-        toast({
-          title: "Success",
-          description: "User has been deleted.",
-        })
-        fetchUsers() // Refresh users list
-      } else {
-        toast({
-          title: "Deletion Failed",
-          description: data.message || "Could not delete the user.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred during deletion.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const getRoleStats = () => {
-    const stats = {
-      admin: users.filter((u) => u.role === "admin").length,
-      driver: users.filter((u) => u.role === "driver").length,
-      investor: users.filter((u) => u.role === "investor").length,
-      total: users.length,
-    }
-    return stats
-  }
-
-  const stats = getRoleStats()
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Sidebar role="admin" />
-
-        <div className="md:ml-64">
-          <Header userName="Admin" userStatus="System Administrator" notificationCount={0} />
-
-          <div className="p-6">
-            <Card className="max-w-md mx-auto mt-20">
-              <CardHeader>
-                <CardTitle className="text-red-600 flex items-center">
-                  <AlertTriangle className="h-5 w-5 mr-2" />
-                  Error Loading Users
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">{error}</p>
-                <Button onClick={fetchUsers} className="w-full">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const from = totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1
+  const to = Math.min(currentPage * PAGE_SIZE, totalCount)
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar role="admin" />
-
-      <div className="md:ml-64">
-        <Header userName="Admin" userStatus="System Administrator" notificationCount={0} />
-
-        <div className="p-6">
-          {/* Page Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">User Management</h1>
-                <p className="text-muted-foreground">Manage platform users, roles, and permissions</p>
-                <div className="flex items-center space-x-4 mt-2">
-                  <Badge className="bg-blue-100 text-blue-800">
-                    <Users className="w-3 h-3 mr-1" />
-                    {stats.total} Total Users
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">Last updated: {lastUpdated.toLocaleString()}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={fetchUsers}
-                    disabled={isLoading}
-                    className="ml-2 bg-transparent"
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-                    Refresh
-                  </Button>
-                </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Users"
+        subtitle="All registered users on the platform."
+        actions={
+          <>
+            <form action="/dashboard/admin/users" className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+              <div className="relative min-w-[220px] flex-1 sm:w-[280px] sm:flex-none">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  name="q"
+                  defaultValue={q}
+                  placeholder="Search name, email, Privy ID"
+                  className="h-9 pl-9"
+                />
               </div>
-            </div>
-          </div>
+              <select
+                name="role"
+                defaultValue={role}
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+              >
+                <option value="all">All roles</option>
+                <option value="investor">Investor</option>
+                <option value="driver">Driver</option>
+                <option value="admin">Admin</option>
+              </select>
+              <Button type="submit" variant="outline" className="h-9">
+                Apply
+              </Button>
+            </form>
+            <Button asChild variant="outline" className="h-9">
+              <Link href="/api/admin/users/export">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-          {/* User Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <Users className="h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <p className="text-xs opacity-80">All registered users</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Administrators</CardTitle>
-                <Shield className="h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.admin}</div>
-                <p className="text-xs opacity-80">Platform administrators</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Drivers</CardTitle>
-                <UserIcon className="h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.driver}</div>
-                <p className="text-xs opacity-80">Active drivers</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Investors</CardTitle>
-                <UserIcon className="h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.investor}</div>
-                <p className="text-xs opacity-80">Platform investors</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Users Table */}
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-foreground flex items-center">
-                <Users className="h-5 w-5 mr-2" />
-                All Users ({users.length})
-              </CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Manage user roles and permissions across the platform
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4 p-4">
-                      <Skeleton className="h-4 w-48" />
-                      <Skeleton className="h-4 w-64" />
-                      <Skeleton className="h-6 w-20" />
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-8 w-8 ml-auto" />
-                    </div>
-                  ))}
-                </div>
-              ) : users.length === 0 ? (
-                <div className="text-center py-12">
-                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No users found</p>
-                </div>
-              ) : (
-                <div className="rounded-lg border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Joined</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map((user) => (
-                        <TableRow key={user._id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={user.role === "admin" ? "default" : "secondary"}
-                              className={`capitalize ${
-                                user.role === "admin"
-                                  ? "bg-purple-100 text-purple-800"
-                                  : user.role === "driver"
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-orange-100 text-orange-800"
-                              }`}
-                            >
-                              {user.role}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
-                            <AlertDialog>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Open menu</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Change Role</DropdownMenuLabel>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => handleRoleChange(user._id, "admin")}
-                                    disabled={user.role === "admin"}
-                                  >
-                                    <Shield className="mr-2 h-4 w-4" />
-                                    Make Admin
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleRoleChange(user._id, "driver")}
-                                    disabled={user.role === "driver"}
-                                  >
-                                    <UserIcon className="mr-2 h-4 w-4" />
-                                    Make Driver
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleRoleChange(user._id, "investor")}
-                                    disabled={user.role === "investor"}
-                                  >
-                                    <UserIcon className="mr-2 h-4 w-4" />
-                                    Make Investor
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem className="text-red-600 focus:bg-red-50 focus:text-red-600">
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete User
-                                    </DropdownMenuItem>
-                                  </AlertDialogTrigger>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the user account for{" "}
-                                    <span className="font-semibold">{user.name}</span> and remove their data from our
-                                    servers.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDeleteUser(user._id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Delete User
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      <section className="rounded-xl border border-border/70 bg-card shadow-sm">
+        <div className="flex items-center justify-between border-b border-border/60 px-4 py-3 text-sm text-muted-foreground">
+          <p>
+            Showing {from} to {to} of {totalCount} users
+          </p>
+          <p>Page {currentPage} of {totalPages}</p>
         </div>
-      </div>
+
+        <div className="max-h-[calc(100vh-280px)] overflow-auto">
+          <table className="w-full min-w-[940px] border-collapse text-sm">
+            <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur supports-[backdrop-filter]:bg-muted/65">
+              <tr className="border-b border-border/70 text-left">
+                <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Email / Privy ID</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Role</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Created</th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                    No users found for the selected filters.
+                  </td>
+                </tr>
+              ) : (
+                users.map((user: any) => {
+                  const emailOrPrivy = user.email || user.privyUserId || "N/A"
+                  const statusLabel = deriveUserStatus(user)
+
+                  return (
+                    <tr key={user._id.toString()} className="border-b border-border/60">
+                      <td className="px-4 py-3 font-medium text-foreground">{resolveUserName(user)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <div className="space-y-0.5">
+                            <p className="max-w-[260px] truncate text-foreground">{truncate(emailOrPrivy, 32)}</p>
+                            {user.privyUserId ? (
+                              <p className="max-w-[260px] truncate text-xs text-muted-foreground">{truncate(user.privyUserId, 32)}</p>
+                            ) : null}
+                          </div>
+                          {emailOrPrivy !== "N/A" ? <CopyButton value={emailOrPrivy} /> : null}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant="secondary" className="capitalize">
+                          {user.role || "unknown"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge
+                          variant={statusLabel === "Active" ? "default" : "secondary"}
+                          className={cn(statusLabel === "Active" ? "bg-green-600 text-white hover:bg-green-600" : "")}
+                        >
+                          {statusLabel}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {new Date(user.createdAt).toLocaleDateString("en-NG", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button asChild variant="ghost" size="sm" className="h-8">
+                          <Link href={`/dashboard/admin/users/${user._id.toString()}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                          </Link>
+                        </Button>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-border/60 px-4 py-3">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className={cn(currentPage <= 1 ? "pointer-events-none opacity-50" : "")}
+          >
+            <Link href={buildUsersHref({ page: Math.max(1, currentPage - 1), q, role })}>Previous</Link>
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className={cn(currentPage >= totalPages ? "pointer-events-none opacity-50" : "")}
+          >
+            <Link href={buildUsersHref({ page: Math.min(totalPages, currentPage + 1), q, role })}>Next</Link>
+          </Button>
+        </div>
+      </section>
     </div>
   )
 }
+
