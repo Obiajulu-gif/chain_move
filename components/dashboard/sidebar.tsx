@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useLogout } from "@privy-io/react-auth"
 import type { LucideIcon } from "lucide-react"
 import {
-  Bell,
+  Calendar,
   Car,
   ChevronDown,
   Coins,
@@ -16,13 +16,13 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Receipt,
   ShieldAlert,
   Settings,
   UserCheck,
   Users,
   Vote,
   Wallet,
-  Wrench,
   X,
 } from "lucide-react"
 
@@ -106,14 +106,13 @@ const SIDEBAR_SECTIONS: Record<DashboardRole, SidebarSectionConfig[]> = {
       items: [{ label: "Dashboard", href: "/dashboard/driver", icon: LayoutDashboard }],
     },
     {
-      id: "driver-operations",
-      label: "Operations",
+      id: "driver-hire-purchase",
+      label: "Hire Purchase",
       defaultExpanded: true,
       items: [
-        { label: "KYC Verification", href: "/dashboard/driver/kyc", icon: UserCheck },
-        { label: "Maintenance", href: "/dashboard/driver/maintenance", icon: Wrench },
-        { label: "Loan Terms", href: "/dashboard/driver/loan-terms", icon: FileText },
-        { label: "Repayment", href: "/dashboard/driver/repayment", icon: Wallet },
+        { label: "My Vehicle / Contract", href: "/dashboard/driver/contract", icon: Calendar },
+        { label: "Make Payment", href: "/dashboard/driver/repayment", icon: Wallet },
+        { label: "Payment History", href: "/dashboard/driver/payments", icon: Receipt },
       ],
     },
     {
@@ -121,8 +120,8 @@ const SIDEBAR_SECTIONS: Record<DashboardRole, SidebarSectionConfig[]> = {
       label: "Account",
       defaultExpanded: true,
       items: [
-        { label: "Notifications", href: "/dashboard/driver/notifications", icon: Bell },
-        { label: "Documents", href: "/dashboard/driver/documents", icon: FileText },
+        { label: "Settings", href: "/dashboard/driver/settings", icon: Settings },
+        { label: "Verification", href: "/dashboard/driver/kyc", icon: UserCheck },
       ],
     },
   ],

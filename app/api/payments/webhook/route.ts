@@ -3,6 +3,7 @@ import mongoose from "mongoose"
 import { NextResponse } from "next/server"
 
 import dbConnect from "@/lib/dbConnect"
+import { confirmDriverPayment } from "@/lib/services/driver-contracts.service"
 import Loan from "@/models/Loan"
 import Transaction from "@/models/Transaction"
 import User from "@/models/User"
@@ -28,6 +29,13 @@ async function resolveUserByMetadata({
   }
 
   return null
+}
+
+function resolvePaymentType(metadata: Record<string, unknown>) {
+  const rawType = typeof metadata.paymentType === "string" ? metadata.paymentType.toLowerCase() : "wallet_funding"
+  if (rawType === "down_payment") return "down_payment"
+  if (rawType === "driver_repayment") return "driver_repayment"
+  return "wallet_funding"
 }
 
 export async function POST(request: Request) {
@@ -64,12 +72,21 @@ export async function POST(request: Request) {
     }
 
     const metadata = charge.metadata || {}
-    const paymentType = metadata.paymentType === "down_payment" ? "down_payment" : "wallet_funding"
+    const paymentType = resolvePaymentType(metadata)
     const amountNgn = Number(charge.amount) / 100
     const email = charge.customer?.email as string | undefined
 
     if (!Number.isFinite(amountNgn) || amountNgn <= 0) {
       return NextResponse.json({ message: "Invalid payment amount." }, { status: 400 })
+    }
+
+    if (paymentType === "driver_repayment") {
+      await confirmDriverPayment(reference, {
+        verifiedAmountNgn: amountNgn,
+        channel: typeof charge.channel === "string" ? charge.channel : null,
+        metadata,
+      })
+      return NextResponse.json({ message: "Driver repayment processed." }, { status: 200 })
     }
 
     if (paymentType === "down_payment" && metadata.loanId) {

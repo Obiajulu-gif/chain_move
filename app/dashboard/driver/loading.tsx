@@ -4,7 +4,7 @@ export default function Loading() {
   return (
     <DashboardRouteLoading
       title="Loading driver dashboard"
-      description="Preparing loan status, repayments, and operational alerts."
+      description="Preparing hire-purchase contract, repayments, and payment history."
     />
   )
 }

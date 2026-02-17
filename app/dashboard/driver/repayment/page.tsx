@@ -1,135 +1,131 @@
-"use client"
+import Link from "next/link"
+import { redirect } from "next/navigation"
+import { ArrowRight, Wallet } from "lucide-react"
 
-import { CalendarClock, CreditCard, FileText, Wallet } from "lucide-react"
 import { Sidebar } from "@/components/dashboard/sidebar"
-import { Header } from "@/components/dashboard/header"
-import { Badge } from "@/components/ui/badge"
+import { DashboardHeader } from "@/components/dashboard/investor-overview/dashboard-header"
+import { ContractSummaryCard } from "@/components/dashboard/driver-hire-purchase/contract-summary-card"
+import { DriverPaymentForm } from "@/components/dashboard/driver-hire-purchase/driver-payment-form"
+import { DriverPaymentsTable } from "@/components/dashboard/driver-hire-purchase/driver-payments-table"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import dbConnect from "@/lib/dbConnect"
+import { getSessionFromCookies } from "@/lib/auth/session"
+import { getDriverContract, getDriverPayments } from "@/lib/services/driver-contracts.service"
+import User from "@/models/User"
 
-const repaymentSummary = {
-  dueAmount: 1500,
-  dueDate: "2026-02-28",
-  lastPayment: 500,
-  lastPaymentDate: "2026-01-28",
-  paymentMethod: "Wallet transfer",
+export const dynamic = "force-dynamic"
+
+function resolveDisplayName(user: { fullName?: string; name?: string; email?: string | null }) {
+  if (user.fullName && user.fullName.trim()) return user.fullName.trim()
+  if (user.name && user.name.trim()) return user.name.trim()
+  if (user.email) return user.email.split("@")[0]
+  return "Driver"
 }
 
-const paymentHistory = [
-  { id: "p-01", date: "2026-01-28", amount: 500, status: "Paid" },
-  { id: "p-02", date: "2025-12-28", amount: 500, status: "Paid" },
-  { id: "p-03", date: "2025-11-28", amount: 500, status: "Paid" },
-  { id: "p-04", date: "2025-10-28", amount: 500, status: "Paid" },
-]
+export default async function DriverRepaymentPage() {
+  const session = await getSessionFromCookies()
+  if (!session?.userId) {
+    redirect("/signin")
+  }
 
-export default function DriverRepaymentPage() {
-  return (
-    <div className="min-h-screen bg-background">
-      <Sidebar role="driver" />
+  await dbConnect()
+  const user = await User.findById(session.userId)
+    .select("name fullName email role")
 
-      <div className="md:ml-64 lg:ml-72">
-        <Header userStatus="Verified Driver" />
+  if (!user || user.role !== "driver") {
+    redirect("/signin")
+  }
 
-        <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-          <section className="rounded-2xl border bg-card p-5 sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Repayment center</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Manage upcoming installments and review your payment activity.
-                </p>
-              </div>
-              <Badge className="w-fit bg-amber-600 text-white">Due soon</Badge>
-            </div>
-          </section>
-
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Amount due</CardDescription>
-                <CardTitle>${repaymentSummary.dueAmount.toLocaleString()}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground">Current billing cycle</CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Due date</CardDescription>
-                <CardTitle>{new Date(repaymentSummary.dueDate).toLocaleDateString()}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground">Auto-reminders enabled</CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Last payment</CardDescription>
-                <CardTitle>${repaymentSummary.lastPayment}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground">
-                {new Date(repaymentSummary.lastPaymentDate).toLocaleDateString()}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Payment method</CardDescription>
-                <CardTitle className="text-base">{repaymentSummary.paymentMethod}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground">Default collection source</CardContent>
-            </Card>
-          </section>
-
-          <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_1fr]">
-            <Card>
+  const contract = await getDriverContract(user._id.toString())
+  if (!contract) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Sidebar role="driver" mobileWidth="w-[212px]" className="md:w-[212px] lg:w-[212px]" />
+        <div className="md:ml-[212px]">
+          <DashboardHeader
+            title="Make Payment"
+            welcomeName={resolveDisplayName({
+              fullName: user.fullName,
+              name: user.name,
+              email: user.email,
+            })}
+          />
+          <main className="p-4 md:p-6">
+            <Card className="rounded-[10px] border border-border/70 bg-card">
               <CardHeader>
-                <CardTitle>Pay outstanding balance</CardTitle>
-                <CardDescription>Submit payment using your preferred method.</CardDescription>
+                <CardTitle>No Active Contract</CardTitle>
+                <CardDescription>
+                  A repayment contract must be assigned before you can make payments.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-xl border p-4">
-                  <p className="text-sm text-muted-foreground">Current due amount</p>
-                  <p className="mt-1 text-3xl font-semibold">${repaymentSummary.dueAmount.toLocaleString()}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Due by {new Date(repaymentSummary.dueDate).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button className="bg-[#E57700] text-white hover:bg-[#E57700]/90">
-                    <Wallet className="mr-2 h-4 w-4" />
-                    Make payment
-                  </Button>
-                  <Button variant="outline">
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Change method
-                  </Button>
-                </div>
-                <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
-                  <CalendarClock className="mr-2 inline h-3.5 w-3.5" />
-                  Late payments may affect account standing and next funding round.
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment history</CardTitle>
-                <CardDescription>Latest completed repayments.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {paymentHistory.map((item) => (
-                  <div key={item.id} className="rounded-xl border p-4">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium">{new Date(item.date).toLocaleDateString()}</p>
-                      <Badge className="bg-emerald-600 text-white">{item.status}</Badge>
-                    </div>
-                    <p className="mt-1 text-lg font-semibold">${item.amount}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Reference: {item.id}</p>
-                  </div>
-                ))}
-
-                <Button variant="outline" className="w-full">
-                  <FileText className="mr-2 h-4 w-4" />
-                  Download statement
+              <CardContent>
+                <Button asChild variant="outline">
+                  <Link href="/dashboard/driver">Back to dashboard</Link>
                 </Button>
               </CardContent>
             </Card>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  const recentPayments = await getDriverPayments({
+    driverUserId: user._id.toString(),
+    contractId: contract.id,
+    limit: 12,
+  })
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Sidebar role="driver" mobileWidth="w-[212px]" className="md:w-[212px] lg:w-[212px]" />
+
+      <div className="md:ml-[212px]">
+        <DashboardHeader
+          title="Make Payment"
+          welcomeName={resolveDisplayName({
+            fullName: user.fullName,
+            name: user.name,
+            email: user.email,
+          })}
+        />
+
+        <main className="space-y-4 p-4 md:p-6">
+          <section className="rounded-[10px] border border-border/70 bg-card px-4 py-4 md:px-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold leading-tight text-foreground md:text-2xl">Repayment Center</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Make weekly fiat NGN repayments for your hire-purchase contract.
+                </p>
+              </div>
+              <Button asChild variant="outline" className="h-10">
+                <Link href="/dashboard/driver/payments">
+                  Payment History
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.45fr_1fr]">
+            <ContractSummaryCard contract={contract} />
+            <DriverPaymentForm
+              contractId={contract.id}
+              defaultAmountNgn={contract.nextPaymentAmountNgn || contract.weeklyPaymentNgn}
+              maxAmountNgn={contract.remainingBalanceNgn}
+              defaultEmail={user.email || ""}
+              nextDueDate={contract.nextDueDate}
+            />
+          </section>
+
+          <section className="rounded-[10px] border border-border/70 bg-card p-4 md:p-5">
+            <div className="mb-4 inline-flex items-center text-sm text-muted-foreground">
+              <Wallet className="mr-2 h-4 w-4" />
+              Recent repayments are listed below after Paystack confirmation.
+            </div>
+            <DriverPaymentsTable payments={recentPayments} emptyLabel="No repayment transactions yet." />
           </section>
         </main>
       </div>

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 
 import dbConnect from "@/lib/dbConnect"
 import { getAuthenticatedUser, withSessionRefresh } from "@/lib/auth/current-user"
+import { confirmDriverPayment } from "@/lib/services/driver-contracts.service"
 import Loan from "@/models/Loan"
 import Transaction from "@/models/Transaction"
 import User from "@/models/User"
@@ -45,6 +46,13 @@ async function resolveUserByMetadata({
   return null
 }
 
+function resolvePaymentType(metadata: Record<string, unknown>) {
+  const rawType = typeof metadata.paymentType === "string" ? metadata.paymentType.toLowerCase() : "wallet_funding"
+  if (rawType === "down_payment") return "down_payment"
+  if (rawType === "driver_repayment") return "driver_repayment"
+  return "wallet_funding"
+}
+
 export async function POST(request: Request) {
   const secretKey = process.env.PAYSTACK_SECRET_KEY
   if (!secretKey) {
@@ -84,10 +92,33 @@ export async function POST(request: Request) {
     const metadata = charge.metadata || {}
     const amountNgn = Number(charge.amount) / 100
     const email = charge.customer?.email as string | undefined
-    const paymentType = metadata.paymentType === "down_payment" ? "down_payment" : "wallet_funding"
+    const paymentType = resolvePaymentType(metadata)
 
     if (!Number.isFinite(amountNgn) || amountNgn <= 0) {
       return NextResponse.json({ message: "Invalid payment amount." }, { status: 400 })
+    }
+
+    if (paymentType === "driver_repayment") {
+      const repaymentResult = await confirmDriverPayment(reference, {
+        verifiedAmountNgn: amountNgn,
+        channel: typeof charge.channel === "string" ? charge.channel : null,
+        metadata,
+      })
+
+      const response = NextResponse.json({
+        success: true,
+        type: "driver_repayment",
+        alreadyProcessed: repaymentResult.alreadyProcessed,
+        amountNgn: repaymentResult.payment.amountNgn,
+        appliedAmountNgn: repaymentResult.payment.appliedAmountNgn,
+        remainingBalanceNgn: repaymentResult.contract.remainingBalanceNgn,
+        contractStatus: repaymentResult.contract.status,
+        investorCreditsPosted: repaymentResult.distribution.investorCreditsCount,
+      })
+
+      return authContext.user && authContext.shouldRefreshSession
+        ? withSessionRefresh(response, authContext.user)
+        : response
     }
 
     if (paymentType === "down_payment" && metadata.loanId) {
@@ -172,6 +203,7 @@ export async function POST(request: Request) {
     return authContext.user && authContext.shouldRefreshSession ? withSessionRefresh(response, authContext.user) : response
   } catch (error) {
     console.error("PAYSTACK_VERIFY_ERROR", error)
-    return NextResponse.json({ message: "Internal server error." }, { status: 500 })
+    const message = error instanceof Error ? error.message : "Internal server error."
+    return NextResponse.json({ message }, { status: 500 })
   }
 }
