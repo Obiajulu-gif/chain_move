@@ -135,13 +135,13 @@ export default function AuthPage() {
   }
 
   useEffect(() => {
-    if (!ready || !authenticated) return
+    if (!ready || !authenticated || !identityToken) return
 
     const draft = safeReadSignupDraft()
     if (!draft) return
 
     void syncPrivyUser(draft)
-  }, [authenticated, ready, syncPrivyUser])
+  }, [authenticated, ready, identityToken, syncPrivyUser])
 
   return (
     <AuthLayout
