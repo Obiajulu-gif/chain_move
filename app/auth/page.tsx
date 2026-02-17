@@ -10,7 +10,7 @@ import { AuthInput } from "@/components/auth/AuthInput"
 import { AuthLayout } from "@/components/auth/AuthLayout"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
-import { resolvePrivyIdentityToken } from "@/lib/auth/privy-client"
+import { resolvePrivyAccessToken } from "@/lib/auth/privy-client"
 
 type UserRole = "driver" | "investor"
 
@@ -44,11 +44,11 @@ export default function AuthPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { login, ready, authenticated } = usePrivy()
+  const { login, ready, authenticated, getAccessToken } = usePrivy()
   const { identityToken } = useIdentityToken()
 
   const roleParam = searchParams.get("role")
-  const selectedRole: UserRole = roleParam === "driver" ? "driver" : "investor"
+  const [selectedRole, setSelectedRole] = useState<UserRole>(roleParam === "driver" ? "driver" : "investor")
   const roleLabel = useMemo(() => (selectedRole === "driver" ? "Driver" : "Investor"), [selectedRole])
   const RoleIcon = selectedRole === "driver" ? Car : TrendingUp
 
@@ -67,7 +67,7 @@ export default function AuthPage() {
       setFormError("")
 
       try {
-        const privyToken = await resolvePrivyIdentityToken(identityToken)
+        const privyToken = await resolvePrivyAccessToken(getAccessToken, identityToken)
         if (!privyToken) {
           throw new Error("Unable to retrieve your Privy token. Please try again.")
         }
@@ -102,7 +102,7 @@ export default function AuthPage() {
         isSyncInFlightRef.current = false
       }
     },
-    [identityToken, router, toast],
+    [getAccessToken, identityToken, router, toast],
   )
 
   const handleStartSignup = async (event: FormEvent<HTMLFormElement>) => {
@@ -135,6 +135,10 @@ export default function AuthPage() {
   }
 
   useEffect(() => {
+    setSelectedRole(roleParam === "driver" ? "driver" : "investor")
+  }, [roleParam])
+
+  useEffect(() => {
     if (!ready || !authenticated) return
 
     const draft = safeReadSignupDraft()
@@ -159,7 +163,7 @@ export default function AuthPage() {
         <p className="text-sm text-[#666666]">
           Already have an account?{" "}
           <Link
-            href="/signin"
+            href={`/signin?role=${selectedRole}`}
             className="font-medium text-[#F2780E] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F2780E]"
           >
             Sign in
@@ -167,11 +171,38 @@ export default function AuthPage() {
         </p>
       }
     >
-      <div className="mb-4 rounded-xl border border-[#F4D4BC] bg-[#FFF6EE] px-3 py-2 text-sm text-[#8A4B19]">
-        <p className="inline-flex items-center gap-2 font-medium">
-          <RoleIcon className="h-4 w-4" />
-          Signing up as {roleLabel}
-        </p>
+      <div className="mb-4 space-y-3">
+        <p className="text-sm font-medium text-[#403325]">Choose account type</p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedRole("driver")}
+            className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+              selectedRole === "driver"
+                ? "border-[#F2780E] bg-[#FFF1E6] text-[#8A4B19]"
+                : "border-[#E5E7EB] bg-white text-[#5C5C5C] hover:border-[#F4D4BC]"
+            }`}
+          >
+            Driver
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedRole("investor")}
+            className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+              selectedRole === "investor"
+                ? "border-[#F2780E] bg-[#FFF1E6] text-[#8A4B19]"
+                : "border-[#E5E7EB] bg-white text-[#5C5C5C] hover:border-[#F4D4BC]"
+            }`}
+          >
+            Investor
+          </button>
+        </div>
+        <div className="rounded-xl border border-[#F4D4BC] bg-[#FFF6EE] px-3 py-2 text-sm text-[#8A4B19]">
+          <p className="inline-flex items-center gap-2 font-medium">
+            <RoleIcon className="h-4 w-4" />
+            Signing up as {roleLabel}
+          </p>
+        </div>
       </div>
 
       <form onSubmit={handleStartSignup} noValidate className="space-y-4">

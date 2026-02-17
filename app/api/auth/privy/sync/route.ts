@@ -5,11 +5,60 @@ import type { ParsedPrivyProfile } from "@/lib/auth/privy"
 import { extractPrivyTokenFromRequest, getPrivyProfileFromPayload, verifyPrivyToken } from "@/lib/auth/privy"
 import { setSessionCookie, signSessionToken } from "@/lib/auth/session"
 
-type UserRole = "driver" | "investor" | "admin"
+type RequestedUserRole = "driver" | "investor"
 
-function normalizeRole(role: unknown): UserRole {
-  if (role === "driver" || role === "investor" || role === "admin") return role
+let ensureUserEmailIndexPromise: Promise<void> | null = null
+
+function normalizeRequestedRole(role: unknown): RequestedUserRole {
+  if (role === "driver" || role === "investor") return role
   return "investor"
+}
+
+function isIndexNotFoundError(error: unknown) {
+  if (!(error instanceof Error)) return false
+  return /index not found|can't find index|ns not found/i.test(error.message)
+}
+
+function hasSafeEmailIndex(index: Record<string, unknown> | undefined) {
+  if (!index) return false
+  if (index.unique !== true) return false
+  if (index.sparse === true) return true
+
+  const partial = index.partialFilterExpression
+  return typeof partial === "object" && partial !== null
+}
+
+async function ensureCompatibleUserEmailIndex() {
+  if (ensureUserEmailIndexPromise) return ensureUserEmailIndexPromise
+
+  ensureUserEmailIndexPromise = (async () => {
+    const indexes = await User.collection.indexes()
+    const emailIndex = indexes.find((index) => index.name === "email_1") as Record<string, unknown> | undefined
+
+    if (hasSafeEmailIndex(emailIndex)) return
+
+    if (emailIndex) {
+      try {
+        await User.collection.dropIndex("email_1")
+      } catch (error) {
+        if (!isIndexNotFoundError(error)) throw error
+      }
+    }
+
+    await User.collection.createIndex(
+      { email: 1 },
+      {
+        name: "email_1",
+        unique: true,
+        partialFilterExpression: { email: { $type: "string" } },
+      },
+    )
+  })().catch((error) => {
+    ensureUserEmailIndexPromise = null
+    throw error
+  })
+
+  return ensureUserEmailIndexPromise
 }
 
 function fallbackName(fullName: string | undefined, email: string | undefined, walletAddress: string | undefined) {
@@ -64,14 +113,15 @@ export async function POST(request: Request) {
     const privyPayload = await verifyPrivyToken(privyToken)
     const profile = getPrivyProfileFromPayload(privyPayload)
 
-    const body = await request.json().catch(() => ({} as { fullName?: string; role?: UserRole }))
+    const body = await request.json().catch(() => ({} as { fullName?: string; role?: RequestedUserRole }))
     const fullName = typeof body.fullName === "string" ? body.fullName.trim() : undefined
-    const role = normalizeRole(body.role)
+    const requestedRole = normalizeRequestedRole(body.role)
     const normalizedEmail = profile.email?.toLowerCase()
     const normalizedWalletAddress = normalizeWalletAddress(profile.walletAddress)
     const defaultName = fallbackName(fullName, normalizedEmail, normalizedWalletAddress)
 
     await dbConnect()
+    await ensureCompatibleUserEmailIndex()
 
     if (!profile.privyUserId) {
       return NextResponse.json({ message: "Invalid Privy profile." }, { status: 401 })
@@ -88,7 +138,7 @@ export async function POST(request: Request) {
         user = await User.create({
           name: defaultName,
           fullName: defaultName,
-          role,
+          role: requestedRole,
           email: normalizedEmail,
           phoneNumber: profile.phoneNumber,
           privyUserId: profile.privyUserId,
@@ -148,7 +198,11 @@ export async function POST(request: Request) {
       }
     }
 
-    if (!user.role) user.role = role
+    if (!user.role) {
+      user.role = requestedRole
+    } else if (user.role !== "admin" && user.role !== requestedRole) {
+      user.role = requestedRole
+    }
 
     try {
       await user.save()

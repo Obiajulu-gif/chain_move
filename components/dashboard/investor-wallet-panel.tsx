@@ -186,7 +186,12 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
     [clearReferenceQuery, loadWalletSummary, refetchAuth, toast],
   )
 
-  const handlePrivyFunding = () => {
+  const openWalletExplorer = () => {
+    if (!walletAddress) return
+    window.open(`https://sepolia-blockscout.lisk.com/address/${walletAddress}`, "_blank", "noopener,noreferrer")
+  }
+
+  const handleOpenWalletView = () => {
     if (!walletAddress) {
       toast({
         title: "Wallet unavailable",
@@ -196,13 +201,57 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
       return
     }
 
-    setIsPrivyFunding(true)
-    window.open(`https://sepolia-blockscout.lisk.com/address/${walletAddress}`, "_blank", "noopener,noreferrer")
+    openWalletExplorer()
     toast({
       title: "Wallet address ready",
       description: "Use your wallet address to receive onchain funds, or use Paystack for NGN funding.",
     })
-    window.setTimeout(() => setIsPrivyFunding(false), 300)
+  }
+
+  const handlePrivyFunding = async () => {
+    if (!walletAddress) {
+      toast({
+        title: "Wallet unavailable",
+        description: "Your embedded wallet address is not ready yet. Please sign out and sign in again.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (typeof embeddedWallet?.fund !== "function") {
+      handleOpenWalletView()
+      return
+    }
+
+    setIsPrivyFunding(true)
+    try {
+      await embeddedWallet.fund()
+      toast({
+        title: "Privy funding flow opened",
+        description: "Complete the flow to top up your onchain wallet.",
+      })
+    } catch {
+      toast({
+        title: "Unable to start Privy funding",
+        description: "Use Open wallet / receive or fund your internal wallet via Paystack.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsPrivyFunding(false)
+      if (walletAddress) {
+        setOnchainLoading(true)
+        resolveOnchainBalance(walletAddress)
+          .then((balance) => {
+            setOnchainBalance(balance)
+          })
+          .catch(() => {
+            setOnchainBalance(null)
+          })
+          .finally(() => {
+            setOnchainLoading(false)
+          })
+      }
+    }
   }
 
   const handlePaystackFunding = async () => {
@@ -373,12 +422,8 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
                 <Copy className="mr-1.5 h-3.5 w-3.5" />
                 Copy
               </Button>
-              <Button variant="outline" size="sm" onClick={handlePrivyFunding} disabled={!walletAddress || isPrivyFunding}>
-                {isPrivyFunding ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                )}
+              <Button variant="outline" size="sm" onClick={handleOpenWalletView} disabled={!walletAddress}>
+                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                 Open wallet
               </Button>
             </div>

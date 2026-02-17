@@ -13,7 +13,7 @@ export const Providers: FC<{ children: ReactNode }> = ({ children }) => {
         loginMethods: ["email", "sms"],
         embeddedWallets: {
           ethereum: {
-            createOnLogin: "users-without-wallets",
+            createOnLogin: "all-users",
           },
           showWalletUIs: true,
         },

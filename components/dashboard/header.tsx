@@ -9,8 +9,8 @@ import { getUserDisplayName, useAuth } from "@/hooks/use-auth"
 import { usePathname, useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 
-const ConnectButtonWidget = dynamic(
-  () => import("./ConnectButtonWidget").then((mod) => mod.ConnectButtonWidget),
+const WalletMenu = dynamic(
+  () => import("./wallet-menu").then((mod) => mod.WalletMenu),
   { ssr: false },
 )
 
@@ -123,7 +123,7 @@ export function Header({
           </div>
 
           <div>
-            <ConnectButtonWidget />
+            <WalletMenu />
           </div>
         </div>
       </div>

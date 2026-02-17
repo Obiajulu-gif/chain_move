@@ -1,6 +1,7 @@
 import mongoose from "mongoose"
 import InvestmentPool, { type PoolAssetType } from "@/models/InvestmentPool"
 import PoolInvestment from "@/models/PoolInvestment"
+import { TOTAL_OWNERSHIP_UNITS } from "@/lib/services/investments.service"
 
 export const ASSET_PRICE_NGN: Record<PoolAssetType, number> = {
   SHUTTLE: 4_600_000,
@@ -33,6 +34,19 @@ export interface PoolSummary {
   userOwnershipUnits?: number
   userOwnershipBps?: number
   userInvestedNgn?: number
+}
+
+const TOTAL_OWNERSHIP_BPS = 10_000
+
+function calculateOwnershipFromAmount(amountNgn: number, targetAmountNgn: number) {
+  if (!Number.isFinite(amountNgn) || !Number.isFinite(targetAmountNgn) || targetAmountNgn <= 0) {
+    return { ownershipUnits: 0, ownershipBps: 0 }
+  }
+
+  return {
+    ownershipUnits: Math.max(Math.floor((amountNgn * TOTAL_OWNERSHIP_UNITS) / targetAmountNgn), 0),
+    ownershipBps: Math.max(Math.floor((amountNgn * TOTAL_OWNERSHIP_BPS) / targetAmountNgn), 0),
+  }
 }
 
 function normalizePool(pool: any): PoolSummary {
@@ -117,8 +131,6 @@ export async function listPools(userId?: string): Promise<PoolSummary[]> {
     {
       $group: {
         _id: "$poolId",
-        ownershipUnits: { $sum: "$ownershipUnits" },
-        ownershipBps: { $sum: "$ownershipBps" },
         amountNgn: { $sum: "$amountNgn" },
       },
     },
@@ -128,8 +140,6 @@ export async function listPools(userId?: string): Promise<PoolSummary[]> {
     ownershipRows.map((row) => [
       row._id.toString(),
       {
-        ownershipUnits: row.ownershipUnits,
-        ownershipBps: row.ownershipBps,
         amountNgn: row.amountNgn,
       },
     ]),
@@ -137,11 +147,14 @@ export async function listPools(userId?: string): Promise<PoolSummary[]> {
 
   return normalizedPools.map((pool) => {
     const ownership = ownershipByPool.get(pool.id)
+    const amountNgn = ownership?.amountNgn ?? 0
+    const computedOwnership = calculateOwnershipFromAmount(amountNgn, pool.targetAmountNgn)
+
     return {
       ...pool,
-      userOwnershipUnits: ownership?.ownershipUnits ?? 0,
-      userOwnershipBps: ownership?.ownershipBps ?? 0,
-      userInvestedNgn: ownership?.amountNgn ?? 0,
+      userOwnershipUnits: computedOwnership.ownershipUnits,
+      userOwnershipBps: computedOwnership.ownershipBps,
+      userInvestedNgn: amountNgn,
     }
   })
 }
@@ -174,19 +187,19 @@ export async function getPoolById(poolId: string, userId?: string) {
     {
       $group: {
         _id: "$poolId",
-        ownershipUnits: { $sum: "$ownershipUnits" },
-        ownershipBps: { $sum: "$ownershipBps" },
         amountNgn: { $sum: "$amountNgn" },
       },
     },
   ])
 
   const currentUserOwnership = ownership[0]
+  const investedAmountNgn = currentUserOwnership?.amountNgn ?? 0
+  const computedOwnership = calculateOwnershipFromAmount(investedAmountNgn, normalizedPool.targetAmountNgn)
 
   return {
     ...normalizedPool,
-    userOwnershipUnits: currentUserOwnership?.ownershipUnits ?? 0,
-    userOwnershipBps: currentUserOwnership?.ownershipBps ?? 0,
-    userInvestedNgn: currentUserOwnership?.amountNgn ?? 0,
+    userOwnershipUnits: computedOwnership.ownershipUnits,
+    userOwnershipBps: computedOwnership.ownershipBps,
+    userInvestedNgn: investedAmountNgn,
   }
 }

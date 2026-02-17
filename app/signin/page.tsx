@@ -1,21 +1,29 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useIdentityToken, usePrivy } from "@privy-io/react-auth"
-import { AlertCircle, ArrowRight, Loader2 } from "lucide-react"
+import { AlertCircle, ArrowRight, Car, Loader2, TrendingUp } from "lucide-react"
 
 import { AuthLayout } from "@/components/auth/AuthLayout"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
-import { resolvePrivyIdentityToken } from "@/lib/auth/privy-client"
+import { resolvePrivyAccessToken } from "@/lib/auth/privy-client"
+
+type UserRole = "driver" | "investor"
 
 export default function SignInPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { login, ready, authenticated } = usePrivy()
+  const { login, ready, authenticated, getAccessToken } = usePrivy()
   const { identityToken } = useIdentityToken()
+
+  const roleParam = searchParams.get("role")
+  const [selectedRole, setSelectedRole] = useState<UserRole>(roleParam === "driver" ? "driver" : "investor")
+  const roleLabel = useMemo(() => (selectedRole === "driver" ? "Driver" : "Investor"), [selectedRole])
+  const RoleIcon = selectedRole === "driver" ? Car : TrendingUp
 
   const [isLaunchingPrivy, setIsLaunchingPrivy] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -29,7 +37,7 @@ export default function SignInPage() {
     setError("")
 
     try {
-      const privyToken = await resolvePrivyIdentityToken(identityToken)
+      const privyToken = await resolvePrivyAccessToken(getAccessToken, identityToken)
       if (!privyToken) {
         throw new Error("Unable to retrieve your Privy token. Please try again.")
       }
@@ -40,7 +48,7 @@ export default function SignInPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${privyToken}`,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ role: selectedRole }),
       })
 
       const result = await response.json()
@@ -53,7 +61,7 @@ export default function SignInPage() {
         description: `Welcome back, ${result.user?.name || "User"}.`,
       })
 
-      const role = result.user?.role || "investor"
+      const role = result.user?.role || selectedRole || "investor"
       router.replace(`/dashboard/${role}`)
     } catch (syncError) {
       setError(syncError instanceof Error ? syncError.message : "Unable to sign in.")
@@ -62,7 +70,7 @@ export default function SignInPage() {
       setIsLaunchingPrivy(false)
       syncInFlightRef.current = false
     }
-  }, [identityToken, router, toast])
+  }, [getAccessToken, identityToken, router, selectedRole, toast])
 
   const handlePrivySignIn = () => {
     setError("")
@@ -76,6 +84,10 @@ export default function SignInPage() {
       setError("Unable to open Privy authentication. Please try again.")
     }
   }
+
+  useEffect(() => {
+    setSelectedRole(roleParam === "driver" ? "driver" : "investor")
+  }, [roleParam])
 
   useEffect(() => {
     if (!ready || !authenticated) return
@@ -97,7 +109,7 @@ export default function SignInPage() {
         <p className="text-sm text-[#666666]">
           New to ChainMove?{" "}
           <Link
-            href="/auth"
+            href={`/auth?role=${selectedRole}`}
             className="font-medium text-[#F2780E] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F2780E]"
           >
             Create an account
@@ -106,6 +118,40 @@ export default function SignInPage() {
       }
     >
       <div className="space-y-4">
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-[#403325]">Choose account type</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedRole("driver")}
+              className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                selectedRole === "driver"
+                  ? "border-[#F2780E] bg-[#FFF1E6] text-[#8A4B19]"
+                  : "border-[#E5E7EB] bg-white text-[#5C5C5C] hover:border-[#F4D4BC]"
+              }`}
+            >
+              Driver
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedRole("investor")}
+              className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                selectedRole === "investor"
+                  ? "border-[#F2780E] bg-[#FFF1E6] text-[#8A4B19]"
+                  : "border-[#E5E7EB] bg-white text-[#5C5C5C] hover:border-[#F4D4BC]"
+              }`}
+            >
+              Investor
+            </button>
+          </div>
+          <div className="rounded-xl border border-[#F4D4BC] bg-[#FFF6EE] px-3 py-2 text-sm text-[#8A4B19]">
+            <p className="inline-flex items-center gap-2 font-medium">
+              <RoleIcon className="h-4 w-4" />
+              Signing in as {roleLabel}
+            </p>
+          </div>
+        </div>
+
         <p className="text-sm leading-6 text-[#666666]">
           Continue with your verified email or phone through Privy. Your wallet and session will be restored
           automatically.

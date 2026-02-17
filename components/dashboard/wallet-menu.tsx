@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { usePrivy, useWallets } from "@privy-io/react-auth"
-import { ChevronRight, Copy, Wallet } from "lucide-react"
+import { useWallets } from "@privy-io/react-auth"
+import { ChevronRight, Copy, ExternalLink, Loader2, Wallet } from "lucide-react"
 import { formatEther } from "viem"
 import { liskSepolia } from "viem/chains"
 
@@ -48,11 +48,11 @@ async function resolveOnchainBalance(address: string) {
   return `${parsed.toFixed(4)} ETH`
 }
 
-export const ConnectButtonWidget = () => {
+export function WalletMenu() {
   const { user: authUser } = useAuth()
   const { toast } = useToast()
-  const { authenticated, login } = usePrivy()
   const { wallets } = useWallets()
+  const [isPrivyFunding, setIsPrivyFunding] = useState(false)
 
   const [onchainBalance, setOnchainBalance] = useState<{ address: string; value: string | null }>({
     address: "",
@@ -117,21 +117,40 @@ export const ConnectButtonWidget = () => {
     })
   }
 
-  if (authUser?.role !== "investor") return null
+  const handleFundWithPrivy = async () => {
+    if (!walletAddress) {
+      toast({
+        title: "Wallet unavailable",
+        description: "Your embedded wallet address is not ready yet.",
+        variant: "destructive",
+      })
+      return
+    }
 
-  if (!authenticated) {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => login({ loginMethods: ["email", "sms"] })}
-        className="h-9"
-      >
-        <Wallet className="mr-2 h-4 w-4" />
-        Wallet
-      </Button>
-    )
+    if (typeof embeddedWallet?.fund !== "function") {
+      handleOpenWalletView()
+      return
+    }
+
+    setIsPrivyFunding(true)
+    try {
+      await embeddedWallet.fund()
+      toast({
+        title: "Privy funding flow opened",
+        description: "Complete the funding flow to top up your onchain wallet.",
+      })
+    } catch {
+      toast({
+        title: "Unable to start Privy funding",
+        description: "Use Open wallet / receive or fund your internal wallet via Paystack.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsPrivyFunding(false)
+    }
   }
+
+  if (authUser?.role !== "investor") return null
 
   return (
     <DropdownMenu>
@@ -169,7 +188,24 @@ export const ConnectButtonWidget = () => {
 
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-default">
-          <Button onClick={handleOpenWalletView} disabled={!walletAddress} className="h-8 w-full bg-[#E57700] text-white hover:bg-[#E57700]/90">
+          <Button
+            onClick={handleFundWithPrivy}
+            disabled={!walletAddress || isPrivyFunding}
+            className="h-8 w-full bg-[#E57700] text-white hover:bg-[#E57700]/90"
+          >
+            {isPrivyFunding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Fund with Privy
+            <ChevronRight className="ml-2 h-4 w-4" />
+          </Button>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-default">
+          <Button
+            onClick={handleOpenWalletView}
+            disabled={!walletAddress}
+            variant="outline"
+            className="h-8 w-full"
+          >
+            <ExternalLink className="mr-2 h-4 w-4" />
             Open wallet / receive
             <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
