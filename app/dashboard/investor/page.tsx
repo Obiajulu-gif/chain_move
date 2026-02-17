@@ -2,38 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import dynamic from "next/dynamic"
-import { ArrowRight, ChevronRight, Layers, RefreshCw, Wallet } from "lucide-react"
+import { useWallets } from "@privy-io/react-auth"
+import { CalendarDays, ChevronDown, PlusCircle } from "lucide-react"
+import { formatEther } from "viem"
+import { liskSepolia } from "viem/chains"
 
 import { Sidebar } from "@/components/dashboard/sidebar"
-import { Header } from "@/components/dashboard/header"
-import { Badge } from "@/components/ui/badge"
+import { DashboardHeader } from "@/components/dashboard/investor-overview/dashboard-header"
+import { DashboardBanner } from "@/components/dashboard/investor-overview/dashboard-banner"
+import { MetricsRow } from "@/components/dashboard/investor-overview/metrics-row"
+import { PortfolioActivityCard } from "@/components/dashboard/investor-overview/portfolio-activity-card"
+import { WalletsCard } from "@/components/dashboard/investor-overview/wallets-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Skeleton } from "@/components/ui/skeleton"
 import { DashboardRouteLoading } from "@/components/dashboard/dashboard-route-loading"
 import { getUserDisplayName, useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { formatNaira } from "@/lib/currency"
-
-const InvestorWalletPanel = dynamic(
-  () => import("@/components/dashboard/investor-wallet-panel").then((module) => module.InvestorWalletPanel),
-  {
-    loading: () => (
-      <Card id="wallet">
-        <CardHeader>
-          <Skeleton className="h-6 w-44" />
-          <Skeleton className="h-4 w-64" />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-        </CardContent>
-      </Card>
-    ),
-  },
-)
 
 type PoolPreview = {
   id: string
@@ -43,16 +28,86 @@ type PoolPreview = {
   investorCount: number
   status: "OPEN" | "FUNDED" | "CLOSED"
   progressRatio: number
+  createdAt: string
+}
+
+type KycAwareAuthUser = {
+  kycStatus?: string
+  isKycVerified?: boolean
+  kycVerified?: boolean
+}
+
+function truncateAddress(address: string) {
+  if (address.length < 10) return address
+  return `${address.slice(0, 4)}...${address.slice(-4)}`
+}
+
+function formatEthForUi(balanceEth: number | null) {
+  if (!Number.isFinite(balanceEth) || balanceEth === null) return "0 ETH"
+  if (balanceEth < 0.01) return "0 ETH"
+  if (balanceEth < 1) return `${balanceEth.toFixed(2)} ETH`
+  return `${balanceEth.toFixed(1)} ETH`
+}
+
+async function resolveOnchainBalanceEth(address: string) {
+  const rpcUrl = liskSepolia.rpcUrls.default.http[0]
+  const response = await fetch(rpcUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "eth_getBalance",
+      params: [address, "latest"],
+    }),
+  })
+
+  const payload = await response.json()
+  const balanceHex = payload?.result
+  if (typeof balanceHex !== "string") return null
+
+  const parsed = Number.parseFloat(formatEther(BigInt(balanceHex)))
+  if (!Number.isFinite(parsed)) return null
+  return parsed
+}
+
+function isKycComplete(user: KycAwareAuthUser | null | undefined) {
+  if (!user) return true
+
+  if (typeof user.isKycVerified === "boolean") return user.isKycVerified
+  if (typeof user.kycVerified === "boolean") return user.kycVerified
+
+  const rawStatus = typeof user.kycStatus === "string" ? user.kycStatus.toLowerCase() : null
+  if (!rawStatus) return true
+
+  return ["approved", "approved_stage2", "verified", "complete", "completed"].includes(rawStatus)
+}
+
+function formatStartedDate(dateString: string) {
+  const parsedDate = new Date(dateString)
+  if (Number.isNaN(parsedDate.getTime())) return "Recently"
+  return parsedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 }
 
 export default function InvestorOverviewPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { user: authUser, loading: authLoading, refetch } = useAuth()
+  const { wallets } = useWallets()
 
   const [openPools, setOpenPools] = useState<PoolPreview[]>([])
   const [isPoolsLoading, setIsPoolsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [onchainBalanceEth, setOnchainBalanceEth] = useState<number | null>(null)
+  const [isDepositingCrypto, setIsDepositingCrypto] = useState(false)
+
+  const embeddedWallet = useMemo(
+    () => wallets.find((wallet) => wallet.walletClientType === "privy" || wallet.walletClientType === "privy-v2"),
+    [wallets],
+  )
+  const walletAddress = embeddedWallet?.address || authUser?.walletAddress || ""
+  const isWalletConnected = Boolean(walletAddress)
+  const investorKycComplete = isKycComplete((authUser as KycAwareAuthUser | null | undefined) ?? null)
 
   const investorName = getUserDisplayName(authUser, "Investor")
 
@@ -76,9 +131,23 @@ export default function InvestorOverviewPage() {
     }
   }, [toast])
 
+  const refreshOnchainBalance = useCallback(async () => {
+    if (!walletAddress) {
+      setOnchainBalanceEth(null)
+      return
+    }
+
+    try {
+      const balance = await resolveOnchainBalanceEth(walletAddress)
+      setOnchainBalanceEth(balance)
+    } catch {
+      setOnchainBalanceEth(null)
+    }
+  }, [walletAddress])
+
   const refreshOverview = async () => {
     setIsRefreshing(true)
-    await Promise.all([loadOpenPools(), refetch?.()])
+    await Promise.all([loadOpenPools(), refetch?.(), refreshOnchainBalance()])
     setIsRefreshing(false)
   }
 
@@ -86,25 +155,99 @@ export default function InvestorOverviewPage() {
     void loadOpenPools()
   }, [loadOpenPools])
 
-  const keyStats = useMemo(() => {
+  useEffect(() => {
+    void refreshOnchainBalance()
+  }, [refreshOnchainBalance])
+
+  const ethLabel = formatEthForUi(onchainBalanceEth)
+
+  const metrics = useMemo(() => {
+    const availableBalance = authUser?.availableBalance || 0
+    const totalInvested = authUser?.totalInvested || 0
+    const totalReturns = authUser?.totalReturns || 0
+    const totalPortfolioValue = availableBalance + totalInvested + totalReturns
+    const annualRoi = totalInvested > 0 ? (totalReturns / totalInvested) * 100 : 0
+
     return [
       {
-        label: "Internal balance",
-        value: formatNaira(authUser?.availableBalance || 0),
-        hint: "Available for pool investments",
+        id: "portfolio-value",
+        label: "Total Portfolio Value",
+        value: formatNaira(totalPortfolioValue),
+        accentValue: `+ ${ethLabel}`,
+        hint: "Combined value of active vehicle investments.",
       },
       {
-        label: "Total invested",
-        value: formatNaira(authUser?.totalInvested || 0),
-        hint: "Lifetime investor capital deployed",
+        id: "capital-invested",
+        label: "Total Capital Invested",
+        value: formatNaira(totalInvested),
+        hint: "Total amount deployed into vehicle assets.",
       },
       {
-        label: "Total returns",
-        value: formatNaira(authUser?.totalReturns || 0),
-        hint: "Recorded returns to date",
+        id: "returns-earned",
+        label: "Total Returns Earned",
+        value: formatNaira(totalReturns),
+        accentValue: `+ ${ethLabel}`,
+        hint: "Net income distributed to your wallets.",
+      },
+      {
+        id: "annual-roi",
+        label: "Annual ROI",
+        value: `${formatNaira(totalReturns)} / ${annualRoi.toFixed(1)}%`,
+        hint: "Calculated after operational and platform expenses.",
       },
     ]
-  }, [authUser?.availableBalance, authUser?.totalInvested, authUser?.totalReturns])
+  }, [authUser?.availableBalance, authUser?.totalInvested, authUser?.totalReturns, ethLabel])
+
+  const activityItems = useMemo(() => {
+    return openPools.slice(0, 2).map((pool) => {
+      const principalAmount = pool.currentRaisedNgn > 0 ? pool.currentRaisedNgn : pool.targetAmountNgn
+      const monthlyReturns = Math.round(principalAmount * 0.1)
+      const progressMonths = Math.max(1, Math.round(Math.min(pool.progressRatio, 1) * 24))
+
+      return {
+        id: pool.id,
+        title: pool.assetType === "KEKE" ? "Keke Napep" : "Shuttle Bus",
+        startedLabel: `Started ${formatStartedDate(pool.createdAt)}`,
+        amountLabel: formatNaira(principalAmount),
+        monthlyReturnsLabel: `Estimated Monthly Returns:  ${formatNaira(monthlyReturns)}`,
+        progressLabel: `${progressMonths}/24`,
+        progressPercent: Math.min(Math.max(pool.progressRatio * 100, 6), 100),
+      }
+    })
+  }, [openPools])
+
+  const walletChipLabel = isWalletConnected ? `${truncateAddress(walletAddress)} (${ethLabel})` : null
+  const bannerVariant = !isWalletConnected ? "connect-wallet" : !investorKycComplete ? "kyc" : null
+
+  const handleDepositCrypto = async () => {
+    if (!walletAddress) {
+      router.push("/dashboard/investor/wallet")
+      return
+    }
+
+    if (typeof embeddedWallet?.fund !== "function") {
+      window.open(`https://sepolia-blockscout.lisk.com/address/${walletAddress}`, "_blank", "noopener,noreferrer")
+      return
+    }
+
+    setIsDepositingCrypto(true)
+    try {
+      await embeddedWallet.fund()
+      toast({
+        title: "Deposit flow opened",
+        description: "Complete the Privy flow to top up your crypto wallet.",
+      })
+    } catch {
+      toast({
+        title: "Unable to start deposit",
+        description: "Try again from Wallet or use direct transfer.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDepositingCrypto(false)
+      await refreshOnchainBalance()
+    }
+  }
 
   if (authLoading) {
     return <DashboardRouteLoading title="Loading investor overview" description="Preparing wallet and opportunity data." />
@@ -130,141 +273,84 @@ export default function InvestorOverviewPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar role="investor" />
+      <Sidebar role="investor" mobileWidth="w-[212px]" className="md:w-[212px] lg:w-[212px]" />
 
-      <div className="md:ml-64 lg:ml-72">
-        <Header userStatus="Verified Investor" />
+      <div className="md:ml-[212px]">
+        <DashboardHeader
+          welcomeName={investorName}
+          walletChipLabel={walletChipLabel}
+          onWalletChipClick={() => router.push("/dashboard/investor/wallet")}
+        />
 
-        <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-          <section className="rounded-2xl border bg-card p-5 sm:p-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="space-y-2">
-                <Badge variant="secondary" className="w-fit">
-                  Overview
-                </Badge>
-                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Welcome back, {investorName}</h1>
-                <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-                  Monitor your internal wallet, fund your account, and deploy capital into fractional mobility pools.
+        <main className="space-y-4 p-4 md:p-6">
+          {bannerVariant ? (
+            <DashboardBanner
+              variant={bannerVariant}
+              onAction={() =>
+                router.push(bannerVariant === "connect-wallet" ? "/dashboard/investor/wallet" : "/dashboard/investor/settings")
+              }
+            />
+          ) : null}
+
+          <section className="rounded-[10px] border border-border/70 bg-card px-4 py-4 md:px-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold leading-tight text-foreground md:text-2xl">Portfolio Overview</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Monitor your mobility investments across fiat and crypto funding.
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={refreshOverview} disabled={isRefreshing}>
-                  <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                  Refresh
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="h-10"
+                  type="button"
+                >
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  Last 30 Days
+                  <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
                 <Button
-                  className="bg-[#E57700] text-white hover:bg-[#E57700]/90"
-                  onClick={() => router.push("/dashboard/investor/opportunities")}
+                  type="button"
+                  className="h-10 bg-[#E57A00] text-white hover:bg-[#D77200]"
+                  onClick={() => router.push("/dashboard/investor/wallet")}
                 >
-                  Open opportunities
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Fund Wallet
                 </Button>
               </div>
             </div>
           </section>
 
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {keyStats.map((item) => (
-              <Card key={item.label}>
-                <CardHeader className="pb-2">
-                  <CardDescription>{item.label}</CardDescription>
-                  <CardTitle>{item.value}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-xs text-muted-foreground">{item.hint}</CardContent>
-              </Card>
-            ))}
+          <MetricsRow metrics={metrics} />
+
+          <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.55fr_1fr]">
+            <PortfolioActivityCard
+              activities={activityItems}
+              isLoading={isPoolsLoading}
+              isRefreshing={isRefreshing}
+              onRefresh={refreshOverview}
+              onViewAll={() => router.push("/dashboard/investor/investments")}
+            />
+
+            <WalletsCard
+              fiatBalanceLabel={formatNaira(authUser.availableBalance || 0)}
+              cryptoBalanceLabel={ethLabel}
+              walletAddressLabel={walletAddress ? truncateAddress(walletAddress) : "not connected"}
+              isRefreshing={isRefreshing}
+              isDepositingCrypto={isDepositingCrypto}
+              onRefresh={refreshOverview}
+              onFundWallet={() => router.push("/dashboard/investor/wallet")}
+              onDepositCrypto={handleDepositCrypto}
+              onWithdrawToBank={() =>
+                toast({
+                  title: "Withdrawals are managed in Wallet",
+                  description: "Open Wallet to continue bank withdrawal flow.",
+                })
+              }
+            />
           </section>
-
-          <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_1fr]">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Layers className="h-5 w-5 text-[#E57700]" />
-                  Open opportunities snapshot
-                </CardTitle>
-                <CardDescription>Latest pool opportunities with live funding progress.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isPoolsLoading ? (
-                  <div className="space-y-3">
-                    {Array.from({ length: 3 }).map((_, index) => (
-                      <div key={index} className="rounded-xl border p-4">
-                        <Skeleton className="mb-2 h-5 w-36" />
-                        <Skeleton className="mb-2 h-4 w-52" />
-                        <Skeleton className="h-2 w-full" />
-                      </div>
-                    ))}
-                  </div>
-                ) : openPools.length === 0 ? (
-                  <div className="rounded-xl border border-dashed p-8 text-center">
-                    <h3 className="font-semibold">No open pools</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Create one from Open opportunities to begin funding.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {openPools.map((pool) => {
-                      const progress = Math.min(pool.progressRatio * 100, 100)
-                      return (
-                        <div key={pool.id} className="rounded-xl border p-4">
-                          <div className="mb-2 flex items-center justify-between gap-3">
-                            <p className="font-semibold">{pool.assetType}</p>
-                            <Badge variant="secondary">{pool.investorCount} investors</Badge>
-                          </div>
-
-                          <div className="space-y-1 text-sm">
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Raised</span>
-                              <span>{formatNaira(pool.currentRaisedNgn)}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Target</span>
-                              <span>{formatNaira(pool.targetAmountNgn)}</span>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 space-y-1">
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>Funding progress</span>
-                              <span>{progress.toFixed(1)}%</span>
-                            </div>
-                            <Progress value={progress} className="h-2" />
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Wallet className="h-5 w-5 text-[#E57700]" />
-                  Wallet quick actions
-                </CardTitle>
-                <CardDescription>Fund and manage your wallet from one place.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button
-                  className="w-full bg-[#E57700] text-white hover:bg-[#E57700]/90"
-                  onClick={() => router.push("/dashboard/investor#wallet")}
-                >
-                  Open wallet funding
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button variant="outline" className="w-full" onClick={() => router.push("/dashboard/investor/opportunities")}>
-                  Invest in pools
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
-          </section>
-
-          <InvestorWalletPanel sectionId="wallet" />
         </main>
       </div>
     </div>
