@@ -2,6 +2,7 @@
 
 import type { FC, ReactNode } from "react"
 import { PrivyProvider } from "@privy-io/react-auth"
+import { liskSepolia } from "viem/chains"
 
 const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID
 
@@ -11,6 +12,8 @@ export const Providers: FC<{ children: ReactNode }> = ({ children }) => {
       appId={privyAppId ?? ""}
       config={{
         loginMethods: ["email", "sms"],
+        supportedChains: [liskSepolia],
+        defaultChain: liskSepolia,
         embeddedWallets: {
           ethereum: {
             createOnLogin: "all-users",

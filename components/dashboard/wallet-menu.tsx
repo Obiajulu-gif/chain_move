@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useWallets } from "@privy-io/react-auth"
+import { useFundWallet, useWallets } from "@privy-io/react-auth"
 import { ChevronRight, Copy, ExternalLink, Loader2, Wallet } from "lucide-react"
 import { formatEther } from "viem"
 import { liskSepolia } from "viem/chains"
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { formatNaira } from "@/lib/currency"
 import { useAuth } from "@/hooks/use-auth"
+import { getPrivyFundingErrorMessage, startPrivyFunding } from "@/lib/auth/privy-funding"
 import { useToast } from "@/components/ui/use-toast"
 
 function truncateAddress(address: string) {
@@ -52,6 +53,7 @@ export function WalletMenu() {
   const { user: authUser } = useAuth()
   const { toast } = useToast()
   const { wallets } = useWallets()
+  const { fundWallet } = useFundWallet()
   const [isPrivyFunding, setIsPrivyFunding] = useState(false)
 
   const [onchainBalance, setOnchainBalance] = useState<{ address: string; value: string | null }>({
@@ -127,22 +129,21 @@ export function WalletMenu() {
       return
     }
 
-    if (typeof embeddedWallet?.fund !== "function") {
-      handleOpenWalletView()
-      return
-    }
-
     setIsPrivyFunding(true)
     try {
-      await embeddedWallet.fund()
+      await startPrivyFunding({
+        walletAddress,
+        embeddedWallet,
+        fundWallet,
+      })
       toast({
         title: "Privy funding flow opened",
         description: "Complete the funding flow to top up your onchain wallet.",
       })
-    } catch {
+    } catch (error) {
       toast({
         title: "Unable to start Privy funding",
-        description: "Use Open wallet / receive or fund your internal wallet via Paystack.",
+        description: getPrivyFundingErrorMessage(error),
         variant: "destructive",
       })
     } finally {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useWallets } from "@privy-io/react-auth"
+import { useFundWallet, useWallets } from "@privy-io/react-auth"
 import { formatEther } from "viem"
 import { liskSepolia } from "viem/chains"
 import {
@@ -17,6 +17,7 @@ import {
 
 import { useAuth } from "@/hooks/use-auth"
 import { formatNaira } from "@/lib/currency"
+import { getPrivyFundingErrorMessage, startPrivyFunding } from "@/lib/auth/privy-funding"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -100,6 +101,7 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
   const { toast } = useToast()
   const { user: authUser, refetch: refetchAuth } = useAuth()
   const { wallets } = useWallets()
+  const { fundWallet } = useFundWallet()
 
   const [walletSummary, setWalletSummary] = useState<WalletSummaryPayload | null>(null)
   const [isSummaryLoading, setIsSummaryLoading] = useState(true)
@@ -218,22 +220,21 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
       return
     }
 
-    if (typeof embeddedWallet?.fund !== "function") {
-      handleOpenWalletView()
-      return
-    }
-
     setIsPrivyFunding(true)
     try {
-      await embeddedWallet.fund()
+      await startPrivyFunding({
+        walletAddress,
+        embeddedWallet,
+        fundWallet,
+      })
       toast({
         title: "Privy funding flow opened",
         description: "Complete the flow to top up your onchain wallet.",
       })
-    } catch {
+    } catch (error) {
       toast({
         title: "Unable to start Privy funding",
-        description: "Use Open wallet / receive or fund your internal wallet via Paystack.",
+        description: getPrivyFundingErrorMessage(error),
         variant: "destructive",
       })
     } finally {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useWallets } from "@privy-io/react-auth"
+import { useFundWallet, useWallets } from "@privy-io/react-auth"
 import { CalendarDays, ChevronDown, PlusCircle } from "lucide-react"
 import { formatEther } from "viem"
 import { liskSepolia } from "viem/chains"
@@ -18,6 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DashboardRouteLoading } from "@/components/dashboard/dashboard-route-loading"
 import { getUserDisplayName, useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
+import { getPrivyFundingErrorMessage, startPrivyFunding } from "@/lib/auth/privy-funding"
 import { formatNaira } from "@/lib/currency"
 
 type PoolPreview = {
@@ -94,6 +95,7 @@ export default function InvestorOverviewPage() {
   const { toast } = useToast()
   const { user: authUser, loading: authLoading, refetch } = useAuth()
   const { wallets } = useWallets()
+  const { fundWallet } = useFundWallet()
 
   const [openPools, setOpenPools] = useState<PoolPreview[]>([])
   const [isPoolsLoading, setIsPoolsLoading] = useState(true)
@@ -225,22 +227,21 @@ export default function InvestorOverviewPage() {
       return
     }
 
-    if (typeof embeddedWallet?.fund !== "function") {
-      window.open(`https://sepolia-blockscout.lisk.com/address/${walletAddress}`, "_blank", "noopener,noreferrer")
-      return
-    }
-
     setIsDepositingCrypto(true)
     try {
-      await embeddedWallet.fund()
+      await startPrivyFunding({
+        walletAddress,
+        embeddedWallet,
+        fundWallet,
+      })
       toast({
         title: "Deposit flow opened",
         description: "Complete the Privy flow to top up your crypto wallet.",
       })
-    } catch {
+    } catch (error) {
       toast({
         title: "Unable to start deposit",
-        description: "Try again from Wallet or use direct transfer.",
+        description: getPrivyFundingErrorMessage(error),
         variant: "destructive",
       })
     } finally {
