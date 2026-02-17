@@ -73,6 +73,14 @@ function toPaystackAmount(value: string) {
   return parsed
 }
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase()
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
 async function resolveOnchainBalance(address: string) {
   const rpcUrl = liskSepolia.rpcUrls.default.http[0]
   const response = await fetch(rpcUrl, {
@@ -110,6 +118,7 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
   const [isPrivyFunding, setIsPrivyFunding] = useState(false)
   const [isPaystackFunding, setIsPaystackFunding] = useState(false)
   const [paystackAmount, setPaystackAmount] = useState("")
+  const [paystackEmail, setPaystackEmail] = useState(authUser?.email || "")
   const [onchainBalance, setOnchainBalance] = useState<string | null>(null)
   const [onchainLoading, setOnchainLoading] = useState(false)
 
@@ -266,6 +275,25 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
       return
     }
 
+    const email = normalizeEmail(paystackEmail || authUser?.email || "")
+    if (!email) {
+      toast({
+        title: "Email required",
+        description: "Enter an email address to continue with Paystack funding.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!isValidEmail(email)) {
+      toast({
+        title: "Invalid email",
+        description: "Enter a valid email address.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsPaystackFunding(true)
     try {
       const response = await fetch("/api/payments/initialize", {
@@ -273,6 +301,7 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amountNgn,
+          email,
         }),
       })
 
@@ -347,6 +376,12 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
       isMounted = false
     }
   }, [walletAddress])
+
+  useEffect(() => {
+    if (authUser?.email && !paystackEmail) {
+      setPaystackEmail(authUser.email)
+    }
+  }, [authUser?.email, paystackEmail])
 
   if (isSummaryLoading) {
     return (
@@ -467,6 +502,17 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
             <p className="mt-1 text-sm text-muted-foreground">
               Fiat deposits are credited directly to your internal NGN wallet balance.
             </p>
+            <div className="mt-3 space-y-2">
+              <Label htmlFor="paystack-funding-email">Email</Label>
+              <Input
+                id="paystack-funding-email"
+                inputMode="email"
+                type="email"
+                placeholder="you@example.com"
+                value={paystackEmail}
+                onChange={(event) => setPaystackEmail(event.target.value)}
+              />
+            </div>
             <div className="mt-3 space-y-2">
               <Label htmlFor="paystack-funding-amount">Amount (NGN)</Label>
               <Input

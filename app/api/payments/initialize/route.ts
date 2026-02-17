@@ -7,6 +7,10 @@ function resolveCallbackUrl(request: Request) {
   return `${appUrl}/dashboard/investor`
 }
 
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
 export async function POST(request: Request) {
   const secretKey = process.env.PAYSTACK_SECRET_KEY
   if (!secretKey) {
@@ -19,14 +23,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
     }
 
-    if (!user.email) {
-      return NextResponse.json({ message: "An email is required for Paystack funding." }, { status: 400 })
-    }
-
     const body = await request.json().catch(() => ({}))
     const amountNgn = Number(body.amountNgn ?? body.amount)
     if (!Number.isFinite(amountNgn) || amountNgn <= 0) {
       return NextResponse.json({ message: "A valid amount is required." }, { status: 400 })
+    }
+
+    const providedEmail = typeof body.email === "string" ? body.email.trim().toLowerCase() : ""
+    const fundingEmail = (user.email || providedEmail || "").trim().toLowerCase()
+    if (!fundingEmail) {
+      return NextResponse.json({ message: "An email is required for Paystack funding." }, { status: 400 })
+    }
+
+    if (!isValidEmail(fundingEmail)) {
+      return NextResponse.json({ message: "Enter a valid email address for Paystack funding." }, { status: 400 })
     }
 
     const amountInKobo = Math.round(amountNgn * 100)
@@ -40,7 +50,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         amount: amountInKobo,
-        email: user.email,
+        email: fundingEmail,
         reference,
         callback_url: resolveCallbackUrl(request),
         metadata: {
@@ -48,6 +58,7 @@ export async function POST(request: Request) {
           userId: user._id.toString(),
           role: user.role,
           amountNgn,
+          payerEmail: fundingEmail,
         },
       }),
     })
