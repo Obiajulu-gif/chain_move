@@ -78,9 +78,9 @@ export default function SignInPage() {
   }
 
   useEffect(() => {
-    if (!ready || !authenticated) return
+    if (!ready || !authenticated || !identityToken) return
     void syncUser()
-  }, [authenticated, ready, syncUser])
+  }, [authenticated, ready, identityToken, syncUser])
 
   return (
     <AuthLayout
