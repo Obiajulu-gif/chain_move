@@ -3,6 +3,27 @@ import { NextResponse } from "next/server"
 import { getAuthenticatedUser, withSessionRefresh } from "@/lib/auth/current-user"
 import { investInPool } from "@/lib/services/investments.service"
 
+function isTransientTransactionError(error: unknown) {
+  if (!error || typeof error !== "object") return false
+
+  const maybeMongoError = error as {
+    code?: number
+    codeName?: string
+    errorLabels?: string[]
+    message?: string
+  }
+
+  const labels = Array.isArray(maybeMongoError.errorLabels) ? maybeMongoError.errorLabels : []
+  const message = typeof maybeMongoError.message === "string" ? maybeMongoError.message : ""
+
+  return (
+    maybeMongoError.code === 251 ||
+    maybeMongoError.codeName === "NoSuchTransaction" ||
+    labels.includes("TransientTransactionError") ||
+    /does not match any in-progress transactions/i.test(message)
+  )
+}
+
 export async function POST(request: Request, context: { params: Promise<{ poolId: string }> }) {
   try {
     const { user, shouldRefreshSession } = await getAuthenticatedUser(request)
@@ -28,6 +49,13 @@ export async function POST(request: Request, context: { params: Promise<{ poolId
     const response = NextResponse.json({ success: true, investment }, { status: 201 })
     return shouldRefreshSession ? withSessionRefresh(response, user) : response
   } catch (error) {
+    if (isTransientTransactionError(error)) {
+      return NextResponse.json(
+        { message: "Temporary transaction conflict. Please retry your investment." },
+        { status: 503 },
+      )
+    }
+
     const message = error instanceof Error ? error.message : "Failed to invest in pool."
     console.error("POOL_INVEST_ERROR", error)
     return NextResponse.json({ message }, { status: 400 })

@@ -32,6 +32,29 @@ export interface InvestInPoolResult {
   userBalanceNgn: number
 }
 
+const TRANSACTION_RETRY_LIMIT = 1
+
+function shouldRetryMongoTransaction(error: unknown) {
+  if (!error || typeof error !== "object") return false
+
+  const maybeMongoError = error as {
+    code?: number
+    codeName?: string
+    errorLabels?: string[]
+    message?: string
+  }
+
+  const labels = Array.isArray(maybeMongoError.errorLabels) ? maybeMongoError.errorLabels : []
+  const message = typeof maybeMongoError.message === "string" ? maybeMongoError.message : ""
+
+  return (
+    maybeMongoError.code === 251 ||
+    maybeMongoError.codeName === "NoSuchTransaction" ||
+    labels.includes("TransientTransactionError") ||
+    /does not match any in-progress transactions/i.test(message)
+  )
+}
+
 export function calculateOwnership(amountNgn: number, targetAmountNgn: number): OwnershipResult {
   const ownershipUnits = Math.floor((amountNgn * TOTAL_OWNERSHIP_UNITS) / targetAmountNgn)
   const ownershipBps = Math.floor((amountNgn * 10_000) / targetAmountNgn)
@@ -55,118 +78,129 @@ export async function investInPool({ poolId, userId, amountNgn, txRef }: InvestI
     throw new Error("Amount must be greater than zero.")
   }
 
-  const session = await mongoose.startSession()
-  session.startTransaction()
+  let attempt = 0
+  const generatedTxRef = txRef || `pool_${poolId}_${Date.now()}`
 
-  try {
-    const [pool, user] = await Promise.all([
-      InvestmentPool.findById(poolId).session(session),
-      User.findById(userId).session(session),
-    ])
+  while (attempt <= TRANSACTION_RETRY_LIMIT) {
+    const session = await mongoose.startSession()
+    session.startTransaction()
 
-    if (!pool) throw new Error("Pool not found.")
-    if (!user) throw new Error("User not found.")
+    try {
+      // Mongo transactions do not support parallel operations on the same session.
+      const pool = await InvestmentPool.findById(poolId).session(session)
+      const user = await User.findById(userId).session(session)
 
-    if (pool.status !== "OPEN") {
-      throw new Error("This pool is not open for investment.")
-    }
+      if (!pool) throw new Error("Pool not found.")
+      if (!user) throw new Error("User not found.")
 
-    if (amountNgn < pool.minContributionNgn) {
-      throw new Error(`Minimum contribution is ${pool.minContributionNgn}.`)
-    }
+      if (pool.status !== "OPEN") {
+        throw new Error("This pool is not open for investment.")
+      }
 
-    const remainingAmountNgn = pool.targetAmountNgn - pool.currentRaisedNgn
-    if (remainingAmountNgn <= 0) {
-      throw new Error("This pool has already reached its target amount.")
-    }
+      if (amountNgn < pool.minContributionNgn) {
+        throw new Error(`Minimum contribution is ${pool.minContributionNgn}.`)
+      }
 
-    if (amountNgn > remainingAmountNgn) {
-      throw new Error(`Amount exceeds remaining target by ${amountNgn - remainingAmountNgn}.`)
-    }
+      const remainingAmountNgn = pool.targetAmountNgn - pool.currentRaisedNgn
+      if (remainingAmountNgn <= 0) {
+        throw new Error("This pool has already reached its target amount.")
+      }
 
-    if (amountNgn > (user.availableBalance || 0)) {
-      throw new Error("Insufficient internal wallet balance.")
-    }
+      if (amountNgn > remainingAmountNgn) {
+        throw new Error(`Amount exceeds remaining target by ${amountNgn - remainingAmountNgn}.`)
+      }
 
-    const { ownershipUnits, ownershipBps } = calculateOwnership(amountNgn, pool.targetAmountNgn)
+      if (amountNgn > (user.availableBalance || 0)) {
+        throw new Error("Insufficient internal wallet balance.")
+      }
 
-    const existingInvestment = await PoolInvestment.exists({
-      poolId: pool._id,
-      userId: user._id,
-      status: "CONFIRMED",
-    }).session(session)
+      const { ownershipUnits, ownershipBps } = calculateOwnership(amountNgn, pool.targetAmountNgn)
 
-    const generatedTxRef = txRef || `pool_${pool._id}_${Date.now()}`
+      const existingInvestment = await PoolInvestment.exists({
+        poolId: pool._id,
+        userId: user._id,
+        status: "CONFIRMED",
+      }).session(session)
 
-    await PoolInvestment.create(
-      [
-        {
-          poolId: pool._id,
-          userId: user._id,
-          amountNgn,
-          ownershipUnits,
-          ownershipBps,
-          txRef: generatedTxRef,
-          status: "CONFIRMED",
-        },
-      ],
-      { session },
-    )
-
-    user.availableBalance = Math.max((user.availableBalance || 0) - amountNgn, 0)
-    user.totalInvested = (user.totalInvested || 0) + amountNgn
-    await user.save({ session })
-
-    pool.currentRaisedNgn += amountNgn
-    if (!existingInvestment) {
-      pool.investorCount += 1
-    }
-    if (pool.currentRaisedNgn >= pool.targetAmountNgn) {
-      pool.status = "FUNDED"
-    }
-    await pool.save({ session })
-
-    await Transaction.create(
-      [
-        {
-          userId: user._id,
-          userType: user.role || "investor",
-          type: "pool_investment",
-          amount: amountNgn,
-          currency: "NGN",
-          method: "internal_wallet",
-          status: "Completed",
-          description: `${pool.assetType} pool investment`,
-          relatedId: pool._id.toString(),
-          gatewayReference: generatedTxRef,
-          metadata: {
+      await PoolInvestment.create(
+        [
+          {
+            poolId: pool._id,
+            userId: user._id,
+            amountNgn,
             ownershipUnits,
             ownershipBps,
+            txRef: generatedTxRef,
+            status: "CONFIRMED",
           },
-        },
-      ],
-      { session },
-    )
+        ],
+        { session },
+      )
 
-    await session.commitTransaction()
+      user.availableBalance = Math.max((user.availableBalance || 0) - amountNgn, 0)
+      user.totalInvested = (user.totalInvested || 0) + amountNgn
+      await user.save({ session })
 
-    return {
-      poolId: pool._id.toString(),
-      userId: user._id.toString(),
-      amountNgn,
-      ownershipUnits,
-      ownershipBps,
-      txRef: generatedTxRef,
-      poolStatus: pool.status,
-      currentRaisedNgn: pool.currentRaisedNgn,
-      targetAmountNgn: pool.targetAmountNgn,
-      investorCount: pool.investorCount,
-      userBalanceNgn: user.availableBalance,
+      pool.currentRaisedNgn += amountNgn
+      if (!existingInvestment) {
+        pool.investorCount += 1
+      }
+      if (pool.currentRaisedNgn >= pool.targetAmountNgn) {
+        pool.status = "FUNDED"
+      }
+      await pool.save({ session })
+
+      await Transaction.create(
+        [
+          {
+            userId: user._id,
+            userType: user.role || "investor",
+            type: "pool_investment",
+            amount: amountNgn,
+            currency: "NGN",
+            method: "internal_wallet",
+            status: "Completed",
+            description: `${pool.assetType} pool investment`,
+            relatedId: pool._id.toString(),
+            gatewayReference: generatedTxRef,
+            metadata: {
+              ownershipUnits,
+              ownershipBps,
+            },
+          },
+        ],
+        { session },
+      )
+
+      await session.commitTransaction()
+
+      return {
+        poolId: pool._id.toString(),
+        userId: user._id.toString(),
+        amountNgn,
+        ownershipUnits,
+        ownershipBps,
+        txRef: generatedTxRef,
+        poolStatus: pool.status,
+        currentRaisedNgn: pool.currentRaisedNgn,
+        targetAmountNgn: pool.targetAmountNgn,
+        investorCount: pool.investorCount,
+        userBalanceNgn: user.availableBalance,
+      }
+    } catch (error) {
+      await session.abortTransaction().catch(() => undefined)
+
+      const canRetry = attempt < TRANSACTION_RETRY_LIMIT && shouldRetryMongoTransaction(error)
+      if (canRetry) {
+        attempt += 1
+        continue
+      }
+
+      throw error
+    } finally {
+      session.endSession()
     }
-  } catch (error) {
-    await session.abortTransaction()
-    throw error
-  } finally {
-    session.endSession()
   }
+
+  throw new Error("Unable to process investment transaction.")
 }
