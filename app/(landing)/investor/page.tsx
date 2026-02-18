@@ -9,6 +9,7 @@ import { RiskAwarenessSection } from "@/components/landing/sections/RiskAwarenes
 import { VehicleOptionsSection } from "@/components/landing/sections/VehicleOptionsSection"
 import { WhoIsThisForSection } from "@/components/landing/sections/WhoIsThisForSection"
 import { WhyInvestSection } from "@/components/landing/sections/WhyInvestSection"
+import { MotionSection } from "@/components/motion/motion-section"
 
 const FAQSection = dynamic(() => import("@/components/landing/sections/FAQSection").then((mod) => mod.FAQSection))
 const PartnersSection = dynamic(() => import("@/components/landing/sections/PartnersSection").then((mod) => mod.PartnersSection))
@@ -42,16 +43,36 @@ export default function InvestorLandingPage() {
         secondaryCtaLabel="View Opportunities"
         secondaryCtaHref="#how-it-works"
       />
-      <AboutChainMoveSection />
-      <HowItWorksSection />
-      <MonitorPerformanceSection />
-      <RiskAwarenessSection />
-      <WhoIsThisForSection />
-      <VehicleOptionsSection />
-      <WhyInvestSection />
-      <FAQSection />
-      <PartnersSection />
-      <ReadyToJoinSection />
+      <MotionSection as="div">
+        <AboutChainMoveSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <HowItWorksSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <MonitorPerformanceSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <RiskAwarenessSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <WhoIsThisForSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <VehicleOptionsSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <WhyInvestSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <FAQSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <PartnersSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <ReadyToJoinSection />
+      </MotionSection>
     </>
   )
 }

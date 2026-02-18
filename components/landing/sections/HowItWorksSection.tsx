@@ -1,4 +1,5 @@
 import { Container } from "@/components/landing/Container"
+import { MotionStagger, MotionStaggerItem } from "@/components/motion/motion-stagger"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 
@@ -35,32 +36,31 @@ export function HowItWorksSection() {
             <h2 className="mt-2 text-[30px] sm:text-[34px] font-bold leading-[1.02] tracking-[-0.03em] text-[#6c2b04] md:text-[40px]">
               How Chainmove Works?
             </h2>
-            <p className="mt-5 text-[16px] sm:text-[19px] leading-[1.2] text-[#6f6f6f]">
+            <p className="mt-5 text-[16px] sm:text-[19px] leading-[1.55] text-[#6f6f6f]">
               A simple, structured way to invest in mobility without managing vehicles yourself.
             </p>
           </div>
 
           <Link
             href="#"
-            className="inline-flex h-14 items-center justify-center rounded-full bg-cm-orange px-7 text-[16px] sm:text-[18px] font-semibold text-white transition-colors hover:bg-[#de6805]"
+            className="inline-flex h-14 items-center justify-center rounded-full bg-cm-orange px-7 text-[16px] sm:text-[18px] font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-[#de6805] hover:shadow-[0_10px_22px_rgba(242,120,14,0.32)]"
           >
             See How Capital Flows
             <ArrowRight className="ml-2 h-5 w-5" />
           </Link>
         </div>
 
-        <div className="mt-11 grid gap-4 md:grid-cols-2">
+        <MotionStagger className="mt-11 grid gap-4 md:grid-cols-2" stagger={0.1}>
           {steps.map((step) => (
-            <article
-              key={step.number}
-              className="rounded-3xl border border-cm-border-light bg-[#F6F0EC] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.08)] md:p-8"
-            >
-              <p className="text-[20px] sm:text-[22px] font-medium leading-none text-cm-orange">{step.number}</p>
-              <h3 className="mt-7 text-[20px] sm:text-[20px] font-semibold leading-[1.08] text-[#2f2f2f]">{step.title}</h3>
-              <p className="mt-5 text-[16px] sm:text-[19px] leading-[1.2] text-[#767676]">{step.body}</p>
-            </article>
+            <MotionStaggerItem key={step.number}>
+              <article className="rounded-3xl border border-cm-border-light bg-[#F6F0EC] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.08)] transition-[transform,box-shadow] duration-200 md:p-8 md:hover:-translate-y-1 md:hover:shadow-[0_16px_36px_rgba(0,0,0,0.12)]">
+                <p className="text-[20px] sm:text-[22px] font-medium leading-none text-cm-orange">{step.number}</p>
+                <h3 className="mt-7 text-[20px] sm:text-[20px] font-semibold leading-[1.08] text-[#2f2f2f]">{step.title}</h3>
+                <p className="mt-5 text-[16px] sm:text-[19px] leading-[1.55] text-[#767676]">{step.body}</p>
+              </article>
+            </MotionStaggerItem>
           ))}
-        </div>
+        </MotionStagger>
       </Container>
     </section>
   )

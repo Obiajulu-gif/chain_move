@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react"
 
+import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { Header } from "@/components/dashboard/header"
-import { Sidebar } from "@/components/dashboard/sidebar"
 import { cn } from "@/lib/utils"
 
 interface AdminShellProps {
@@ -43,13 +43,8 @@ export function AdminContent({ children, className }: AdminContentProps) {
 
 export function AdminShell({ userName, children }: AdminShellProps) {
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar role="admin" />
-      <div className="flex h-screen flex-col md:ml-64 lg:ml-72">
-        <AdminTopbar userName={userName} />
-        <AdminContent>{children}</AdminContent>
-      </div>
-    </div>
+    <DashboardShell role="admin" header={<AdminTopbar userName={userName} />} className="flex min-h-dvh flex-col">
+      <AdminContent>{children}</AdminContent>
+    </DashboardShell>
   )
 }
-

@@ -1,9 +1,17 @@
 "use client"
 
-import { Bell, ChevronDown, User } from "lucide-react"
+import { Bell, ChevronDown, Menu, MoreVertical, User } from "lucide-react"
 
+import { emitDashboardSidebarToggle } from "@/components/dashboard/sidebar-events"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface DashboardHeaderProps {
   title?: string
@@ -23,13 +31,26 @@ export function DashboardHeader({
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/95 backdrop-blur">
       <div className="flex h-[60px] items-center justify-between px-4 md:px-6">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold leading-none text-foreground">{title}</h1>
-          <p className="mt-1 truncate text-sm text-muted-foreground">Welcome back, {welcomeName}</p>
+        <div className="flex min-w-0 items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 md:hidden"
+            onClick={emitDashboardSidebarToggle}
+            aria-label="Open sidebar menu"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-semibold leading-none text-foreground md:text-xl">{title}</h1>
+            <p className="mt-1 hidden truncate text-sm text-muted-foreground sm:block">Welcome back, {welcomeName}</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <ThemeToggle className="h-8 w-8 rounded-md text-muted-foreground hover:bg-muted" />
+          <ThemeToggle className="hidden h-8 w-8 rounded-md text-muted-foreground hover:bg-muted md:inline-flex" />
 
           <Button
             variant="ghost"
@@ -65,6 +86,21 @@ export function DashboardHeader({
               {walletChipLabel}
             </button>
           ) : null}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" size="icon" className="h-8 w-8 md:hidden" aria-label="Open quick actions">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 md:hidden">
+              <DropdownMenuLabel className="truncate">{welcomeName}</DropdownMenuLabel>
+              {walletChipLabel ? (
+                <DropdownMenuItem onClick={onWalletChipClick}>Open wallet</DropdownMenuItem>
+              ) : null}
+              <DropdownMenuItem onClick={emitDashboardSidebarToggle}>Open menu</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

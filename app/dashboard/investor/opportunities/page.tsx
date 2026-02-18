@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowRight, ChevronRight, Layers, Loader2, Plus, Users, Wallet } from "lucide-react"
 
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { Header } from "@/components/dashboard/header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -265,251 +265,245 @@ export default function OpenOpportunitiesPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-background">
-        <Sidebar role="investor" />
+      <DashboardShell role="investor" header={<Header userStatus="Verified Investor" />}>
+        <main className="space-y-6 p-4 sm:p-6 lg:p-8">
+          <section className="rounded-2xl border bg-card p-5 sm:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-2">
+                <Badge variant="secondary" className="w-fit">
+                  Open opportunities
+                </Badge>
+                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                  Fractional pools for {investorName}
+                </h1>
+                <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
+                  Browse active pools, create new opportunities, and invest directly from your internal NGN wallet.
+                </p>
+              </div>
 
-        <div className="md:ml-64 lg:ml-72">
-          <Header userStatus="Verified Investor" />
-
-          <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-            <section className="rounded-2xl border bg-card p-5 sm:p-6">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                  <Badge variant="secondary" className="w-fit">
-                    Open opportunities
-                  </Badge>
-                  <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Fractional pools for {investorName}
-                  </h1>
-                  <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-                    Browse active pools, create new opportunities, and invest directly from your internal NGN wallet.
-                  </p>
+              <div className="space-y-2 sm:min-w-[280px]">
+                <div className="rounded-xl border bg-muted/20 p-3 text-sm">
+                  <p className="text-muted-foreground">Internal balance</p>
+                  <p className="text-lg font-semibold">{formatNaira(walletBalance)}</p>
                 </div>
-
-                <div className="space-y-2 sm:min-w-[280px]">
-                  <div className="rounded-xl border bg-muted/20 p-3 text-sm">
-                    <p className="text-muted-foreground">Internal balance</p>
-                    <p className="text-lg font-semibold">{formatNaira(walletBalance)}</p>
-                  </div>
-                  <div className="rounded-xl border bg-muted/20 p-3 text-sm">
-                    <p className="text-muted-foreground">Open pools</p>
-                    <p className="text-lg font-semibold">{openPoolsCount}</p>
-                  </div>
+                <div className="rounded-xl border bg-muted/20 p-3 text-sm">
+                  <p className="text-muted-foreground">Open pools</p>
+                  <p className="text-lg font-semibold">{openPoolsCount}</p>
                 </div>
               </div>
-            </section>
+            </div>
+          </section>
 
-            <section className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Layers className="h-4 w-4" />
-                Pool list with real-time ownership and progress
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={refreshPageData} disabled={isRefreshing}>
-                  {isRefreshing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Refreshing
-                    </>
-                  ) : (
-                    "Refresh"
-                  )}
-                </Button>
-                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-[#E57700] text-white hover:bg-[#E57700]/90">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create pool
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create investment pool</DialogTitle>
-                      <DialogDescription>
-                        Define a new fractional pool opportunity for shuttle or keke assets.
-                      </DialogDescription>
-                    </DialogHeader>
+          <section className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Layers className="h-4 w-4" />
+              Pool list with real-time ownership and progress
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={refreshPageData} disabled={isRefreshing} className="w-full sm:w-auto">
+                {isRefreshing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Refreshing
+                  </>
+                ) : (
+                  "Refresh"
+                )}
+              </Button>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="w-full bg-[#E57700] text-white hover:bg-[#E57700]/90 sm:w-auto">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create pool
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create investment pool</DialogTitle>
+                    <DialogDescription>
+                      Define a new fractional pool opportunity for shuttle or keke assets.
+                    </DialogDescription>
+                  </DialogHeader>
 
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="pool-asset-type">Asset type</Label>
-                        <Select
-                          value={newAssetType}
-                          onValueChange={(value) => {
-                            const nextType = value as AssetType
-                            setNewAssetType(nextType)
-                            setNewTargetAmount(String(DEFAULT_TARGETS[nextType]))
-                          }}
-                        >
-                          <SelectTrigger id="pool-asset-type">
-                            <SelectValue placeholder="Select asset type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="SHUTTLE">Shuttle (₦4,600,000)</SelectItem>
-                            <SelectItem value="KEKE">Keke (₦3,500,000)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="pool-target">Target amount (NGN)</Label>
-                        <Input
-                          id="pool-target"
-                          type="number"
-                          inputMode="decimal"
-                          value={newTargetAmount}
-                          onChange={(event) => setNewTargetAmount(event.target.value)}
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="pool-min-contribution">Minimum contribution (NGN)</Label>
-                        <Input
-                          id="pool-min-contribution"
-                          type="number"
-                          inputMode="decimal"
-                          value={newMinContribution}
-                          onChange={(event) => setNewMinContribution(event.target.value)}
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="pool-description">Description (optional)</Label>
-                        <Textarea
-                          id="pool-description"
-                          value={newDescription}
-                          onChange={(event) => setNewDescription(event.target.value)}
-                          placeholder="Add a short description for investors"
-                        />
-                      </div>
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pool-asset-type">Asset type</Label>
+                      <Select
+                        value={newAssetType}
+                        onValueChange={(value) => {
+                          const nextType = value as AssetType
+                          setNewAssetType(nextType)
+                          setNewTargetAmount(String(DEFAULT_TARGETS[nextType]))
+                        }}
+                      >
+                        <SelectTrigger id="pool-asset-type">
+                          <SelectValue placeholder="Select asset type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SHUTTLE">Shuttle (N4,600,000)</SelectItem>
+                          <SelectItem value="KEKE">Keke (N3,500,000)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleCreatePool}
-                        disabled={isCreatingPool}
-                        className="bg-[#E57700] text-white hover:bg-[#E57700]/90"
-                      >
-                        {isCreatingPool ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating
-                          </>
-                        ) : (
-                          <>
-                            Create pool
-                            <ChevronRight className="ml-2 h-4 w-4" />
-                          </>
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </section>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pool-target">Target amount (NGN)</Label>
+                      <Input
+                        id="pool-target"
+                        type="number"
+                        inputMode="decimal"
+                        value={newTargetAmount}
+                        onChange={(event) => setNewTargetAmount(event.target.value)}
+                      />
+                    </div>
 
-            <section>
-              {isPoolsLoading ? (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {Array.from({ length: 6 }).map((_, index) => (
-                    <Card key={index}>
-                      <CardHeader>
-                        <Skeleton className="h-5 w-32" />
-                        <Skeleton className="h-4 w-48" />
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pool-min-contribution">Minimum contribution (NGN)</Label>
+                      <Input
+                        id="pool-min-contribution"
+                        type="number"
+                        inputMode="decimal"
+                        value={newMinContribution}
+                        onChange={(event) => setNewMinContribution(event.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pool-description">Description (optional)</Label>
+                      <Textarea
+                        id="pool-description"
+                        value={newDescription}
+                        onChange={(event) => setNewDescription(event.target.value)}
+                        placeholder="Add a short description for investors"
+                      />
+                    </div>
+                  </div>
+
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleCreatePool}
+                      disabled={isCreatingPool}
+                      className="bg-[#E57700] text-white hover:bg-[#E57700]/90"
+                    >
+                      {isCreatingPool ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating
+                        </>
+                      ) : (
+                        <>
+                          Create pool
+                          <ChevronRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </section>
+
+          <section>
+            {isPoolsLoading ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <Card key={index}>
+                    <CardHeader>
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-48" />
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-2 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : pools.length === 0 ? (
+              <Card>
+                <CardContent className="py-10 text-center">
+                  <h3 className="font-semibold">No pools available yet</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Create the first opportunity to get started.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {pools.map((pool) => {
+                  const progress = Math.min(pool.progressRatio * 100, 100)
+                  const userOwnership = (pool.userOwnershipBps || 0) / 100
+                  const isInvestable = pool.status === "OPEN"
+
+                  return (
+                    <Card key={pool.id} className="flex h-full flex-col">
+                      <CardHeader className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-base">{pool.assetType}</CardTitle>
+                            <CardDescription>Asset price: {formatNaira(pool.assetPriceNgn)}</CardDescription>
+                          </div>
+                          <Badge variant={pool.status === "OPEN" ? "default" : "secondary"}>{pool.status}</Badge>
+                        </div>
+                        {pool.description ? <p className="text-sm text-muted-foreground">{pool.description}</p> : null}
                       </CardHeader>
-                      <CardContent className="space-y-2">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-2 w-full" />
-                        <Skeleton className="h-10 w-full" />
+
+                      <CardContent className="flex flex-1 flex-col gap-4">
+                        <div className="space-y-1.5 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Target</span>
+                            <span>{formatNaira(pool.targetAmountNgn)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Raised</span>
+                            <span>{formatNaira(pool.currentRaisedNgn)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Remaining</span>
+                            <span>{formatNaira(pool.remainingAmountNgn)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Min contribution</span>
+                            <span>{formatNaira(pool.minContributionNgn)}</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Funding progress</span>
+                            <span>{progress.toFixed(1)}%</span>
+                          </div>
+                          <Progress value={progress} className="h-2" />
+                        </div>
+
+                        <div className="space-y-1.5 rounded-lg border bg-muted/30 p-2.5 text-xs">
+                          <p className="flex items-center gap-1.5 text-muted-foreground">
+                            <Users className="h-3.5 w-3.5" />
+                            {pool.investorCount} investors invested
+                          </p>
+                          <p className="text-muted-foreground">Your ownership: {formatPercent(userOwnership, 2)}</p>
+                          <p className="text-muted-foreground">You invested: {formatNaira(pool.userInvestedNgn || 0)}</p>
+                        </div>
+
+                        <Button
+                          className="mt-auto bg-[#E57700] text-white hover:bg-[#E57700]/90"
+                          onClick={() => handleOpenInvestDialog(pool)}
+                          disabled={!isInvestable}
+                        >
+                          <Wallet className="mr-2 h-4 w-4" />
+                          {isInvestable ? "Invest from wallet" : "Not open"}
+                        </Button>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
-              ) : pools.length === 0 ? (
-                <Card>
-                  <CardContent className="py-10 text-center">
-                    <h3 className="font-semibold">No pools available yet</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">Create the first opportunity to get started.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {pools.map((pool) => {
-                    const progress = Math.min(pool.progressRatio * 100, 100)
-                    const userOwnership = (pool.userOwnershipBps || 0) / 100
-                    const isInvestable = pool.status === "OPEN"
-
-                    return (
-                      <Card key={pool.id} className="flex h-full flex-col">
-                        <CardHeader className="space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <CardTitle className="text-base">{pool.assetType}</CardTitle>
-                              <CardDescription>Asset price: {formatNaira(pool.assetPriceNgn)}</CardDescription>
-                            </div>
-                            <Badge variant={pool.status === "OPEN" ? "default" : "secondary"}>{pool.status}</Badge>
-                          </div>
-                          {pool.description ? <p className="text-sm text-muted-foreground">{pool.description}</p> : null}
-                        </CardHeader>
-
-                        <CardContent className="flex flex-1 flex-col gap-4">
-                          <div className="space-y-1.5 text-sm">
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Target</span>
-                              <span>{formatNaira(pool.targetAmountNgn)}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Raised</span>
-                              <span>{formatNaira(pool.currentRaisedNgn)}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Remaining</span>
-                              <span>{formatNaira(pool.remainingAmountNgn)}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Min contribution</span>
-                              <span>{formatNaira(pool.minContributionNgn)}</span>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>Funding progress</span>
-                              <span>{progress.toFixed(1)}%</span>
-                            </div>
-                            <Progress value={progress} className="h-2" />
-                          </div>
-
-                          <div className="space-y-1.5 rounded-lg border bg-muted/30 p-2.5 text-xs">
-                            <p className="flex items-center gap-1.5 text-muted-foreground">
-                              <Users className="h-3.5 w-3.5" />
-                              {pool.investorCount} investors invested
-                            </p>
-                            <p className="text-muted-foreground">Your ownership: {formatPercent(userOwnership, 2)}</p>
-                            <p className="text-muted-foreground">You invested: {formatNaira(pool.userInvestedNgn || 0)}</p>
-                          </div>
-
-                          <Button
-                            className="mt-auto bg-[#E57700] text-white hover:bg-[#E57700]/90"
-                            onClick={() => handleOpenInvestDialog(pool)}
-                            disabled={!isInvestable}
-                          >
-                            <Wallet className="mr-2 h-4 w-4" />
-                            {isInvestable ? "Invest from wallet" : "Not open"}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                </div>
-              )}
-            </section>
-          </main>
-        </div>
-      </div>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        </main>
+      </DashboardShell>
 
       <Dialog open={isInvestDialogOpen} onOpenChange={setIsInvestDialogOpen}>
         <DialogContent>
@@ -560,3 +554,4 @@ export default function OpenOpportunitiesPage() {
     </>
   )
 }
+

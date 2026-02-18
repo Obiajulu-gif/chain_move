@@ -19,7 +19,7 @@ export function DashboardRouteLoading({ title, description, className }: Dashboa
           <Skeleton className="h-4 w-48" />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className="rounded-xl border bg-card p-4">
               <Skeleton className="mb-3 h-4 w-28" />

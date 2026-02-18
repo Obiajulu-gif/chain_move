@@ -8,6 +8,7 @@ import { TrackProgressSection } from "@/components/landing/sections/TrackProgres
 import { VehicleOptionsSection } from "@/components/landing/sections/VehicleOptionsSection"
 import { WhyDriveSection } from "@/components/landing/sections/WhyDriveSection"
 import { WhyInvestSection } from "@/components/landing/sections/WhyInvestSection"
+import { MotionSection } from "@/components/motion/motion-section"
 
 const FAQSection = dynamic(() => import("@/components/landing/sections/FAQSection").then((mod) => mod.FAQSection))
 const PartnersSection = dynamic(() => import("@/components/landing/sections/PartnersSection").then((mod) => mod.PartnersSection))
@@ -44,16 +45,36 @@ export default function DriverLandingPage() {
         secondaryCtaLabel="Speak to Us"
         secondaryCtaHref="https://calendly.com/okoyeemmanuelobiajulu/replas"
       />
-      <BuiltForDriversSection />
-      <ClearPathToOwnershipSection />
-      <TrackProgressSection />
-      <WhyDriveSection />
-      <VehicleOptionsSection />
-      <WhyInvestSection />
-      <FAQSection />
-      <PartnersSection />
-      <TestimonialsSection />
-      <ReadyToJoinSection />
+      <MotionSection as="div">
+        <BuiltForDriversSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <ClearPathToOwnershipSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <TrackProgressSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <WhyDriveSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <VehicleOptionsSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <WhyInvestSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <FAQSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <PartnersSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <TestimonialsSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <ReadyToJoinSection />
+      </MotionSection>
     </>
   )
 }

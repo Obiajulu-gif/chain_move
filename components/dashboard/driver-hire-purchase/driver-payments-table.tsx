@@ -66,30 +66,49 @@ export function DriverPaymentsTable({ payments, emptyLabel = "No payment records
   }
 
   return (
-    <div className="overflow-x-auto rounded-[10px] border border-border/70">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Method</TableHead>
-            <TableHead>Reference</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {payments.map((payment) => (
-            <TableRow key={payment.id}>
-              <TableCell className="text-xs">{formatDateLabel(payment.createdAt)}</TableCell>
-              <TableCell className="font-medium">{formatNaira(payment.amountNgn)}</TableCell>
-              <TableCell>{renderStatusBadge(payment.status)}</TableCell>
-              <TableCell className="text-xs">{payment.method}</TableCell>
-              <TableCell className="max-w-[160px] truncate text-xs text-muted-foreground">{payment.paystackRef}</TableCell>
+    <>
+      <div className="space-y-3 md:hidden">
+        {payments.map((payment) => (
+          <article key={payment.id} className="rounded-[10px] border border-border/70 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">{formatDateLabel(payment.createdAt)}</p>
+                <p className="mt-1 text-sm font-semibold">{formatNaira(payment.amountNgn)}</p>
+              </div>
+              {renderStatusBadge(payment.status)}
+            </div>
+            <div className="mt-2 grid gap-1 text-xs text-muted-foreground">
+              <p>Method: {payment.method}</p>
+              <p className="truncate">Reference: {payment.paystackRef}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-[10px] border border-border/70 md:block">
+        <Table>
+          <TableHeader className="sticky top-0 z-10 bg-background">
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Method</TableHead>
+              <TableHead>Reference</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {payments.map((payment) => (
+              <TableRow key={payment.id}>
+                <TableCell className="text-xs">{formatDateLabel(payment.createdAt)}</TableCell>
+                <TableCell className="font-medium">{formatNaira(payment.amountNgn)}</TableCell>
+                <TableCell>{renderStatusBadge(payment.status)}</TableCell>
+                <TableCell className="text-xs">{payment.method}</TableCell>
+                <TableCell className="max-w-[160px] truncate text-xs text-muted-foreground">{payment.paystackRef}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   )
 }
-

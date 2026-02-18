@@ -1,12 +1,23 @@
 "use client"
 
+import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { emitDashboardSidebarToggle } from "@/components/dashboard/sidebar-events"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Bell, ChevronLeft, User } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Bell, ChevronLeft, Menu, MoreVertical, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getUserDisplayName, useAuth } from "@/hooks/use-auth"
 import { usePathname, useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
 import dynamic from "next/dynamic"
 
 const WalletMenu = dynamic(
@@ -48,6 +59,7 @@ export function Header({
   className,
 }: HeaderProps) {
   const { user: authUser } = useAuth()
+  const { theme, setTheme } = useTheme()
   const pathname = usePathname()
   const router = useRouter()
 
@@ -56,6 +68,7 @@ export function Header({
 
   const normalizedStatus = userStatus.toLowerCase()
   const isVerified = STATUS_VARIANTS.has(normalizedStatus)
+  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light")
 
   return (
     <header
@@ -65,7 +78,18 @@ export function Header({
       )}
     >
       <div className="flex h-12 items-center justify-between gap-3">
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 md:hidden"
+            onClick={emitDashboardSidebarToggle}
+            aria-label="Open sidebar menu"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+
           {showBackButton ? (
             <Button
               variant="outline"
@@ -78,14 +102,14 @@ export function Header({
             </Button>
           ) : null}
 
-          <div className="hidden md:block">
-            <h2 className="text-lg font-semibold text-foreground">Dashboard</h2>
-            <p className="truncate text-xs text-muted-foreground">Welcome back, {resolvedUserName}</p>
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-semibold text-foreground md:text-lg">Dashboard</h2>
+            <p className="hidden truncate text-xs text-muted-foreground sm:block">Welcome back, {resolvedUserName}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden sm:block">
+          <div className="hidden md:block">
             <Badge
               variant={isVerified ? "default" : "secondary"}
               className={cn(
@@ -97,7 +121,7 @@ export function Header({
             </Badge>
           </div>
 
-          <ThemeToggle className="hidden sm:inline-flex" />
+          <ThemeToggle className="hidden md:inline-flex" />
 
           <Button
             variant="ghost"
@@ -122,9 +146,30 @@ export function Header({
             </div>
           </div>
 
-          <div>
+          <div className="hidden md:block">
             <WalletMenu />
           </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" size="icon" className="h-9 w-9 md:hidden" aria-label="Open quick actions">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 md:hidden">
+              <DropdownMenuLabel className="truncate">{resolvedUserName}</DropdownMenuLabel>
+              <DropdownMenuItem disabled className="text-xs">
+                {userStatus}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={toggleTheme}>Toggle theme</DropdownMenuItem>
+              {authUser?.role === "investor" ? (
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/investor/wallet">Open wallet</Link>
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

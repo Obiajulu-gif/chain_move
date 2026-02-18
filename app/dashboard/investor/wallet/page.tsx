@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -41,14 +41,10 @@ export default function InvestorWalletPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar role="investor" />
-      <div className="md:ml-64 lg:ml-72">
-        <Header userStatus="Verified Investor" />
-        <main className="p-4 sm:p-6 lg:p-8">
-          <InvestorWalletPanel />
-        </main>
-      </div>
-    </div>
+    <DashboardShell role="investor" header={<Header userStatus="Verified Investor" />}>
+      <main className="p-4 sm:p-6 lg:p-8">
+        <InvestorWalletPanel />
+      </main>
+    </DashboardShell>
   )
 }

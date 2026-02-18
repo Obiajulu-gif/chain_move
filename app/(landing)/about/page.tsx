@@ -7,6 +7,7 @@ import { ReadyToJoinSection } from "@/components/landing/sections/ReadyToJoinSec
 import { WhatSetsUsApartSection } from "@/components/landing/sections/WhatSetsUsApartSection"
 import { WhyWeExistStatementSection } from "@/components/landing/sections/WhyWeExistStatementSection"
 import { WhyWeExistStorySection } from "@/components/landing/sections/WhyWeExistStorySection"
+import { MotionSection } from "@/components/motion/motion-section"
 
 const FAQSection = dynamic(() => import("@/components/landing/sections/FAQSection").then((mod) => mod.FAQSection))
 const PartnersSection = dynamic(() => import("@/components/landing/sections/PartnersSection").then((mod) => mod.PartnersSection))
@@ -33,16 +34,36 @@ export const metadata: Metadata = {
 export default function AboutLandingPage() {
   return (
     <>
-      <WhyWeExistStatementSection />
-      <WhyWeExistStorySection />
-      <RegisteredCompanySection />
-      <WhatSetsUsApartSection />
-      <CoreValuesSection />
-      <JourneyMilestonesSection />
-      <FAQSection />
-      <PartnersSection />
-      <TestimonialsSection />
-      <ReadyToJoinSection />
+      <MotionSection as="div">
+        <WhyWeExistStatementSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <WhyWeExistStorySection />
+      </MotionSection>
+      <MotionSection as="div">
+        <RegisteredCompanySection />
+      </MotionSection>
+      <MotionSection as="div">
+        <WhatSetsUsApartSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <CoreValuesSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <JourneyMilestonesSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <FAQSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <PartnersSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <TestimonialsSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <ReadyToJoinSection />
+      </MotionSection>
     </>
   )
 }

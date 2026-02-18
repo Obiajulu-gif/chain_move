@@ -3,6 +3,7 @@
 import { landingAssets } from "@/components/landing/assets";
 import { Container } from "@/components/landing/Container";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, m, useReducedMotion } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -23,6 +24,7 @@ const vehicleSlides = [
 
 export function VehicleOptionsSection() {
 	const [activeIndex, setActiveIndex] = useState(0);
+	const shouldReduceMotion = useReducedMotion();
 
 	const handlePrevious = () => {
 		setActiveIndex((prev) =>
@@ -62,14 +64,24 @@ export function VehicleOptionsSection() {
 
 					<div className="relative overflow-hidden rounded-3xl bg-[#efefef] px-4 py-6 sm:px-7 sm:py-8">
 						<div className="relative h-[300px] sm:h-[360px] lg:h-[420px]">
-							<Image
-								key={activeVehicle.key}
-								src={activeVehicle.image}
-								alt={activeVehicle.title}
-								fill
-								className="object-contain"
-								sizes="(min-width: 1024px) 60vw, 100vw"
-							/>
+							<AnimatePresence mode="wait" initial={false}>
+								<m.div
+									key={activeVehicle.key}
+									className="absolute inset-0"
+									initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+									animate={{ opacity: 1 }}
+									exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+									transition={{ duration: shouldReduceMotion ? 0.15 : 0.35, ease: "easeOut" }}
+								>
+									<Image
+										src={activeVehicle.image}
+										alt={activeVehicle.title}
+										fill
+										className="object-contain"
+										sizes="(min-width: 1024px) 60vw, 100vw"
+									/>
+								</m.div>
+							</AnimatePresence>
 						</div>
 
 						<div className="absolute inset-y-0 left-5 flex items-center">
@@ -96,8 +108,9 @@ export function VehicleOptionsSection() {
 
 						<div className="mt-2 flex justify-center gap-2">
 							{vehicleSlides.map((slide, index) => (
-								<span
+								<m.span
 									key={slide.key}
+									layout
 									className={cn(
 										"h-2.5 w-2.5 rounded-full",
 										index === activeIndex ? "bg-cm-orange" : "bg-black/20",

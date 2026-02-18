@@ -1,14 +1,18 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { IBM_Plex_Sans } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { PlatformProvider } from "@/contexts/platform-context"
-import { Providers } from "./Providers"
 
 
-const inter = Inter({ subsets: ["latin"] })
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-sans",
+})
 
 export const metadata: Metadata = {
   title: {
@@ -44,15 +48,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <Providers>
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-            <PlatformProvider>
-              {children}
-              <Toaster />
-            </PlatformProvider>
-          </ThemeProvider>
-        </Providers>
+      <body className={`${ibmPlexSans.variable} font-sans`}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          <PlatformProvider>
+            {children}
+            <Toaster />
+          </PlatformProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

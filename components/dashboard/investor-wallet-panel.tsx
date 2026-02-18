@@ -560,30 +560,47 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
               </div>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <div className="space-y-3 p-4">
+              <div className="space-y-2 md:hidden">
                 {fundingTransactions.map((tx) => (
-                  <TableRow key={tx.id}>
-                    <TableCell className="text-xs">{new Date(tx.timestamp).toLocaleString()}</TableCell>
-                    <TableCell className="text-xs capitalize">{tx.method || tx.type.replaceAll("_", " ")}</TableCell>
-                    <TableCell>
-                      <Badge variant={tx.status.toLowerCase() === "completed" ? "default" : "secondary"}>
-                        {tx.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">{formatNaira(tx.amount)}</TableCell>
-                  </TableRow>
+                  <article key={tx.id} className="rounded-lg border border-border/70 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-xs text-muted-foreground">{new Date(tx.timestamp).toLocaleString()}</p>
+                      <Badge variant={tx.status.toLowerCase() === "completed" ? "default" : "secondary"}>{tx.status}</Badge>
+                    </div>
+                    <p className="mt-2 text-sm capitalize text-muted-foreground">{tx.method || tx.type.replaceAll("_", " ")}</p>
+                    <p className="mt-1 text-sm font-semibold">{formatNaira(tx.amount)}</p>
+                  </article>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-background">
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fundingTransactions.map((tx) => (
+                      <TableRow key={tx.id}>
+                        <TableCell className="text-xs">{new Date(tx.timestamp).toLocaleString()}</TableCell>
+                        <TableCell className="text-xs capitalize">{tx.method || tx.type.replaceAll("_", " ")}</TableCell>
+                        <TableCell>
+                          <Badge variant={tx.status.toLowerCase() === "completed" ? "default" : "secondary"}>
+                            {tx.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">{formatNaira(tx.amount)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           )}
         </div>
       </CardContent>

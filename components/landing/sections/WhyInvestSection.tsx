@@ -1,4 +1,5 @@
 import { Container } from "@/components/landing/Container"
+import { MotionStagger, MotionStaggerItem } from "@/components/motion/motion-stagger"
 import { BadgeCheck, BriefcaseBusiness, ChevronRight, Eye, Wallet } from "lucide-react"
 import Link from "next/link"
 
@@ -38,31 +39,33 @@ export function WhyInvestSection() {
               <h2 className="mt-5 text-[30px] sm:text-[36px] font-bold leading-[1.02] tracking-[-0.03em] text-cm-text md:text-[42px]">
                 Why Invest with <span className="text-cm-orange">Chainmove?</span>
               </h2>
-              <p className="mt-4 text-[16px] sm:text-[19px] leading-[1.2] text-cm-muted">
+              <p className="mt-4 text-[16px] sm:text-[19px] leading-[1.55] text-cm-muted">
                 Built for disciplined capital. Designed for long-term returns.
               </p>
             </div>
 
             <Link
               href="#"
-              className="inline-flex items-center justify-center rounded-full border border-white/70 px-7 py-3.5 text-[16px] sm:text-[18px] font-medium text-cm-text transition-colors hover:bg-white/10"
+              className="inline-flex items-center justify-center rounded-full border border-white/70 px-7 py-3.5 text-[16px] sm:text-[18px] font-medium text-cm-text transition-all duration-200 hover:-translate-y-px hover:bg-white/10"
             >
               Explore Ownership Benefits
               <ChevronRight className="ml-2.5 h-5 w-5" />
             </Link>
           </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <MotionStagger className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4" stagger={0.09}>
             {benefits.map((benefit) => (
-              <article key={benefit.title} className="rounded-3xl border border-cm-border-dark bg-cm-dark-2 p-6">
-                <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/6">
-                  <benefit.icon className="h-8 w-8 text-cm-text" />
-                </div>
-                <h3 className="mt-6 text-[20px] sm:text-[22px] font-semibold leading-[1.08] text-cm-text">{benefit.title}</h3>
-                <p className="mt-4 text-[16px] sm:text-[19px] leading-[1.2] text-cm-muted">{benefit.body}</p>
-              </article>
+              <MotionStaggerItem key={benefit.title}>
+                <article className="rounded-3xl border border-cm-border-dark bg-cm-dark-2 p-6 transition-[transform,box-shadow] duration-200 md:hover:-translate-y-1 md:hover:shadow-[0_18px_36px_rgba(0,0,0,0.28)]">
+                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/6">
+                    <benefit.icon className="h-8 w-8 text-cm-text" />
+                  </div>
+                  <h3 className="mt-6 text-[20px] sm:text-[22px] font-semibold leading-[1.08] text-cm-text">{benefit.title}</h3>
+                  <p className="mt-4 text-[16px] sm:text-[19px] leading-[1.55] text-cm-muted">{benefit.body}</p>
+                </article>
+              </MotionStaggerItem>
             ))}
-          </div>
+          </MotionStagger>
         </div>
       </Container>
     </section>

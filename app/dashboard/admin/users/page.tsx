@@ -151,7 +151,55 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
           <p>Page {currentPage} of {totalPages}</p>
         </div>
 
-        <div className="max-h-[calc(100vh-280px)] overflow-auto">
+        <div className="divide-y divide-border/60 md:hidden">
+          {users.length === 0 ? (
+            <div className="px-4 py-12 text-center text-sm text-muted-foreground">No users found for the selected filters.</div>
+          ) : (
+            users.map((user: any) => {
+              const emailOrPrivy = user.email || user.privyUserId || "N/A"
+              const statusLabel = deriveUserStatus(user)
+
+              return (
+                <article key={user._id.toString()} className="space-y-3 px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-foreground">{resolveUserName(user)}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {new Date(user.createdAt).toLocaleDateString("en-NG", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="capitalize">
+                      {user.role || "unknown"}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <Badge
+                      variant={statusLabel === "Active" ? "default" : "secondary"}
+                      className={cn(statusLabel === "Active" ? "bg-green-600 text-white hover:bg-green-600" : "")}
+                    >
+                      {statusLabel}
+                    </Badge>
+                    {emailOrPrivy !== "N/A" ? <CopyButton value={emailOrPrivy} /> : null}
+                  </div>
+                  <p className="truncate text-sm text-muted-foreground">{truncate(emailOrPrivy, 42)}</p>
+                  {user.privyUserId ? <p className="truncate text-xs text-muted-foreground">{truncate(user.privyUserId, 42)}</p> : null}
+                  <Button asChild variant="outline" size="sm" className="w-full">
+                    <Link href={`/dashboard/admin/users/${user._id.toString()}`}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      View user
+                    </Link>
+                  </Button>
+                </article>
+              )
+            })
+          )}
+        </div>
+
+        <div className="hidden max-h-[calc(100vh-280px)] overflow-auto md:block">
           <table className="w-full min-w-[940px] border-collapse text-sm">
             <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur supports-[backdrop-filter]:bg-muted/65">
               <tr className="border-b border-border/70 text-left">
@@ -247,4 +295,3 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
     </div>
   )
 }
-

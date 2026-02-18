@@ -1,5 +1,6 @@
 import { landingAssets } from "@/components/landing/assets"
 import { Container } from "@/components/landing/Container"
+import { MotionStagger, MotionStaggerItem } from "@/components/motion/motion-stagger"
 import Image from "next/image"
 
 const testimonials = [
@@ -26,16 +27,6 @@ const testimonials = [
   },
 ]
 
-function normalizeTestimonialText(text: string) {
-  return text
-    .normalize("NFC")
-    .replaceAll("â€™", "’")
-    .replaceAll("â€œ", "“")
-    .replaceAll("\u00e2\u20ac\u009d", "”")
-    .replaceAll("â€“", "–")
-    .replaceAll("â€”", "—")
-}
-
 export function TestimonialsSection() {
   return (
     <section className="bg-white py-20 md:py-24">
@@ -44,34 +35,34 @@ export function TestimonialsSection() {
           <h2 className="text-[30px] sm:text-[36px] font-bold leading-[1.02] tracking-[-0.03em] text-[#6c2b04] md:text-[42px]">
             Words on the Street
           </h2>
-          <p className="max-w-[680px] text-[16px] sm:text-[19px] leading-[1.2] text-[#6f6f6f]">
+          <p className="max-w-[680px] text-[16px] sm:text-[19px] leading-[1.55] text-[#6f6f6f]">
             Real stories from drivers, investors, and mobility operators using ChainMove.
           </p>
         </div>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <MotionStagger className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3" stagger={0.08}>
           {testimonials.map((testimonial) => (
-            <article
-              key={testimonial.name + testimonial.role}
-              className="rounded-3xl border border-cm-border-light bg-[#fcf8f6] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)]"
-            >
-              <div className="flex items-center gap-4">
-                <div className="relative h-16 w-16 overflow-hidden rounded-full bg-[#d8d8d8]">
-                  <Image src={testimonial.image} alt={testimonial.name} fill className="object-cover" sizes="64px" />
+            <MotionStaggerItem key={`${testimonial.name}-${testimonial.role}`}>
+              <article className="rounded-3xl border border-cm-border-light bg-[#fcf8f6] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)] transition-[transform,box-shadow] duration-200 md:hover:-translate-y-1 md:hover:shadow-[0_18px_36px_rgba(0,0,0,0.12)]">
+                <div className="flex items-center gap-4">
+                  <div className="relative h-16 w-16 overflow-hidden rounded-full bg-[#d8d8d8]">
+                    <Image src={testimonial.image} alt={testimonial.name} fill className="object-cover" sizes="64px" />
+                  </div>
+                  <div>
+                    <p className="text-[16px] sm:text-[19px] font-semibold leading-none text-[#2a2a2a]">{testimonial.name}</p>
+                    <p className="mt-1 text-[16px] sm:text-[18px] text-[#777]">{testimonial.role}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[16px] sm:text-[19px] font-semibold leading-none text-[#2a2a2a]">{testimonial.name}</p>
-                  <p className="mt-1 text-[16px] sm:text-[18px] text-[#777]">{testimonial.role}</p>
-                </div>
-              </div>
 
-              <p className="mt-6 break-words text-[16px] leading-[1.35] text-[#5f5f5f] sm:text-[19px]">
-                “{normalizeTestimonialText(testimonial.quote)}”
-              </p>
-            </article>
+                <p className="mt-6 break-words text-[16px] leading-[1.6] text-[#5f5f5f] sm:text-[19px]">
+                  "{testimonial.quote}"
+                </p>
+              </article>
+            </MotionStaggerItem>
           ))}
-        </div>
+        </MotionStagger>
       </Container>
     </section>
   )
 }
+

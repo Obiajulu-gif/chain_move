@@ -170,7 +170,45 @@ export default async function AdminInvestorsPage({ searchParams }: InvestorsPage
           <p>Page {currentPage} of {totalPages}</p>
         </div>
 
-        <div className="max-h-[calc(100vh-280px)] overflow-auto">
+        <div className="divide-y divide-border/60 md:hidden">
+          {investors.length === 0 ? (
+            <div className="px-4 py-12 text-center text-sm text-muted-foreground">No investors found.</div>
+          ) : (
+            investors.map((investor: any) => {
+              const id = investor._id.toString()
+              const deposited = depositByUser.get(id) || 0
+              const pooled = poolInvestByUser.get(id)
+              const invested = (pooled?.invested || 0) + (legacyInvestByUser.get(id) || 0)
+              const walletAddress = investor.walletAddress || investor.walletaddress || "Not linked"
+
+              return (
+                <article key={id} className="space-y-3 px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-foreground">{displayName(investor)}</p>
+                      <p className="text-xs text-muted-foreground">{investor.email || "No email"}</p>
+                    </div>
+                    <Badge variant="secondary">{pooled?.activePools || 0} pools</Badge>
+                  </div>
+                  <div className="grid gap-1 text-xs text-muted-foreground">
+                    <p>Total deposited: {formatNaira(deposited)}</p>
+                    <p>Total invested: {formatNaira(invested)}</p>
+                    <p className="truncate">Wallet: {walletAddress}</p>
+                    <p className="truncate">Privy: {investor.privyUserId || "Not linked"}</p>
+                  </div>
+                  <Button asChild variant="outline" size="sm" className="w-full">
+                    <Link href={`/dashboard/admin/investors/${id}`}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      View profile
+                    </Link>
+                  </Button>
+                </article>
+              )
+            })
+          )}
+        </div>
+
+        <div className="hidden max-h-[calc(100vh-280px)] overflow-auto md:block">
           <table className="w-full min-w-[1200px] border-collapse text-sm">
             <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur supports-[backdrop-filter]:bg-muted/65">
               <tr className="border-b border-border/70 text-left">
@@ -260,4 +298,3 @@ export default async function AdminInvestorsPage({ searchParams }: InvestorsPage
     </div>
   )
 }
-

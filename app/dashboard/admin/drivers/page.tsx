@@ -172,7 +172,58 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
           <p>Page {currentPage} of {totalPages}</p>
         </div>
 
-        <div className="max-h-[calc(100vh-280px)] overflow-auto">
+        <div className="divide-y divide-border/60 md:hidden">
+          {drivers.length === 0 ? (
+            <div className="px-4 py-12 text-center text-sm text-muted-foreground">No drivers registered yet.</div>
+          ) : (
+            drivers.map((driver: any) => {
+              const kycStatus = normalizeKycStatus(driver)
+              const contract = latestContractByDriver.get(driver._id.toString())
+              const contractLabel = contract ? `${contract.vehicleDisplayName} (${contract.status})` : "Not assigned"
+
+              return (
+                <article key={driver._id.toString()} className="space-y-3 px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-foreground">{getDriverName(driver)}</p>
+                      <p className="text-xs text-muted-foreground">{driver.email || "No email"}</p>
+                    </div>
+                    <Badge
+                      variant={kycStatus === "Approved" ? "default" : "secondary"}
+                      className={cn(
+                        kycStatus === "Approved" ? "bg-green-600 text-white hover:bg-green-600" : "",
+                        kycStatus === "Rejected" ? "bg-red-600 text-white hover:bg-red-600" : "",
+                      )}
+                    >
+                      {kycStatus}
+                    </Badge>
+                  </div>
+                  <div className="grid gap-1 text-xs text-muted-foreground">
+                    <p>Phone: {driver.phoneNumber || "Not provided"}</p>
+                    <p>Region: {getDriverRegion(driver)}</p>
+                    <p>Vehicle: {contractLabel}</p>
+                    <p>
+                      Registered:{" "}
+                      {new Date(driver.createdAt).toLocaleDateString("en-NG", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <Button asChild variant="outline" size="sm" className="w-full">
+                    <Link href={`/dashboard/admin/drivers/${driver._id.toString()}`}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      View details
+                    </Link>
+                  </Button>
+                </article>
+              )
+            })
+          )}
+        </div>
+
+        <div className="hidden max-h-[calc(100vh-280px)] overflow-auto md:block">
           <table className="w-full min-w-[960px] border-collapse text-sm">
             <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur supports-[backdrop-filter]:bg-muted/65">
               <tr className="border-b border-border/70 text-left">
@@ -265,4 +316,3 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
     </div>
   )
 }
-

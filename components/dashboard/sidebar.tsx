@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useLogout } from "@privy-io/react-auth"
@@ -15,7 +15,6 @@ import {
   Layers,
   LayoutDashboard,
   LogOut,
-  Menu,
   Receipt,
   ShieldAlert,
   Settings,
@@ -27,7 +26,7 @@ import {
 } from "lucide-react"
 
 import { ChainMoveLogo } from "@/components/chain-move-logo"
-import { Button } from "@/components/ui/button"
+import { getDashboardSidebarEventNames } from "@/components/dashboard/sidebar-events"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -207,7 +206,7 @@ export function SidebarSection({ section, pathname, onNavigate }: SidebarSection
   )
 }
 
-export function Sidebar({ role, className, mobileWidth = "w-64" }: SidebarProps) {
+export function Sidebar({ role, className, mobileWidth = "w-[18rem]" }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
@@ -217,6 +216,25 @@ export function Sidebar({ role, className, mobileWidth = "w-64" }: SidebarProps)
   const sections = useMemo(() => SIDEBAR_SECTIONS[role], [role])
 
   const closeMobileSidebar = () => setIsOpen(false)
+
+  useEffect(() => {
+    closeMobileSidebar()
+    // Close drawer on route changes to avoid stale overlays.
+  }, [pathname])
+
+  useEffect(() => {
+    const eventNames = getDashboardSidebarEventNames()
+    const handleToggle = () => setIsOpen((previous) => !previous)
+    const handleClose = () => setIsOpen(false)
+
+    window.addEventListener(eventNames.toggle, handleToggle)
+    window.addEventListener(eventNames.close, handleClose)
+
+    return () => {
+      window.removeEventListener(eventNames.toggle, handleToggle)
+      window.removeEventListener(eventNames.close, handleClose)
+    }
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -241,16 +259,6 @@ export function Sidebar({ role, className, mobileWidth = "w-64" }: SidebarProps)
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed left-3 top-3 z-50 border border-border bg-background text-foreground shadow-sm hover:bg-muted md:hidden"
-        onClick={() => setIsOpen((previous) => !previous)}
-        aria-label="Toggle sidebar"
-      >
-        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
-
       {isOpen ? (
         <div
           className="fixed inset-0 z-40 bg-[#0D1422]/35 backdrop-blur-[1px] md:hidden"
@@ -261,7 +269,7 @@ export function Sidebar({ role, className, mobileWidth = "w-64" }: SidebarProps)
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 transform border-r border-border bg-[#F8FAFD] transition-transform duration-300 ease-out dark:bg-[#0B1220]",
+          "fixed inset-y-0 left-0 z-50 border-r border-border bg-[#F8FAFD] transition-transform duration-300 ease-out dark:bg-[#0B1220]",
           mobileWidth,
           "md:w-64 md:translate-x-0 lg:w-72",
           isOpen ? "translate-x-0" : "-translate-x-full",
@@ -270,11 +278,19 @@ export function Sidebar({ role, className, mobileWidth = "w-64" }: SidebarProps)
         aria-label="Sidebar navigation"
       >
         <div className="flex h-full flex-col">
-          <div className="flex h-[60px] items-center border-b border-border px-4">
-            <Link href="/" className="inline-flex items-center gap-2">
+          <div className="flex h-[60px] items-center justify-between border-b border-border px-4">
+            <Link href="/" className="inline-flex items-center gap-2" onClick={closeMobileSidebar}>
               <ChainMoveLogo width={24} height={24} className="h-6 w-6" />
               <span className="text-xl font-semibold leading-none text-foreground">ChainMove</span>
             </Link>
+            <button
+              type="button"
+              onClick={closeMobileSidebar}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/80 hover:text-foreground md:hidden"
+              aria-label="Close sidebar"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
           <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-5">

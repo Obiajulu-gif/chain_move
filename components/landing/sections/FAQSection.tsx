@@ -1,8 +1,10 @@
 "use client"
 
 import { Container } from "@/components/landing/Container"
+import { MotionStagger, MotionStaggerItem } from "@/components/motion/motion-stagger"
 import { cn } from "@/lib/utils"
-import { Minus, Plus } from "lucide-react"
+import { AnimatePresence, m, useReducedMotion } from "framer-motion"
+import { Plus } from "lucide-react"
 import { useState } from "react"
 
 const faqItems = [
@@ -40,6 +42,7 @@ interface FAQSectionProps {
 
 export function FAQSection({ title = "Frequently Asked Questions", id = "faqs" }: FAQSectionProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const shouldReduceMotion = useReducedMotion()
 
   return (
     <section id={id} className="bg-white py-20 md:py-24">
@@ -49,44 +52,58 @@ export function FAQSection({ title = "Frequently Asked Questions", id = "faqs" }
             {title}
           </h2>
 
-          <div className="space-y-3">
+          <MotionStagger className="space-y-3" stagger={0.07}>
             {faqItems.map((item, index) => {
               const isOpen = openIndex === index
               const panelId = `faq-panel-${index}`
 
               return (
-                <article
-                  key={item.question}
-                  className={cn(
-                    "rounded-2xl border border-cm-border-light bg-white transition-colors",
-                    isOpen ? "bg-[#fcf7f4]" : "bg-white",
-                  )}
-                >
-                  <h3>
-                    <button
-                      type="button"
-                      aria-expanded={isOpen}
-                      aria-controls={panelId}
-                      onClick={() => setOpenIndex(isOpen ? null : index)}
-                      className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left md:px-6 md:py-6"
-                    >
-                      <span className="text-[18px] sm:text-[20px] font-medium leading-[1.1] text-[#1f1f1f]">{item.question}</span>
-                      <span
-                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cm-orange text-white"
-                        aria-hidden="true"
+                <MotionStaggerItem key={item.question}>
+                  <article
+                    className={cn(
+                      "rounded-2xl border border-cm-border-light bg-white transition-colors",
+                      isOpen ? "bg-[#fcf7f4]" : "bg-white",
+                    )}
+                  >
+                    <h3>
+                      <button
+                        type="button"
+                        aria-expanded={isOpen}
+                        aria-controls={panelId}
+                        onClick={() => setOpenIndex(isOpen ? null : index)}
+                        className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left md:px-6 md:py-6"
                       >
-                        {isOpen ? <Minus className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-                      </span>
-                    </button>
-                  </h3>
+                        <span className="text-[18px] sm:text-[20px] font-medium leading-[1.2] text-[#1f1f1f]">{item.question}</span>
+                        <m.span
+                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cm-orange text-white"
+                          aria-hidden="true"
+                          animate={shouldReduceMotion ? { rotate: 0 } : { rotate: isOpen ? 45 : 0 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                        >
+                          <Plus className="h-5 w-5" />
+                        </m.span>
+                      </button>
+                    </h3>
 
-                  <div id={panelId} hidden={!isOpen} className="px-5 pb-6 md:px-6">
-                    <p className="max-w-[760px] text-[16px] sm:text-[18px] leading-[1.2] text-[#6f6f6f]">{item.answer}</p>
-                  </div>
-                </article>
+                    <AnimatePresence initial={false}>
+                      {isOpen ? (
+                        <m.div
+                          id={panelId}
+                          initial={shouldReduceMotion ? { opacity: 1, height: "auto" } : { opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={shouldReduceMotion ? { opacity: 0, height: 0 } : { opacity: 0, height: 0 }}
+                          transition={{ duration: shouldReduceMotion ? 0.15 : 0.3, ease: "easeOut" }}
+                          className="overflow-hidden px-5 md:px-6"
+                        >
+                          <p className="max-w-[760px] pb-6 text-[16px] sm:text-[18px] leading-[1.55] text-[#6f6f6f]">{item.answer}</p>
+                        </m.div>
+                      ) : null}
+                    </AnimatePresence>
+                  </article>
+                </MotionStaggerItem>
               )
             })}
-          </div>
+          </MotionStagger>
         </div>
       </Container>
     </section>

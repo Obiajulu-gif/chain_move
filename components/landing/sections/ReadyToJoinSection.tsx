@@ -17,14 +17,14 @@ export function ReadyToJoinSection() {
             <h3 className="text-[28px] sm:text-[32px] font-semibold leading-[1.04] tracking-[-0.02em] text-[#1f1f1f] md:text-[40px]">
               <span className="text-cm-orange">Invest in Mobility.</span> Track From Anywhere.
             </h3>
-            <p className="mt-5 text-[17px] sm:text-[20px] leading-[1.2] text-[#626262]">
+            <p className="mt-5 text-[17px] sm:text-[20px] leading-[1.55] text-[#626262]">
               Own income-generating transport assets without managing drivers yourself.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/auth?role=investor"
-                className="inline-flex items-center justify-center rounded-full bg-cm-orange px-6 py-3.5 text-[16px] font-semibold text-white transition-colors hover:bg-[#de6805]"
+                className="inline-flex items-center justify-center rounded-full bg-cm-orange px-6 py-3.5 text-[16px] font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-[#de6805] hover:shadow-[0_10px_20px_rgba(242,120,14,0.3)]"
               >
                 Become a Founding Investor
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -33,7 +33,7 @@ export function ReadyToJoinSection() {
                 href="https://calendly.com/okoyeemmanuelobiajulu/replas"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-full border border-[#333] px-6 py-3.5 text-[16px] font-semibold text-[#1f1f1f] transition-colors hover:bg-black/5"
+                className="inline-flex items-center justify-center rounded-full border border-[#333] px-6 py-3.5 text-[16px] font-semibold text-[#1f1f1f] transition-all duration-200 hover:-translate-y-px hover:bg-black/5"
               >
                 Schedule a Private Call
                 <ChevronRight className="ml-2 h-5 w-5" />

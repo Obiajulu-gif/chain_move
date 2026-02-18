@@ -1,3 +1,5 @@
+import { DashboardRouteLoading } from "@/components/dashboard/dashboard-route-loading"
+
 export default function Loading() {
-  return null
+  return <DashboardRouteLoading title="Loading admin dashboard" description="Preparing metrics, records, and governance data." />
 }

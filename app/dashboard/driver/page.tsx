@@ -2,7 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { AlertTriangle, ArrowRight, Calendar, CheckCircle, Wallet } from "lucide-react"
 
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { DashboardHeader } from "@/components/dashboard/investor-overview/dashboard-header"
 import { MetricsRow, type OverviewMetricItem } from "@/components/dashboard/investor-overview/metrics-row"
 import { ContractSummaryCard } from "@/components/dashboard/driver-hire-purchase/contract-summary-card"
@@ -120,133 +120,131 @@ export default async function DriverDashboardPage() {
   const showDueAlert = Boolean(contract && contract.status === "ACTIVE" && contract.nextDueDate)
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar role="driver" mobileWidth="w-[212px]" className="md:w-[212px] lg:w-[212px]" />
-
-      <div className="md:ml-[212px]">
-        <DashboardHeader title="Dashboard" welcomeName={driverName} />
-
-        <main className="space-y-4 p-4 md:p-6">
-          {showDueAlert ? (
-            <section className="rounded-[10px] border border-red-300 bg-red-50 px-4 py-3 text-red-700 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-300">
-              <div className="flex items-start justify-between gap-3">
-                <div className="inline-flex items-start">
-                  <AlertTriangle className="mr-2 mt-0.5 h-4 w-4 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold">Repayment due soon</p>
-                    <p className="text-sm">
-                      Your next payment of {formatNaira(contract?.nextPaymentAmountNgn || 0)} is due on{" "}
-                      {formatDateLabel(contract?.nextDueDate || null)}.
-                    </p>
-                  </div>
-                </div>
-                <Button asChild size="sm" className="bg-[#E57A00] text-white hover:bg-[#D77200]">
-                  <Link href="/dashboard/driver/repayment">Pay now</Link>
-                </Button>
-              </div>
-            </section>
-          ) : null}
-
-          <section className="rounded-[10px] border border-border/70 bg-card px-4 py-4 md:px-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold leading-tight text-foreground md:text-2xl">Hire Purchase Overview</h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Track your assigned vehicle contract, outstanding balance, and repayment performance.
-                </p>
-              </div>
-
-              <Button asChild className="h-10 bg-[#E57A00] text-white hover:bg-[#D77200]">
-                <Link href="/dashboard/driver/repayment">
-                  <Wallet className="mr-2 h-4 w-4" />
-                  Make Payment
-                </Link>
-              </Button>
-            </div>
-          </section>
-
-          <MetricsRow metrics={metrics} />
-
-          <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.55fr_1fr]">
-            {contract ? (
-              <ContractSummaryCard contract={contract} />
-            ) : (
-              <Card className="rounded-[10px] border border-border/70 bg-card">
-                <CardHeader>
-                  <CardTitle>No Contract Assigned</CardTitle>
-                  <CardDescription>
-                    You do not have an active hire-purchase contract yet.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild variant="outline">
-                    <Link href="/dashboard/driver/settings">Open account settings</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            <section className="rounded-[10px] border border-border/70 bg-card p-4 md:p-5">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-foreground">Make a Payment</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Pay weekly installments in fiat NGN only.</p>
-              </div>
-
-              {contract ? (
-                <div className="space-y-3">
-                  <article className="rounded-[10px] border border-border/70 px-3 py-3">
-                    <p className="text-xs text-muted-foreground">Next installment</p>
-                    <p className="mt-1 text-xl font-semibold text-foreground">
-                      {formatNaira(contract.nextPaymentAmountNgn)}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Due {formatDateLabel(contract.nextDueDate)}
-                    </p>
-                  </article>
-
-                  <article className="rounded-[10px] border border-border/70 px-3 py-3">
-                    <p className="text-xs text-muted-foreground">Outstanding balance</p>
-                    <p className="mt-1 text-xl font-semibold text-foreground">
-                      {formatNaira(contract.remainingBalanceNgn)}
-                    </p>
-                    <p className="mt-1 inline-flex items-center text-xs text-emerald-700 dark:text-emerald-400">
-                      <CheckCircle className="mr-1 h-3.5 w-3.5" />
-                      Progress {Math.round(contract.progressRatio * 100)}%
-                    </p>
-                  </article>
-
-                  <Button asChild className="h-10 w-full bg-[#E57A00] text-white hover:bg-[#D77200]">
-                    <Link href="/dashboard/driver/repayment">
-                      Continue to payment
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="rounded-[10px] border border-dashed border-border px-4 py-8 text-center">
-                  <Calendar className="mx-auto h-5 w-5 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Contract details will appear once assigned by the operations team.
+    <DashboardShell
+      role="driver"
+      sidebarWidth="compact"
+      header={<DashboardHeader title="Dashboard" welcomeName={driverName} />}
+    >
+      <main className="space-y-4 p-4 md:p-6">
+        {showDueAlert ? (
+          <section className="rounded-[10px] border border-red-300 bg-red-50 px-4 py-3 text-red-700 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-300">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="inline-flex items-start">
+                <AlertTriangle className="mr-2 mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold">Repayment due soon</p>
+                  <p className="text-sm">
+                    Your next payment of {formatNaira(contract?.nextPaymentAmountNgn || 0)} is due on{" "}
+                    {formatDateLabel(contract?.nextDueDate || null)}.
                   </p>
                 </div>
-              )}
-            </section>
-          </section>
-
-          <section className="rounded-[10px] border border-border/70 bg-card p-4 md:p-5">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">Recent Payments</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Latest repayment transactions on your contract.</p>
               </div>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/dashboard/driver/payments">View full history</Link>
+              <Button asChild size="sm" className="w-full bg-[#E57A00] text-white hover:bg-[#D77200] sm:w-auto">
+                <Link href="/dashboard/driver/repayment">Pay now</Link>
               </Button>
             </div>
-            <DriverPaymentsTable payments={recentPayments} emptyLabel="No repayments have been made yet." />
           </section>
-        </main>
-      </div>
-    </div>
+        ) : null}
+
+        <section className="rounded-[10px] border border-border/70 bg-card px-4 py-4 md:px-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold leading-tight text-foreground md:text-2xl">Hire Purchase Overview</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Track your assigned vehicle contract, outstanding balance, and repayment performance.
+              </p>
+            </div>
+
+            <Button asChild className="h-10 w-full bg-[#E57A00] text-white hover:bg-[#D77200] sm:w-auto">
+              <Link href="/dashboard/driver/repayment">
+                <Wallet className="mr-2 h-4 w-4" />
+                Make Payment
+              </Link>
+            </Button>
+          </div>
+        </section>
+
+        <MetricsRow metrics={metrics} />
+
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.55fr_1fr]">
+          {contract ? (
+            <ContractSummaryCard contract={contract} />
+          ) : (
+            <Card className="rounded-[10px] border border-border/70 bg-card">
+              <CardHeader>
+                <CardTitle>No Contract Assigned</CardTitle>
+                <CardDescription>
+                  You do not have an active hire-purchase contract yet.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="outline">
+                  <Link href="/dashboard/driver/settings">Open account settings</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          <section className="rounded-[10px] border border-border/70 bg-card p-4 md:p-5">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-foreground">Make a Payment</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Pay weekly installments in fiat NGN only.</p>
+            </div>
+
+            {contract ? (
+              <div className="space-y-3">
+                <article className="rounded-[10px] border border-border/70 px-3 py-3">
+                  <p className="text-xs text-muted-foreground">Next installment</p>
+                  <p className="mt-1 text-xl font-semibold text-foreground">
+                    {formatNaira(contract.nextPaymentAmountNgn)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Due {formatDateLabel(contract.nextDueDate)}
+                  </p>
+                </article>
+
+                <article className="rounded-[10px] border border-border/70 px-3 py-3">
+                  <p className="text-xs text-muted-foreground">Outstanding balance</p>
+                  <p className="mt-1 text-xl font-semibold text-foreground">
+                    {formatNaira(contract.remainingBalanceNgn)}
+                  </p>
+                  <p className="mt-1 inline-flex items-center text-xs text-emerald-700 dark:text-emerald-400">
+                    <CheckCircle className="mr-1 h-3.5 w-3.5" />
+                    Progress {Math.round(contract.progressRatio * 100)}%
+                  </p>
+                </article>
+
+                <Button asChild className="h-10 w-full bg-[#E57A00] text-white hover:bg-[#D77200]">
+                  <Link href="/dashboard/driver/repayment">
+                    Continue to payment
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-[10px] border border-dashed border-border px-4 py-8 text-center">
+                <Calendar className="mx-auto h-5 w-5 text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Contract details will appear once assigned by the operations team.
+                </p>
+              </div>
+            )}
+          </section>
+        </section>
+
+        <section className="rounded-[10px] border border-border/70 bg-card p-4 md:p-5">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">Recent Payments</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Latest repayment transactions on your contract.</p>
+            </div>
+            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+              <Link href="/dashboard/driver/payments">View full history</Link>
+            </Button>
+          </div>
+          <DriverPaymentsTable payments={recentPayments} emptyLabel="No repayments have been made yet." />
+        </section>
+      </main>
+    </DashboardShell>
   )
 }

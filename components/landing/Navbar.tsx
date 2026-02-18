@@ -88,14 +88,14 @@ export function Navbar({ variant = "default" }: NavbarProps) {
 						<Link
 							href="/signin"
 							onClick={() => setIsOpen(false)}
-							className="rounded-full border border-transparent px-5 py-2.5 text-sm font-medium text-cm-text transition-colors hover:text-white"
+							className="rounded-full border border-transparent px-5 py-2.5 text-sm font-medium text-cm-text transition-all duration-200 hover:-translate-y-px hover:text-white"
 						>
 							Log in
 						</Link>
 						<Link
 							href="/auth"
 							onClick={() => setIsOpen(false)}
-							className="rounded-full bg-cm-orange px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#de6805]"
+							className="rounded-full bg-cm-orange px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-[#de6805] hover:shadow-[0_10px_20px_rgba(242,120,14,0.3)]"
 						>
 							Get Started!
 						</Link>

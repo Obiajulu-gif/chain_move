@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build": "bun run next build",
-    "dev": "bun run next dev",
+    "dev": "bun run next dev --turbopack --disable-source-maps",
+    "dev:stable": "bun run next dev --webpack --disable-source-maps",
     "lint": "bun run eslint .",
     "start": "bun run next start"
   },
@@ -55,6 +56,7 @@
     "date-fns": "4.1.0",
     "dotenv": "^17.0.0",
     "embla-carousel-react": "8.5.1",
+    "framer-motion": "12.5.0",
     "input-otp": "1.4.1",
     "jose": "^6.0.11",
     "jsonwebtoken": "^9.0.2",

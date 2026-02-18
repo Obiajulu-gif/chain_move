@@ -7,7 +7,7 @@ import { CalendarDays, ChevronDown, PlusCircle } from "lucide-react"
 import { formatEther } from "viem"
 import { liskSepolia } from "viem/chains"
 
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { DashboardHeader } from "@/components/dashboard/investor-overview/dashboard-header"
 import { DashboardBanner } from "@/components/dashboard/investor-overview/dashboard-banner"
 import { MetricsRow } from "@/components/dashboard/investor-overview/metrics-row"
@@ -273,87 +273,83 @@ export default function InvestorOverviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar role="investor" mobileWidth="w-[212px]" className="md:w-[212px] lg:w-[212px]" />
-
-      <div className="md:ml-[212px]">
+    <DashboardShell
+      role="investor"
+      sidebarWidth="compact"
+      header={
         <DashboardHeader
           welcomeName={investorName}
           walletChipLabel={walletChipLabel}
           onWalletChipClick={() => router.push("/dashboard/investor/wallet")}
         />
+      }
+    >
+      <main className="space-y-4 p-4 md:p-6">
+        {bannerVariant ? (
+          <DashboardBanner
+            variant={bannerVariant}
+            onAction={() =>
+              router.push(bannerVariant === "connect-wallet" ? "/dashboard/investor/wallet" : "/dashboard/investor/settings")
+            }
+          />
+        ) : null}
 
-        <main className="space-y-4 p-4 md:p-6">
-          {bannerVariant ? (
-            <DashboardBanner
-              variant={bannerVariant}
-              onAction={() =>
-                router.push(bannerVariant === "connect-wallet" ? "/dashboard/investor/wallet" : "/dashboard/investor/settings")
-              }
-            />
-          ) : null}
-
-          <section className="rounded-[10px] border border-border/70 bg-card px-4 py-4 md:px-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold leading-tight text-foreground md:text-2xl">Portfolio Overview</h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Monitor your mobility investments across fiat and crypto funding.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  className="h-10"
-                  type="button"
-                >
-                  <CalendarDays className="mr-2 h-4 w-4" />
-                  Last 30 Days
-                  <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  className="h-10 bg-[#E57A00] text-white hover:bg-[#D77200]"
-                  onClick={() => router.push("/dashboard/investor/wallet")}
-                >
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Fund Wallet
-                </Button>
-              </div>
+        <section className="rounded-[10px] border border-border/70 bg-card px-4 py-4 md:px-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold leading-tight text-foreground md:text-2xl">Portfolio Overview</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Monitor your mobility investments across fiat and crypto funding.
+              </p>
             </div>
-          </section>
 
-          <MetricsRow metrics={metrics} />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button variant="outline" className="h-10 w-full sm:w-auto" type="button">
+                <CalendarDays className="mr-2 h-4 w-4" />
+                Last 30 Days
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                className="h-10 w-full bg-[#E57A00] text-white hover:bg-[#D77200] sm:w-auto"
+                onClick={() => router.push("/dashboard/investor/wallet")}
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Fund Wallet
+              </Button>
+            </div>
+          </div>
+        </section>
 
-          <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.55fr_1fr]">
-            <PortfolioActivityCard
-              activities={activityItems}
-              isLoading={isPoolsLoading}
-              isRefreshing={isRefreshing}
-              onRefresh={refreshOverview}
-              onViewAll={() => router.push("/dashboard/investor/investments")}
-            />
+        <MetricsRow metrics={metrics} />
 
-            <WalletsCard
-              fiatBalanceLabel={formatNaira(authUser.availableBalance || 0)}
-              cryptoBalanceLabel={ethLabel}
-              walletAddressLabel={walletAddress ? truncateAddress(walletAddress) : "not connected"}
-              isRefreshing={isRefreshing}
-              isDepositingCrypto={isDepositingCrypto}
-              onRefresh={refreshOverview}
-              onFundWallet={() => router.push("/dashboard/investor/wallet")}
-              onDepositCrypto={handleDepositCrypto}
-              onWithdrawToBank={() =>
-                toast({
-                  title: "Withdrawals are managed in Wallet",
-                  description: "Open Wallet to continue bank withdrawal flow.",
-                })
-              }
-            />
-          </section>
-        </main>
-      </div>
-    </div>
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.55fr_1fr]">
+          <PortfolioActivityCard
+            activities={activityItems}
+            isLoading={isPoolsLoading}
+            isRefreshing={isRefreshing}
+            onRefresh={refreshOverview}
+            onViewAll={() => router.push("/dashboard/investor/investments")}
+          />
+
+          <WalletsCard
+            fiatBalanceLabel={formatNaira(authUser.availableBalance || 0)}
+            cryptoBalanceLabel={ethLabel}
+            walletAddressLabel={walletAddress ? truncateAddress(walletAddress) : "not connected"}
+            isRefreshing={isRefreshing}
+            isDepositingCrypto={isDepositingCrypto}
+            onRefresh={refreshOverview}
+            onFundWallet={() => router.push("/dashboard/investor/wallet")}
+            onDepositCrypto={handleDepositCrypto}
+            onWithdrawToBank={() =>
+              toast({
+                title: "Withdrawals are managed in Wallet",
+                description: "Open Wallet to continue bank withdrawal flow.",
+              })
+            }
+          />
+        </section>
+      </main>
+    </DashboardShell>
   )
 }
