@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "bun run next build",
-    "dev": "bun run next dev --turbopack --disable-source-maps",
-    "dev:stable": "bun run next dev --webpack --disable-source-maps",
-    "lint": "bun run eslint .",
-    "start": "bun run next start"
+    "build": "next build --webpack",
+    "dev": "next dev --turbopack --disable-source-maps",
+    "dev:stable": "next dev --webpack --disable-source-maps",
+    "lint": "eslint .",
+    "start": "next start"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -56,7 +56,7 @@
     "date-fns": "4.1.0",
     "dotenv": "^17.0.0",
     "embla-carousel-react": "8.5.1",
-    "framer-motion": "12.5.0",
+    "framer-motion": "12.34.2",
     "input-otp": "1.4.1",
     "jose": "^6.0.11",
     "jsonwebtoken": "^9.0.2",
@@ -79,6 +79,10 @@
     "vaul": "^0.9.6",
     "viem": "^2.31.4",
     "zod": "^3.24.1"
+  },
+  "overrides": {
+    "motion-dom": "12.34.2",
+    "motion-utils": "12.29.2"
   },
   "devDependencies": {
     "@types/node": "^22",
