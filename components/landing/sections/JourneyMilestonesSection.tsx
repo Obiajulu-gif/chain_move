@@ -19,7 +19,7 @@ const milestones = [
   },
   {
     title: "2026 — Revenue Milestone",
-    body: "We reach $1 million in revenue in just 110 days of operation.",
+    body: "We reach 1 million naira in revenue in just 110 days of operation.",
   },
  
 ]
