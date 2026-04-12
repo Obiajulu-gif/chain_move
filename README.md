@@ -135,10 +135,11 @@ Drivers with an active hire-purchase contract can now receive a Paystack dedicat
 - bank transfers into that account are matched to the driver's active contract through the Paystack webhook
 - overpayments still apply only up to the contract balance, with any excess credited to the driver's internal balance
 - the existing Paystack checkout repayment flow remains available as a fallback if provisioning fails or the driver cannot use bank transfer
+- investors can also receive a dedicated Paystack account for internal wallet funding, with webhook-based auto-crediting into `availableBalance`
 
 ### Driver Profile Requirements
 
-The dedicated virtual account flow currently requires:
+The dedicated virtual account flows currently require:
 
 - email
 - name / full name

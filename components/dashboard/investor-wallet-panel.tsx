@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { formatNaira } from "@/lib/currency"
 import { getPrivyFundingErrorMessage, startPrivyFunding } from "@/lib/auth/privy-funding"
 import { cn } from "@/lib/utils"
+import { InvestorWalletDedicatedAccountCard } from "@/components/dashboard/investor-wallet-dedicated-account-card"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -341,6 +342,25 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
   }, [loadWalletSummary])
 
   useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadWalletSummary()
+      }
+    }, 30000)
+
+    const handleFocus = () => {
+      void loadWalletSummary()
+    }
+
+    window.addEventListener("focus", handleFocus)
+
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener("focus", handleFocus)
+    }
+  }, [loadWalletSummary])
+
+  useEffect(() => {
     const reference = searchParams.get("reference")
     if (!reference) return
     void verifyPaymentReference(reference)
@@ -472,9 +492,11 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
           </div>
         </div>
 
+        <InvestorWalletDedicatedAccountCard internalBalanceNgn={internalBalance} />
+
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-xl border p-4">
-            <h3 className="font-semibold">1. Fund via Privy wallet flow</h3>
+            <h3 className="font-semibold">2. Fund via Privy wallet flow</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Use Privy on-ramp where supported, or copy your wallet address to receive funds on-chain.
             </p>
@@ -498,7 +520,7 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
           </div>
 
           <div className="rounded-xl border p-4">
-            <h3 className="font-semibold">2. Fund via Paystack</h3>
+            <h3 className="font-semibold">3. Fund via Paystack checkout</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Fiat deposits are credited directly to your internal NGN wallet balance.
             </p>

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 
 import dbConnect from "@/lib/dbConnect"
 import { confirmDriverPayment, createAndConfirmDriverTransferPayment } from "@/lib/services/driver-contracts.service"
+import { getInvestorVirtualAccountByAccountNumber } from "@/lib/services/paystack-investor-dva.service"
 import { getDriverVirtualAccountByAccountNumber } from "@/lib/services/paystack-dva.service"
 import { processGatewayCharge } from "@/lib/services/paystack-processing.service"
 
@@ -56,52 +57,85 @@ export async function POST(request: Request) {
     }
 
     if (isDedicatedVirtualAccountCharge(charge)) {
+      const amountNgn = Number(charge.amount) / 100
+      const email = charge.customer?.email as string | undefined
       const receiverAccountNumber = resolveReceiverAccountNumber(charge)
       if (!receiverAccountNumber) {
         return NextResponse.json({ message: "Missing dedicated account number on webhook payload." }, { status: 400 })
       }
 
       const virtualAccount = await getDriverVirtualAccountByAccountNumber(receiverAccountNumber)
-      if (!virtualAccount) {
-        return NextResponse.json(
-          {
-            status: "ignored",
-            reason: "No local driver virtual account matched the dedicated account number.",
-          },
-          { status: 200 },
-        )
-      }
-
-      const amountNgn = Number(charge.amount) / 100
-      const email = charge.customer?.email as string | undefined
-
       if (!Number.isFinite(amountNgn) || amountNgn <= 0) {
         return NextResponse.json({ message: "Invalid payment amount." }, { status: 400 })
       }
 
       const authorization = charge.authorization || {}
-      const settlementResult = await createAndConfirmDriverTransferPayment({
-        contractId: virtualAccount.contractId,
-        driverUserId: virtualAccount.driverUserId,
+      if (virtualAccount) {
+        const settlementResult = await createAndConfirmDriverTransferPayment({
+          contractId: virtualAccount.contractId,
+          driverUserId: virtualAccount.driverUserId,
+          amountNgn,
+          payerEmail: email,
+          paystackRef: reference,
+          channel: typeof authorization.channel === "string" ? authorization.channel : null,
+          metadata: {
+            ...(charge.metadata || {}),
+            source: "driver_repayment_dedicated_account",
+            receiverBankAccountNumber: receiverAccountNumber,
+            receiverBank: authorization.receiver_bank || null,
+            senderBank: authorization.sender_bank || null,
+            senderBankAccountNumber: authorization.sender_bank_account_number || null,
+            senderName: authorization.sender_name || null,
+          },
+        })
+
+        return NextResponse.json(
+          {
+            status: "success",
+            type: "driver_repayment",
+            alreadyProcessed: settlementResult.alreadyProcessed,
+          },
+          { status: 200 },
+        )
+      }
+
+      const investorVirtualAccount = await getInvestorVirtualAccountByAccountNumber(receiverAccountNumber)
+      if (!investorVirtualAccount) {
+        return NextResponse.json(
+          {
+            status: "ignored",
+            reason: "No local dedicated virtual account matched the receiver account number.",
+          },
+          { status: 200 },
+        )
+      }
+
+      const settlementResult = await processGatewayCharge({
+        reference,
+        paymentType: "wallet_funding",
         amountNgn,
-        payerEmail: email,
-        paystackRef: reference,
-        channel: typeof authorization.channel === "string" ? authorization.channel : null,
         metadata: {
           ...(charge.metadata || {}),
-          source: "driver_repayment_dedicated_account",
+          paymentType: "wallet_funding",
+          userId: investorVirtualAccount.investorUserId,
+          source: "investor_wallet_dedicated_account",
+          investorVirtualAccountId: investorVirtualAccount.id,
           receiverBankAccountNumber: receiverAccountNumber,
           receiverBank: authorization.receiver_bank || null,
           senderBank: authorization.sender_bank || null,
           senderBankAccountNumber: authorization.sender_bank_account_number || null,
           senderName: authorization.sender_name || null,
         },
+        email,
+        fallbackUserId: investorVirtualAccount.investorUserId,
+        channel: typeof authorization.channel === "string" ? authorization.channel : null,
+        processedVia: "webhook",
       })
 
       return NextResponse.json(
         {
           status: "success",
-          type: "driver_repayment",
+          type: settlementResult.type,
           alreadyProcessed: settlementResult.alreadyProcessed,
         },
         { status: 200 },
