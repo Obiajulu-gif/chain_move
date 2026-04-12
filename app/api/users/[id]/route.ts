@@ -237,7 +237,7 @@ export async function PUT(request: Request, { params }: RouteContext) {
 
     return auth.shouldRefreshSession ? withSessionRefresh(response, auth.user) : response
   } catch (error) {
-    console.error("USER_ROLE_UPDATE_ERROR", error)
+    console.error("USER_UPDATE_ERROR", error)
 
     if (isDuplicateKeyError(error)) {
       return NextResponse.json({ message: resolveDuplicateKeyMessage(error) }, { status: 409 })

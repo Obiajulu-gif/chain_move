@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Loader2, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react"
 
 import { Button, type ButtonProps } from "@/components/ui/button"
@@ -310,6 +310,7 @@ export function AdminUserCrudActions({
   className,
 }: AdminUserCrudActionsProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { toast } = useToast()
   const [pendingAction, setPendingAction] = useState<"promote" | "delete" | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -374,7 +375,11 @@ export function AdminUserCrudActions({
           description: `${displayName(user)} was removed successfully.`,
         })
 
-        router.refresh()
+        if (pathname.startsWith("/dashboard/admin/users/")) {
+          router.push("/dashboard/admin/users")
+        } else {
+          router.refresh()
+        }
       } catch (error) {
         toast({
           title: "Delete failed",
