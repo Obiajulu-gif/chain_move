@@ -34,6 +34,7 @@ The current codebase already supports a meaningful offchain and wallet-enabled p
 - admin views for users, investors, reports, KYC, and fleet operations
 - Privy-based authentication with embedded wallet provisioning
 - Paystack-backed fiat funding into an internal NGN wallet
+- Paystack dedicated virtual accounts for driver repayment collection
 - MongoDB-backed APIs for pools, investments, transactions, and user state
 
 ## Arbitrum Alignment Note
@@ -106,6 +107,7 @@ NEXT_PUBLIC_PRIVY_APP_ID=<your_privy_app_id>
 PRIVY_APP_SECRET=<your_privy_app_secret>
 PRIVY_JWKS_URL=<your_privy_jwks_url>
 PAYSTACK_SECRET_KEY=<optional_if_testing_payments>
+PAYSTACK_DVA_PREFERRED_BANK=<optional_paystack_bank_slug>
 RESEND_API_KEY=<optional_if_testing_emails>
 ```
 
@@ -122,7 +124,27 @@ npm run dev
 - `MONGODB_URI` and `JWT_SECRET` are required for application and session state.
 - `NEXT_PUBLIC_PRIVY_APP_ID`, `PRIVY_APP_SECRET`, and `PRIVY_JWKS_URL` are required for Privy-backed auth and embedded wallets.
 - `PAYSTACK_SECRET_KEY` is required for wallet funding flows.
+- `PAYSTACK_DVA_PREFERRED_BANK` optionally overrides the bank slug used when provisioning Paystack dedicated virtual accounts. For test keys, the app defaults to `test-bank`.
 - `RESEND_API_KEY` is only needed for email features.
+
+## Driver Dedicated Repayment Accounts
+
+Drivers with an active hire-purchase contract can now receive a Paystack dedicated virtual account in the repayment center.
+
+- the account is provisioned automatically when the driver loads the repayment center and has the required profile fields
+- bank transfers into that account are matched to the driver's active contract through the Paystack webhook
+- overpayments still apply only up to the contract balance, with any excess credited to the driver's internal balance
+- the existing Paystack checkout repayment flow remains available as a fallback if provisioning fails or the driver cannot use bank transfer
+
+### Driver Profile Requirements
+
+The dedicated virtual account flow currently requires:
+
+- email
+- name / full name
+- phone number
+
+If Paystack DVA eligibility for the business requires additional customer identification beyond those fields, the app surfaces the upstream error and leaves the fallback checkout flow available.
 
 ## Suggested Arbitrum Integration Path
 

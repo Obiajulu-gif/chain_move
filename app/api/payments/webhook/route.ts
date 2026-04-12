@@ -2,7 +2,8 @@ import crypto from "crypto"
 import { NextResponse } from "next/server"
 
 import dbConnect from "@/lib/dbConnect"
-import { confirmDriverPayment } from "@/lib/services/driver-contracts.service"
+import { confirmDriverPayment, createAndConfirmDriverTransferPayment } from "@/lib/services/driver-contracts.service"
+import { getDriverVirtualAccountByAccountNumber } from "@/lib/services/paystack-dva.service"
 import { processGatewayCharge } from "@/lib/services/paystack-processing.service"
 
 function resolvePaymentType(metadata: Record<string, unknown>) {
@@ -10,6 +11,20 @@ function resolvePaymentType(metadata: Record<string, unknown>) {
   if (rawType === "down_payment") return "down_payment"
   if (rawType === "driver_repayment") return "driver_repayment"
   return "wallet_funding"
+}
+
+function resolveReceiverAccountNumber(charge: Record<string, any>) {
+  const authorization = charge.authorization
+  if (!authorization || typeof authorization !== "object") return null
+
+  const accountNumber = authorization.receiver_bank_account_number
+  return typeof accountNumber === "string" && accountNumber.trim() ? accountNumber.trim() : null
+}
+
+function isDedicatedVirtualAccountCharge(charge: Record<string, any>) {
+  const authorization = charge.authorization
+  if (!authorization || typeof authorization !== "object") return false
+  return authorization.channel === "dedicated_nuban"
 }
 
 export async function POST(request: Request) {
@@ -38,6 +53,59 @@ export async function POST(request: Request) {
     const reference = charge.reference as string
     if (!reference) {
       return NextResponse.json({ message: "Missing transaction reference." }, { status: 400 })
+    }
+
+    if (isDedicatedVirtualAccountCharge(charge)) {
+      const receiverAccountNumber = resolveReceiverAccountNumber(charge)
+      if (!receiverAccountNumber) {
+        return NextResponse.json({ message: "Missing dedicated account number on webhook payload." }, { status: 400 })
+      }
+
+      const virtualAccount = await getDriverVirtualAccountByAccountNumber(receiverAccountNumber)
+      if (!virtualAccount) {
+        return NextResponse.json(
+          {
+            status: "ignored",
+            reason: "No local driver virtual account matched the dedicated account number.",
+          },
+          { status: 200 },
+        )
+      }
+
+      const amountNgn = Number(charge.amount) / 100
+      const email = charge.customer?.email as string | undefined
+
+      if (!Number.isFinite(amountNgn) || amountNgn <= 0) {
+        return NextResponse.json({ message: "Invalid payment amount." }, { status: 400 })
+      }
+
+      const authorization = charge.authorization || {}
+      const settlementResult = await createAndConfirmDriverTransferPayment({
+        contractId: virtualAccount.contractId,
+        driverUserId: virtualAccount.driverUserId,
+        amountNgn,
+        payerEmail: email,
+        paystackRef: reference,
+        channel: typeof authorization.channel === "string" ? authorization.channel : null,
+        metadata: {
+          ...(charge.metadata || {}),
+          source: "driver_repayment_dedicated_account",
+          receiverBankAccountNumber: receiverAccountNumber,
+          receiverBank: authorization.receiver_bank || null,
+          senderBank: authorization.sender_bank || null,
+          senderBankAccountNumber: authorization.sender_bank_account_number || null,
+          senderName: authorization.sender_name || null,
+        },
+      })
+
+      return NextResponse.json(
+        {
+          status: "success",
+          type: "driver_repayment",
+          alreadyProcessed: settlementResult.alreadyProcessed,
+        },
+        { status: 200 },
+      )
     }
 
     const metadata = charge.metadata || {}

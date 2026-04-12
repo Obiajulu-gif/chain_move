@@ -53,6 +53,7 @@ export interface CreateDriverPaymentInput {
   amountNgn: number
   payerEmail?: string
   paystackRef?: string
+  metadata?: Record<string, unknown>
 }
 
 export interface GetDriverPaymentsInput {
@@ -280,6 +281,7 @@ export async function createDriverPayment({
   amountNgn,
   payerEmail,
   paystackRef,
+  metadata,
 }: CreateDriverPaymentInput): Promise<DriverPaymentSnapshot> {
   await dbConnect()
 
@@ -321,10 +323,92 @@ export async function createDriverPayment({
     method: "PAYSTACK",
     paystackRef: paystackRef || buildDriverPaymentReference(),
     payerEmail: payerEmail?.trim().toLowerCase() || undefined,
+    metadata,
     status: "PENDING",
   })
 
   return mapDriverPaymentSnapshot(payment)
+}
+
+export async function createDriverTransferPayment({
+  contractId,
+  driverUserId,
+  amountNgn,
+  payerEmail,
+  paystackRef,
+  metadata,
+}: CreateDriverPaymentInput): Promise<DriverPaymentSnapshot> {
+  await dbConnect()
+
+  const contractObjectId = toObjectId(contractId, "contract id")
+  const driverObjectId = toObjectId(driverUserId, "driver user id")
+  const normalizedAmountNgn = Number(amountNgn)
+  const normalizedReference = paystackRef?.trim()
+
+  if (!normalizedReference) {
+    throw new Error("Payment reference is required.")
+  }
+
+  if (!Number.isFinite(normalizedAmountNgn) || normalizedAmountNgn <= 0) {
+    throw new Error("Amount must be greater than zero.")
+  }
+
+  const existingPayment = await DriverPayment.findOne({ paystackRef: normalizedReference }).lean()
+  if (existingPayment) {
+    return mapDriverPaymentSnapshot(existingPayment)
+  }
+
+  const contract = await HirePurchaseContract.findOne({
+    _id: contractObjectId,
+    driverUserId: driverObjectId,
+  })
+
+  if (!contract) {
+    throw new Error("Contract not found.")
+  }
+
+  if (contract.status !== "ACTIVE") {
+    throw new Error("This hire-purchase contract is not active.")
+  }
+
+  const payment = await DriverPayment.create({
+    contractId: contract._id,
+    driverUserId: driverObjectId,
+    amountNgn: normalizedAmountNgn,
+    appliedAmountNgn: 0,
+    method: "PAYSTACK",
+    paystackRef: normalizedReference,
+    payerEmail: payerEmail?.trim().toLowerCase() || undefined,
+    metadata,
+    status: "PENDING",
+  })
+
+  return mapDriverPaymentSnapshot(payment)
+}
+
+export async function createAndConfirmDriverTransferPayment({
+  contractId,
+  driverUserId,
+  amountNgn,
+  payerEmail,
+  paystackRef,
+  metadata,
+  channel,
+}: CreateDriverPaymentInput & { channel?: string | null }) {
+  await createDriverTransferPayment({
+    contractId,
+    driverUserId,
+    amountNgn,
+    payerEmail,
+    paystackRef,
+    metadata,
+  })
+
+  return confirmDriverPayment(paystackRef || "", {
+    verifiedAmountNgn: amountNgn,
+    channel,
+    metadata,
+  })
 }
 
 export async function markDriverPaymentFailed({

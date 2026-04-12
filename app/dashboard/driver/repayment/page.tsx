@@ -7,11 +7,13 @@ import { DashboardHeader } from "@/components/dashboard/investor-overview/dashbo
 import { ContractSummaryCard } from "@/components/dashboard/driver-hire-purchase/contract-summary-card"
 import { DriverPaymentForm } from "@/components/dashboard/driver-hire-purchase/driver-payment-form"
 import { DriverPaymentsTable } from "@/components/dashboard/driver-hire-purchase/driver-payments-table"
+import { DriverVirtualAccountCard } from "@/components/dashboard/driver-hire-purchase/driver-virtual-account-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import dbConnect from "@/lib/dbConnect"
 import { getSessionFromCookies } from "@/lib/auth/session"
 import { getDriverContract, getDriverPayments } from "@/lib/services/driver-contracts.service"
+import { getOrProvisionDriverVirtualAccount } from "@/lib/services/paystack-dva.service"
 import User from "@/models/User"
 
 export const dynamic = "force-dynamic"
@@ -79,6 +81,36 @@ export default async function DriverRepaymentPage() {
     limit: 12,
   })
 
+  let virtualAccount:
+    | {
+        accountNumber: string
+        accountName: string
+        bankName: string
+        providerSlug?: string | null
+        status: "PENDING" | "ACTIVE" | "FAILED" | "INACTIVE"
+      }
+    | null = null
+  let virtualAccountError: string | null = null
+
+  try {
+    const provisionedAccount = await getOrProvisionDriverVirtualAccount({
+      driverUserId: user._id.toString(),
+      contractId: contract.id,
+    })
+
+    if (provisionedAccount.accountNumber && provisionedAccount.accountName && provisionedAccount.bankName) {
+      virtualAccount = {
+        accountNumber: provisionedAccount.accountNumber,
+        accountName: provisionedAccount.accountName,
+        bankName: provisionedAccount.bankName,
+        providerSlug: provisionedAccount.providerSlug,
+        status: provisionedAccount.status,
+      }
+    }
+  } catch (error) {
+    virtualAccountError = error instanceof Error ? error.message : "Unable to provision a dedicated repayment account."
+  }
+
   return (
     <DashboardShell
       role="driver"
@@ -112,21 +144,40 @@ export default async function DriverRepaymentPage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.45fr_1fr]">
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <ContractSummaryCard contract={contract} />
+          <DriverVirtualAccountCard
+            account={virtualAccount}
+            errorMessage={virtualAccountError}
+            remainingBalanceNgn={contract.remainingBalanceNgn}
+            nextPaymentAmountNgn={contract.nextPaymentAmountNgn || contract.weeklyPaymentNgn}
+          />
+        </section>
+
+        <section className="rounded-[10px] border border-dashed border-border/70 bg-card/70 p-4 md:p-5">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-foreground">Paystack Checkout Fallback</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Use checkout only if your banking app cannot complete a transfer to the dedicated repayment account above.
+            </p>
+          </div>
           <DriverPaymentForm
             contractId={contract.id}
             defaultAmountNgn={contract.nextPaymentAmountNgn || contract.weeklyPaymentNgn}
             maxAmountNgn={contract.remainingBalanceNgn}
             defaultEmail={user.email || ""}
             nextDueDate={contract.nextDueDate}
+            title="Fallback Card / Checkout Payment"
+            description="Use Paystack checkout if you cannot transfer to the dedicated account."
+            submitLabel="Continue to Paystack Checkout"
+            className="border-0 bg-transparent p-0 shadow-none"
           />
         </section>
 
         <section className="rounded-[10px] border border-border/70 bg-card p-4 md:p-5">
           <div className="mb-4 inline-flex items-center text-sm text-muted-foreground">
             <Wallet className="mr-2 h-4 w-4" />
-            Recent repayments are listed below after Paystack confirmation.
+            Recent repayments are listed below after webhook confirmation or checkout verification.
           </div>
           <DriverPaymentsTable payments={recentPayments} emptyLabel="No repayment transactions yet." />
         </section>

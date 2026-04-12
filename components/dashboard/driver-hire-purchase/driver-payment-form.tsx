@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { formatNaira } from "@/lib/currency"
+import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
 interface DriverPaymentFormProps {
@@ -16,6 +17,10 @@ interface DriverPaymentFormProps {
   maxAmountNgn: number
   defaultEmail?: string | null
   nextDueDate?: string | null
+  title?: string
+  description?: string
+  submitLabel?: string
+  className?: string
 }
 
 function isValidEmail(value: string) {
@@ -44,6 +49,10 @@ export function DriverPaymentForm({
   maxAmountNgn,
   defaultEmail,
   nextDueDate,
+  title = "Make a Payment",
+  description = "Payments are in NGN only.",
+  submitLabel = "Continue to Paystack",
+  className,
 }: DriverPaymentFormProps) {
   const { toast } = useToast()
   const router = useRouter()
@@ -176,11 +185,11 @@ export function DriverPaymentForm({
   }
 
   return (
-    <section className="rounded-[10px] border border-border/70 bg-card p-4 md:p-5">
+    <section className={cn("rounded-[10px] border border-border/70 bg-card p-4 md:p-5", className)}>
       <div className="mb-4 flex items-start justify-between gap-2">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Make a Payment</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Payments are in NGN only.</p>
+          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </div>
         <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
           <Calendar className="mr-1 h-3.5 w-3.5" />
@@ -235,7 +244,7 @@ export function DriverPaymentForm({
           </>
         ) : (
           <>
-            Continue to Paystack
+            {submitLabel}
             <ArrowRight className="ml-2 h-4 w-4" />
           </>
         )}
