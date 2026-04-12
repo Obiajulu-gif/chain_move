@@ -1,27 +1,34 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose"
 
 export interface INotification extends Document {
-  userId: string; // Can be a user's ObjectId, or a string like 'admin' or 'system_alert'
-  title: string;
-  message: string;
-  type: string;
-  priority: 'low' | 'medium' | 'high';
-  read: boolean;
-  timestamp: Date;
+  userId: string
+  createdBy?: Schema.Types.ObjectId
+  title: string
+  message: string
+  type: string
+  priority: "low" | "medium" | "high"
+  link?: string
+  read: boolean
+  timestamp: Date
 }
 
 const NotificationSchema: Schema = new Schema({
-  userId: { type: String, required: true },
-  title: { type: String, required: true },
-  message: { type: String, required: true },
-  type: { type: String },
+  userId: { type: String, required: true, index: true },
+  createdBy: { type: Schema.Types.ObjectId, ref: "User", index: true },
+  title: { type: String, required: true, trim: true },
+  message: { type: String, required: true, trim: true },
+  type: { type: String, trim: true, default: "info" },
   priority: {
     type: String,
-    enum: ['low', 'medium', 'high'],
-    default: 'low',
+    enum: ["low", "medium", "high"],
+    default: "low",
+  },
+  link: {
+    type: String,
+    trim: true,
   },
   read: { type: Boolean, default: false },
-  timestamp: { type: Date, default: Date.now },
-});
+  timestamp: { type: Date, default: Date.now, index: true },
+})
 
-export default mongoose.models.Notification || mongoose.model<INotification>('Notification', NotificationSchema);
+export default mongoose.models.Notification || mongoose.model<INotification>("Notification", NotificationSchema)

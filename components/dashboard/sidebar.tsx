@@ -1,10 +1,9 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type ComponentType } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useLogout } from "@privy-io/react-auth"
-import type { LucideIcon } from "lucide-react"
 import {
   Calendar,
   Car,
@@ -35,7 +34,7 @@ type DashboardRole = "driver" | "investor" | "admin"
 interface SidebarItemConfig {
   label: string
   href: string
-  icon: LucideIcon
+  icon: ComponentType<{ className?: string }>
 }
 
 interface SidebarSectionConfig {
@@ -218,7 +217,9 @@ export function Sidebar({ role, className, mobileWidth = "w-[18rem]" }: SidebarP
   const closeMobileSidebar = () => setIsOpen(false)
 
   useEffect(() => {
-    closeMobileSidebar()
+    queueMicrotask(() => {
+      setIsOpen(false)
+    })
     // Close drawer on route changes to avoid stale overlays.
   }, [pathname])
 

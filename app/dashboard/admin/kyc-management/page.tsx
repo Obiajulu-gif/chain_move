@@ -77,6 +77,7 @@ export default function AdminKycManagementPage() {
   // State for document viewer dialog
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false)
   const [currentDocumentUrl, setCurrentDocumentUrl] = useState<string | null>(null)
+  const [currentDocumentLabel, setCurrentDocumentLabel] = useState<string>("Selected document")
 
   // State for reschedule meeting dialog
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false)
@@ -244,7 +245,7 @@ export default function AdminKycManagementPage() {
         selectedRequest._id,
         selectedRequest.kycStatus, // Keep current KYC status
         selectedRequest.kycDocuments,
-        null, // No rejection reason for reschedule
+        rescheduleReasonInput.trim(),
         new Date(rescheduleDateInput), // New rescheduled date
         "rescheduled", // Set physical meeting status to rescheduled
       )
@@ -279,8 +280,9 @@ export default function AdminKycManagementPage() {
     }
   }
 
-  const openDocumentViewer = (url: string) => {
-    setCurrentDocumentUrl(url)
+  const openDocumentViewer = (reference: string, label: string) => {
+    setCurrentDocumentUrl(`/api/kyc-documents?ref=${encodeURIComponent(reference)}`)
+    setCurrentDocumentLabel(label)
     setIsDocumentViewerOpen(true)
   }
 
@@ -418,7 +420,7 @@ export default function AdminKycManagementPage() {
                                 key={index}
                                 variant="outline"
                                 size="sm"
-                                onClick={() => openDocumentViewer(doc)}
+                                onClick={() => openDocumentViewer(doc, `Document ${index + 1}`)}
                                 className="flex items-center gap-1"
                               >
                                 <Eye className="h-3 w-3" />
@@ -626,34 +628,11 @@ export default function AdminKycManagementPage() {
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>View Document</DialogTitle>
-            <DialogDescription>
-              Viewing: {currentDocumentUrl ? currentDocumentUrl.split("/").pop() : "N/A"}
-            </DialogDescription>
+            <DialogDescription>Viewing: {currentDocumentLabel}</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
             {currentDocumentUrl ? (
-              currentDocumentUrl.match(/\.(jpeg|jpg|png|gif)$/i) ? (
-                <img
-                  src={currentDocumentUrl || "/placeholder.svg"}
-                  alt="KYC Document"
-                  className="max-w-full max-h-full object-contain mx-auto"
-                />
-              ) : currentDocumentUrl.match(/\.pdf$/i) ? (
-                <iframe src={currentDocumentUrl} className="w-full h-full border-0" />
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4" />
-                  <p>Unsupported document type or invalid URL.</p>
-                  <a
-                    href={currentDocumentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline"
-                  >
-                    Download to view
-                  </a>
-                </div>
-              )
+              <iframe src={currentDocumentUrl} className="w-full h-full border-0" title={currentDocumentLabel} />
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <p>No document selected.</p>

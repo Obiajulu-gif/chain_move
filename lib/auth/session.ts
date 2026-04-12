@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify } from "jose"
+import { SignJWT, jwtVerify, type JWTPayload } from "jose"
 import { cookies } from "next/headers"
 import type { NextResponse } from "next/server"
 
@@ -6,7 +6,7 @@ export const SESSION_COOKIE_NAME = "token"
 
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7
 
-export interface SessionPayload {
+export interface SessionPayload extends JWTPayload {
   userId: string
   role: "driver" | "investor" | "admin"
   name?: string

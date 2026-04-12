@@ -1,32 +1,81 @@
-import { NextResponse } from "next/server";
-import dbConnect from "@/lib/dbConnect";
-import Transaction from "@/models/Transaction";
+import { NextResponse } from "next/server"
+import { z } from "zod"
+
+import { finalizeAuthenticatedResponse, normalizeUserRole, requireAuthenticatedUser } from "@/lib/api/route-guard"
+import { parseSearchParams } from "@/lib/api/validation"
+import dbConnect from "@/lib/dbConnect"
+import Transaction from "@/models/Transaction"
+
+const TRANSACTION_TYPES = [
+  "investment",
+  "loan_disbursement",
+  "repayment",
+  "deposit",
+  "withdrawal",
+  "return",
+  "pool_investment",
+  "wallet_funding",
+  "wallet_debit",
+  "down_payment",
+] as const
+
+const querySchema = z.object({
+  userId: z.string().trim().regex(/^[a-f\d]{24}$/i, "Invalid userId.").optional(),
+  userType: z.enum(["admin", "driver", "investor"]).optional(),
+  includeTypes: z
+    .preprocess((value) => {
+      if (Array.isArray(value)) {
+        return value.flatMap((item) =>
+          typeof item === "string" ? item.split(",").map((part) => part.trim()).filter(Boolean) : [],
+        )
+      }
+
+      if (typeof value === "string") {
+        return value.split(",").map((item) => item.trim()).filter(Boolean)
+      }
+
+      return []
+    }, z.array(z.enum(TRANSACTION_TYPES)).max(10))
+    .default([]),
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+})
 
 export async function GET(request: Request) {
   try {
-    await dbConnect();
+    const authContext = await requireAuthenticatedUser(request, ["admin", "driver", "investor"])
+    if ("response" in authContext) return authContext.response
 
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const userType = searchParams.get("userType");
-    const includeTypesParam = searchParams.get("includeTypes");
+    const query = parseSearchParams(request, querySchema)
+    if ("response" in query) return query.response
 
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    await dbConnect()
+
+    const filter: Record<string, unknown> = {}
+
+    if (authContext.user.role === "admin") {
+      if (query.data.userId) filter.userId = query.data.userId
+      if (query.data.userType) filter.userType = query.data.userType
+    } else {
+      filter.userId = authContext.user._id.toString()
+
+      const currentRole = normalizeUserRole(authContext.user.role)
+      if (currentRole) {
+        filter.userType = currentRole
+      }
     }
 
-    const filter: any = { userId };
-    if (userType) filter.userType = userType;
-    if (includeTypesParam) {
-      const types = includeTypesParam.split(",").map((t) => t.trim()).filter(Boolean);
-      if (types.length > 0) filter.type = { $in: types };
+    if (query.data.includeTypes.length > 0) {
+      filter.type = { $in: query.data.includeTypes }
     }
 
-    const transactions = await Transaction.find(filter).sort({ timestamp: -1 });
+    const transactions = await Transaction.find(filter)
+      .sort({ timestamp: -1 })
+      .limit(query.data.limit)
 
-    return NextResponse.json({ success: true, transactions });
+    const response = NextResponse.json({ success: true, transactions })
+    return finalizeAuthenticatedResponse(response, authContext)
   } catch (error) {
-    console.error("Error fetching transactions:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("TRANSACTIONS_GET_ERROR", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

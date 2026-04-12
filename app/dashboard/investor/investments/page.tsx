@@ -52,7 +52,7 @@ export default function MyInvestmentsPage() {
     setError(null)
 
     try {
-      const response = await fetch(`/api/investments?investorId=${investorId}`)
+      const response = await fetch("/api/investments")
       if (!response.ok) {
         throw new Error("Unable to load investments")
       }

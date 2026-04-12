@@ -44,7 +44,7 @@ export default function GovernanceTokensPage() {
     setError(null)
 
     try {
-      const response = await fetch(`/api/investments?investorId=${investorId}`)
+      const response = await fetch("/api/investments")
       if (!response.ok) {
         throw new Error("Unable to load token activity")
       }

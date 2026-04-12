@@ -1,16 +1,16 @@
-import mongoose from "mongoose"
 import { NextResponse } from "next/server"
+import { z } from "zod"
 
 import dbConnect from "@/lib/dbConnect"
-import { getAuthenticatedUser, withSessionRefresh } from "@/lib/auth/current-user"
+import { finalizeAuthenticatedResponse, requireAuthenticatedUser } from "@/lib/api/route-guard"
+import { parseJsonBody } from "@/lib/api/validation"
 import { confirmDriverPayment } from "@/lib/services/driver-contracts.service"
-import Loan from "@/models/Loan"
-import Transaction from "@/models/Transaction"
-import User from "@/models/User"
+import { processGatewayCharge } from "@/lib/services/paystack-processing.service"
+import { buildRateLimitKey, consumeRateLimit, getClientIpAddress, rateLimitExceededResponse } from "@/lib/security/rate-limit"
 
-function isObjectId(value: unknown): value is string {
-  return typeof value === "string" && mongoose.Types.ObjectId.isValid(value)
-}
+const bodySchema = z.object({
+  reference: z.string().trim().min(6).max(200),
+})
 
 async function fetchPaystackVerification(reference: string, secretKey: string) {
   const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
@@ -18,32 +18,6 @@ async function fetchPaystackVerification(reference: string, secretKey: string) {
   })
   const payload = await response.json()
   return { response, payload }
-}
-
-async function resolveUserByMetadata({
-  metadataUserId,
-  email,
-  fallbackUserId,
-}: {
-  metadataUserId?: string
-  email?: string
-  fallbackUserId?: string
-}) {
-  if (isObjectId(metadataUserId)) {
-    const byMetadataId = await User.findById(metadataUserId)
-    if (byMetadataId) return byMetadataId
-  }
-
-  if (isObjectId(fallbackUserId)) {
-    const byFallbackId = await User.findById(fallbackUserId)
-    if (byFallbackId) return byFallbackId
-  }
-
-  if (email) {
-    return User.findOne({ email: email.toLowerCase() })
-  }
-
-  return null
 }
 
 function resolvePaymentType(metadata: Record<string, unknown>) {
@@ -60,30 +34,29 @@ export async function POST(request: Request) {
   }
 
   try {
-    const authContext = await getAuthenticatedUser(request).catch(() => ({ user: null, shouldRefreshSession: false }))
-    const authUserId = authContext.user?._id?.toString()
+    const authContext = await requireAuthenticatedUser(request)
+    if ("response" in authContext) return authContext.response
 
-    const { reference } = await request.json()
-    if (!reference || typeof reference !== "string") {
-      return NextResponse.json({ message: "Reference is required." }, { status: 400 })
+    const body = await parseJsonBody(request, bodySchema)
+    if ("response" in body) return body.response
+
+    const rateLimit = consumeRateLimit({
+      key: buildRateLimitKey(
+        "payments:verify",
+        authContext.user._id.toString(),
+        body.data.reference,
+        getClientIpAddress(request),
+      ),
+      limit: 12,
+      windowMs: 10 * 60 * 1000,
+    })
+    if (!rateLimit.allowed) {
+      return rateLimitExceededResponse(rateLimit)
     }
 
     await dbConnect()
 
-    const existingTx = await Transaction.findOne({ gatewayReference: reference, status: "Completed" })
-    if (existingTx) {
-      const response = NextResponse.json({
-        success: true,
-        alreadyProcessed: true,
-        type: existingTx.type,
-        amountNgn: existingTx.amount,
-      })
-      return authContext.user && authContext.shouldRefreshSession
-        ? withSessionRefresh(response, authContext.user)
-        : response
-    }
-
-    const { response: verifyResponse, payload } = await fetchPaystackVerification(reference, secretKey)
+    const { response: verifyResponse, payload } = await fetchPaystackVerification(body.data.reference, secretKey)
     if (!verifyResponse.ok || payload?.data?.status !== "success") {
       return NextResponse.json({ message: payload?.message || "Verification failed." }, { status: 400 })
     }
@@ -99,7 +72,7 @@ export async function POST(request: Request) {
     }
 
     if (paymentType === "driver_repayment") {
-      const repaymentResult = await confirmDriverPayment(reference, {
+      const repaymentResult = await confirmDriverPayment(body.data.reference, {
         verifiedAmountNgn: amountNgn,
         channel: typeof charge.channel === "string" ? charge.channel : null,
         metadata,
@@ -116,91 +89,26 @@ export async function POST(request: Request) {
         investorCreditsPosted: repaymentResult.distribution.investorCreditsCount,
       })
 
-      return authContext.user && authContext.shouldRefreshSession
-        ? withSessionRefresh(response, authContext.user)
-        : response
+      return finalizeAuthenticatedResponse(response, authContext)
     }
 
-    if (paymentType === "down_payment" && metadata.loanId) {
-      const loan = await Loan.findById(metadata.loanId)
-      const user = await resolveUserByMetadata({
-        metadataUserId: metadata.userId,
-        email,
-        fallbackUserId: authUserId,
-      })
-
-      if (!loan || !user) {
-        return NextResponse.json({ message: "Unable to resolve down payment context." }, { status: 404 })
-      }
-
-      if (!loan.downPaymentMade) {
-        loan.downPaymentMade = true
-        loan.downPaymentAmount = amountNgn
-        loan.downPaymentDate = new Date()
-        await loan.save()
-      }
-
-      await Transaction.create({
-        userId: user._id,
-        userType: user.role || "driver",
-        amount: amountNgn,
-        currency: "NGN",
-        status: "Completed",
-        type: "down_payment",
-        method: "paystack",
-        gatewayReference: reference,
-        description: `Down payment for Loan #${loan._id.toString()}`,
-        relatedId: loan._id.toString(),
-      })
-
-      const response = NextResponse.json({
-        success: true,
-        type: "down_payment",
-        loanId: loan._id.toString(),
-        amountNgn,
-      })
-      return authContext.user && authContext.shouldRefreshSession
-        ? withSessionRefresh(response, authContext.user)
-        : response
-    }
-
-    const user = await resolveUserByMetadata({
-      metadataUserId: metadata.userId,
+    const settlementResult = await processGatewayCharge({
+      reference: body.data.reference,
+      paymentType: paymentType === "down_payment" ? "down_payment" : "wallet_funding",
+      amountNgn,
+      metadata,
       email,
-      fallbackUserId: authUserId,
-    })
-
-    if (!user) {
-      return NextResponse.json({ message: "User not found for this transaction." }, { status: 404 })
-    }
-
-    user.availableBalance = (user.availableBalance || 0) + amountNgn
-    await user.save()
-
-    await Transaction.create({
-      userId: user._id,
-      userType: user.role || "investor",
-      amount: amountNgn,
-      currency: "NGN",
-      status: "Completed",
-      type: "wallet_funding",
-      method: "paystack",
-      gatewayReference: reference,
-      description: "Wallet funded via Paystack",
-      metadata: {
-        paymentType: "wallet_funding",
-        channel: charge.channel,
-      },
+      fallbackUserId: authContext.user._id.toString(),
+      channel: typeof charge.channel === "string" ? charge.channel : null,
+      processedVia: "verify",
     })
 
     const response = NextResponse.json({
       success: true,
-      type: "wallet_funding",
-      amountNgn,
-      internalBalanceNgn: user.availableBalance || 0,
+      ...settlementResult,
     })
 
-    return authContext.user && authContext.shouldRefreshSession ? withSessionRefresh(response, authContext.user) : response
+    return finalizeAuthenticatedResponse(response, authContext)
   } catch (error) {
     console.error("PAYSTACK_VERIFY_ERROR", error)
     const message = error instanceof Error ? error.message : "Internal server error."

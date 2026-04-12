@@ -1,27 +1,36 @@
-import { NextRequest, NextResponse } from 'next/server'
-import dbConnect from '@/lib/dbConnect'
-import Vehicle from '@/models/Vehicle'
+import { NextResponse } from "next/server"
 
-export async function POST(request: NextRequest) {
+import { getAuthenticatedUser, withSessionRefresh } from "@/lib/auth/current-user"
+import dbConnect from "@/lib/dbConnect"
+import Vehicle from "@/models/Vehicle"
+
+export async function POST(request: Request) {
   try {
     await dbConnect()
 
-    // Update all vehicles with fundingStatus 'Funded' to have status 'Financed'
-    const result = await Vehicle.updateMany(
-      { fundingStatus: 'Funded' },
-      { $set: { status: 'Financed' } }
-    )
+    const { user, shouldRefreshSession } = await getAuthenticatedUser(request)
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
 
-    return NextResponse.json({
+    if (user.role !== "admin") {
+      return NextResponse.json({ success: false, error: "Admin access required" }, { status: 403 })
+    }
+
+    const result = await Vehicle.updateMany({ fundingStatus: "Funded" }, { $set: { status: "Financed" } })
+
+    const response = NextResponse.json({
       success: true,
       message: `Updated ${result.modifiedCount} vehicles with fundingStatus 'Funded' to status 'Financed'`,
-      modifiedCount: result.modifiedCount
+      modifiedCount: result.modifiedCount,
     })
+
+    return shouldRefreshSession ? withSessionRefresh(response, user) : response
   } catch (error) {
-    console.error('Migration error:', error)
+    console.error("VEHICLE_STATUS_MIGRATION_ERROR", error)
     return NextResponse.json(
-      { success: false, error: 'Failed to migrate vehicle status' },
-      { status: 500 }
+      { success: false, error: "Failed to migrate vehicle status" },
+      { status: 500 },
     )
   }
 }

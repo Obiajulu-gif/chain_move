@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Shield, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Shield, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -17,9 +17,15 @@ async function getAdminRegistrationStatus() {
     try {
         const res = await fetch('/api/auth/admin/status'); // We will create this helper endpoint
         const data = await res.json();
-        return data.isOpen;
-    } catch (error) {
-        return false;
+        return {
+            isOpen: Boolean(data.isOpen),
+            hasExistingAdmin: Boolean(data.hasExistingAdmin),
+        };
+    } catch {
+        return {
+            isOpen: false,
+            hasExistingAdmin: false,
+        };
     }
 }
 
@@ -29,6 +35,7 @@ export default function AdminAuthPage() {
 
     // Page state
     const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+    const [hasExistingAdmin, setHasExistingAdmin] = useState(false);
     const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
     // Form state
@@ -41,8 +48,9 @@ export default function AdminAuthPage() {
 
     useEffect(() => {
         const checkStatus = async () => {
-            const isOpen = await getAdminRegistrationStatus();
-            setIsRegistrationOpen(isOpen);
+            const status = await getAdminRegistrationStatus();
+            setIsRegistrationOpen(status.isOpen);
+            setHasExistingAdmin(status.hasExistingAdmin);
             setIsLoadingStatus(false);
         };
         checkStatus();
@@ -77,7 +85,7 @@ export default function AdminAuthPage() {
             } else {
                 setError(data.message || "An error occurred.");
             }
-        } catch (err) {
+        } catch {
             setError("A network error occurred. Please try again.");
         } finally {
             setIsLoading(false);
@@ -112,7 +120,7 @@ export default function AdminAuthPage() {
                             Admin Registration
                         </CardTitle>
                         <CardDescription className="text-gray-600">
-                           {isRegistrationOpen ? "Create the primary administrator account." : "Admin registration is closed."}
+                           {isRegistrationOpen ? "Create the primary administrator account." : "Public admin registration is disabled."}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -148,8 +156,9 @@ export default function AdminAuthPage() {
                             <Alert variant="default" className="bg-yellow-100 border-yellow-300 text-yellow-800">
                                 <Shield className="h-4 w-4 text-yellow-700" />
                                 <AlertDescription>
-                                    Admin registration is closed because an administrator account already exists. 
-                                    For security reasons, new admins can only be appointed by an existing admin from the user management dashboard.
+                                    {hasExistingAdmin
+                                        ? "An administrator already exists. For security reasons, new admins can only be appointed by an existing admin from the user management dashboard."
+                                        : "Public admin registration is disabled. Bootstrap the first admin through a private setup path, then use the user management dashboard for future promotions."}
                                 </AlertDescription>
                             </Alert>
                        )}

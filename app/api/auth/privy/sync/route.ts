@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server"
+import { z } from "zod"
 import dbConnect from "@/lib/dbConnect"
 import User from "@/models/User"
 import type { ParsedPrivyProfile } from "@/lib/auth/privy"
 import { extractPrivyTokenFromRequest, getPrivyProfileFromPayload, verifyPrivyToken } from "@/lib/auth/privy"
 import { setSessionCookie, signSessionToken } from "@/lib/auth/session"
+import { parseJsonBody } from "@/lib/api/validation"
+import { buildRateLimitKey, consumeRateLimit, getClientIpAddress, rateLimitExceededResponse } from "@/lib/security/rate-limit"
 
 type RequestedUserRole = "driver" | "investor"
+
+const bodySchema = z.object({
+  fullName: z.string().trim().min(1).max(120).optional(),
+  role: z.enum(["driver", "investor"]).optional(),
+})
 
 let ensureUserEmailIndexPromise: Promise<void> | null = null
 
@@ -105,6 +113,15 @@ async function findUserByPrivyProfile(profile: ParsedPrivyProfile) {
 
 export async function POST(request: Request) {
   try {
+    const rateLimit = consumeRateLimit({
+      key: buildRateLimitKey("privy-sync", getClientIpAddress(request)),
+      limit: 30,
+      windowMs: 10 * 60 * 1000,
+    })
+    if (!rateLimit.allowed) {
+      return rateLimitExceededResponse(rateLimit)
+    }
+
     const privyToken = extractPrivyTokenFromRequest(request)
     if (!privyToken) {
       return NextResponse.json({ message: "Missing Privy token." }, { status: 401 })
@@ -113,9 +130,11 @@ export async function POST(request: Request) {
     const privyPayload = await verifyPrivyToken(privyToken)
     const profile = getPrivyProfileFromPayload(privyPayload)
 
-    const body = await request.json().catch(() => ({} as { fullName?: string; role?: RequestedUserRole }))
-    const fullName = typeof body.fullName === "string" ? body.fullName.trim() : undefined
-    const requestedRole = normalizeRequestedRole(body.role)
+    const body = await parseJsonBody(request, bodySchema)
+    if ("response" in body) return body.response
+
+    const fullName = body.data.fullName?.trim() || undefined
+    const requestedRole = normalizeRequestedRole(body.data.role as RequestedUserRole | undefined)
     const normalizedEmail = profile.email?.toLowerCase()
     const normalizedWalletAddress = normalizeWalletAddress(profile.walletAddress)
     const defaultName = fallbackName(fullName, normalizedEmail, normalizedWalletAddress)
@@ -198,9 +217,7 @@ export async function POST(request: Request) {
       }
     }
 
-    if (!user.role) {
-      user.role = requestedRole
-    } else if (user.role !== "admin" && user.role !== requestedRole) {
+    if (!user.role || (user.role !== "admin" && user.role !== "driver" && user.role !== "investor")) {
       user.role = requestedRole
     }
 

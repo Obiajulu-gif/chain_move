@@ -3,6 +3,14 @@
 import { useState, useEffect, useCallback } from "react"
 
 export interface AuthUser {
+  notifications?: Array<{
+    id: string
+    title: string
+    message: string
+    read: boolean
+    timestamp: string
+    link?: string
+  }>
   id: string
   name?: string
   fullName?: string
@@ -13,6 +21,13 @@ export interface AuthUser {
   availableBalance?: number
   totalInvested?: number
   totalReturns?: number
+  kycStatus?: string
+  kycDocuments?: string[]
+  kycRejectionReason?: string | null
+  physicalMeetingDate?: string | null
+  physicalMeetingStatus?: string
+  isKycVerified?: boolean
+  kycVerified?: boolean
 }
 
 export function getUserDisplayName(

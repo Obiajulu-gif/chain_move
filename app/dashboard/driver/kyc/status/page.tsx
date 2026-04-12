@@ -53,7 +53,26 @@ export default function KycStatusPage() {
   let statusMessage
   let actionButton = null
 
-  switch (kycStatus) {
+  if (physicalMeetingStatus === "rejected_stage2") {
+    statusIcon = <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+    statusTitle = "KYC Stage 2 Rejected"
+    statusMessage =
+      "Unfortunately, your second stage KYC (physical meeting) was rejected. Please review your notifications for next steps."
+    if ((authUser as any)?.kycRejectionReason) {
+      statusMessage += ` Reason: ${(authUser as any).kycRejectionReason}`
+    }
+    actionButton = (
+      <Button
+        variant="outline"
+        onClick={() => router.push("/dashboard/driver/notifications")}
+        className="border-border text-foreground hover:bg-muted bg-transparent"
+      >
+        <Bell className="mr-2 h-4 w-4" />
+        Review Alerts
+      </Button>
+    )
+  } else {
+    switch (kycStatus) {
     case "pending":
       statusIcon = <Clock className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
       statusTitle = "KYC Under Review (Stage 1)"
@@ -199,6 +218,7 @@ export default function KycStatusPage() {
       statusTitle = "Checking KYC Status..."
       statusMessage = "Please wait while we determine your KYC verification status."
       break
+    }
   }
 
   return (

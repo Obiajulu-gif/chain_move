@@ -104,7 +104,7 @@ export const deleteVehicle = async (vehicleId: string) => {
  * @returns The URL of the uploaded image.
  */
 export const uploadImage = async (file: File): Promise<string> => {
-  const response = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, {
+  const response = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}&scope=vehicle`, {
     method: "POST",
     body: file,
   });

@@ -62,12 +62,21 @@ export default function KycVerificationPage() {
       return
     }
 
+    if (!authUser) {
+      toast({
+        title: "Session Required",
+        description: "Please sign in again before submitting KYC.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
     try {
       const uploadedUrls: string[] = []
 
       // Upload ID Document
-      const idUploadRes = await fetch(`/api/upload?filename=${idDocument.name}`, {
+      const idUploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(idDocument.name)}&scope=kyc`, {
         method: "POST",
         body: idDocument,
       })
@@ -75,10 +84,10 @@ export default function KycVerificationPage() {
         throw new Error("Failed to upload ID document")
       }
       const idBlob = await idUploadRes.json()
-      uploadedUrls.push(idBlob.url)
+      uploadedUrls.push(idBlob.documentRef)
 
       // Upload Address Document
-      const addressUploadRes = await fetch(`/api/upload?filename=${addressDocument.name}`, {
+      const addressUploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(addressDocument.name)}&scope=kyc`, {
         method: "POST",
         body: addressDocument,
       })
@@ -86,10 +95,10 @@ export default function KycVerificationPage() {
         throw new Error("Failed to upload address document")
       }
       const addressBlob = await addressUploadRes.json()
-      uploadedUrls.push(addressBlob.url)
+      uploadedUrls.push(addressBlob.documentRef)
 
       // Upload BVN/NIN Document
-      const bvnNinUploadRes = await fetch(`/api/upload?filename=${bvnNinDocument.name}`, {
+      const bvnNinUploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(bvnNinDocument.name)}&scope=kyc`, {
         method: "POST",
         body: bvnNinDocument,
       })
@@ -97,7 +106,7 @@ export default function KycVerificationPage() {
         throw new Error("Failed to upload BVN/NIN document")
       }
       const bvnNinBlob = await bvnNinUploadRes.json()
-      uploadedUrls.push(bvnNinBlob.url)
+      uploadedUrls.push(bvnNinBlob.documentRef)
 
       // Update user KYC status to pending (first stage)
       const updateRes = await updateUserKycStatus(authUser.id, "pending", uploadedUrls)
@@ -140,6 +149,15 @@ export default function KycVerificationPage() {
       return
     }
 
+    if (!authUser) {
+      toast({
+        title: "Session Required",
+        description: "Please sign in again before scheduling a meeting.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSchedulingMeeting(true)
     try {
       // Call the server action to update physical meeting details
@@ -147,7 +165,7 @@ export default function KycVerificationPage() {
         authUser.id,
         // Keep kycStatus as approved_stage1 when scheduling the meeting
         "approved_stage1", // This is the change: keep kycStatus as approved_stage1
-        authUser.kycDocuments, // Pass existing documents
+        authUser.kycDocuments || [], // Pass existing documents
         null, // No rejection reason
         new Date(physicalMeetingDate), // Pass the selected date
         "scheduled", // Set physical meeting status to scheduled

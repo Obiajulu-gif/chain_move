@@ -1,133 +1,147 @@
-import { NextRequest, NextResponse } from "next/server"
-import dbConnect from "@/lib/dbConnect"
-import Loan from "@/models/Loan"
-import User from "@/models/User"
-import Vehicle from "@/models/Vehicle"
-import { jwtVerify } from "jose"
-import { cookies } from "next/headers"
+import mongoose from "mongoose"
+import { NextResponse } from "next/server"
 
-// GET - Fetch all loans or loans by user
-export async function GET(request: NextRequest) {
+import { getAuthenticatedUser, withSessionRefresh } from "@/lib/auth/current-user"
+import dbConnect from "@/lib/dbConnect"
+import { logAuditEvent } from "@/lib/security/audit-log"
+import { getClientIpAddress } from "@/lib/security/rate-limit"
+import Loan from "@/models/Loan"
+import Vehicle from "@/models/Vehicle"
+
+const LOAN_STATUS_VALUES = ["Pending", "Under Review", "Approved", "Rejected", "Active", "Completed"] as const
+
+function isObjectId(value: unknown): value is string {
+  return typeof value === "string" && mongoose.Types.ObjectId.isValid(value)
+}
+
+function isApprovedDriver(user: any) {
+  return user?.role === "driver" && (user?.kycStatus === "approved_stage2" || user?.isKycVerified === true || user?.kycVerified === true)
+}
+
+function formatLoan(loan: any) {
+  return {
+    ...loan.toObject(),
+    id: loan._id.toString(),
+    driverId: loan.driverId,
+    vehicleId: loan.vehicleId,
+  }
+}
+
+function toPositiveNumber(value: unknown) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+export async function GET(request: Request) {
   try {
     await dbConnect()
-    
-    // Verify JWT token
-    const cookieStore = await cookies()
-    const tokenCookie = cookieStore.get("token")?.value
-    
-    if (!tokenCookie) {
+
+    const { user, shouldRefreshSession } = await getAuthenticatedUser(request)
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
-    const { payload } = await jwtVerify(tokenCookie, secret)
-    
-    if (!payload) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+
+    if (user.role !== "admin" && user.role !== "driver") {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get("userId")
-    const status = searchParams.get("status")
+    const requestedUserId = searchParams.get("userId")
+    const requestedStatus = searchParams.get("status")
+    const query: Record<string, unknown> = {}
 
-    let query: any = {}
-    
-    if (userId) {
-      query.driverId = userId
+    if (user.role === "admin") {
+      if (requestedUserId) {
+        if (!isObjectId(requestedUserId)) {
+          return NextResponse.json({ error: "Invalid userId" }, { status: 400 })
+        }
+        query.driverId = requestedUserId
+      }
+    } else {
+      query.driverId = user._id
     }
-    
-    if (status) {
-      query.status = status
+
+    if (requestedStatus) {
+      if (!LOAN_STATUS_VALUES.includes(requestedStatus as (typeof LOAN_STATUS_VALUES)[number])) {
+        return NextResponse.json({ error: "Invalid loan status filter" }, { status: 400 })
+      }
+      query.status = requestedStatus
     }
 
     const loans = await Loan.find(query)
-      .populate('driverId', 'name email')
-      .populate('vehicleId', 'name type year price image')
+      .populate("driverId", "name email")
+      .populate("vehicleId", "name type year price image")
       .sort({ submittedDate: -1 })
 
-    // Convert ObjectIds to strings for frontend compatibility
-    const formattedLoans = loans.map(loan => ({
-      ...loan.toObject(),
-      id: loan._id.toString(),
-      // REMOVE these lines that convert populated objects back to IDs:
-      // driverId: loan.driverId._id ? loan.driverId._id.toString() : loan.driverId.toString(),
-      // vehicleId: loan.vehicleId._id ? loan.vehicleId._id.toString() : loan.vehicleId.toString()
-      // Keep the populated objects intact:
-      driverId: loan.driverId,
-      vehicleId: loan.vehicleId
-    }))
-
-    return NextResponse.json({ loans: formattedLoans }, { status: 200 })
+    const response = NextResponse.json({ loans: loans.map(formatLoan) }, { status: 200 })
+    return shouldRefreshSession ? withSessionRefresh(response, user) : response
   } catch (error) {
-    console.error("Error fetching loans:", error)
+    console.error("LOANS_GET_ERROR", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-// POST - Create a new loan application
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     await dbConnect()
-    
-    // Verify JWT token
-    const cookieStore = await cookies()
-    const tokenCookie = cookieStore.get("token")?.value
-    
-    if (!tokenCookie) {
+
+    const { user, shouldRefreshSession } = await getAuthenticatedUser(request)
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
-    const { payload } = await jwtVerify(tokenCookie, secret)
-    
-    if (!payload) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+
+    if (!isApprovedDriver(user)) {
+      return NextResponse.json({ error: "Only KYC-approved drivers can create loan applications." }, { status: 403 })
     }
 
-    const body = await request.json()
-    const {
-      driverId,
-      vehicleId,
-      requestedAmount,
-      loanTerm,
-      monthlyPayment,
-      weeklyPayment,
-      interestRate,
-      purpose,
-      creditScore = 0,
-      collateral,
-      riskAssessment = "Medium"
-    } = body
+    const body = await request.json().catch(() => ({}))
+    const requestedDriverId = typeof body.driverId === "string" ? body.driverId : undefined
+    const vehicleId = typeof body.vehicleId === "string" ? body.vehicleId : ""
+    const requestedAmount = toPositiveNumber(body.requestedAmount)
+    const loanTerm = toPositiveNumber(body.loanTerm)
+    const monthlyPayment = toPositiveNumber(body.monthlyPayment)
+    const weeklyPayment = toPositiveNumber(body.weeklyPayment)
+    const interestRate = toPositiveNumber(body.interestRate)
+    const creditScore = Number.isFinite(Number(body.creditScore)) ? Number(body.creditScore) : 0
+    const purpose = typeof body.purpose === "string" ? body.purpose.trim() : ""
+    const collateral = typeof body.collateral === "string" ? body.collateral.trim() : ""
+    const riskAssessment = body.riskAssessment === "Low" || body.riskAssessment === "High" ? body.riskAssessment : "Medium"
 
-    // Validate required fields
-    if (!driverId || !vehicleId || !requestedAmount || !loanTerm || !monthlyPayment || !weeklyPayment || !interestRate) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (requestedDriverId && requestedDriverId !== user._id.toString()) {
+      return NextResponse.json({ error: "You can only submit a loan for your own account." }, { status: 403 })
     }
 
-    // Verify user exists and is a driver
-    const user = await User.findById(driverId)
-    if (!user || user.role !== "driver") {
-      return NextResponse.json({ error: "Invalid driver" }, { status: 400 })
+    if (!isObjectId(vehicleId) || !requestedAmount || !loanTerm || !monthlyPayment || !weeklyPayment || !interestRate) {
+      return NextResponse.json({ error: "Missing or invalid required fields" }, { status: 400 })
     }
 
-    // Verify vehicle exists and is available
     const vehicle = await Vehicle.findById(vehicleId)
     if (!vehicle) {
       return NextResponse.json({ error: "Vehicle not found" }, { status: 404 })
     }
 
-    // Calculate total amount to pay back (principal + interest)
-    const totalAmountToPayBack = monthlyPayment * loanTerm
+    if (vehicle.status !== "Available") {
+      return NextResponse.json({ error: "This vehicle is not available for financing." }, { status: 409 })
+    }
 
-    // Create new loan application
-    const newLoan = new Loan({
-      driverId,
-      vehicleId,
+    const existingLoan = await Loan.findOne({
+      driverId: user._id,
+      vehicleId: vehicle._id,
+      status: { $in: ["Pending", "Under Review", "Approved", "Active"] },
+    }).select("_id")
+
+    if (existingLoan) {
+      return NextResponse.json({ error: "You already have an active application for this vehicle." }, { status: 409 })
+    }
+
+    const newLoan = await Loan.create({
+      driverId: user._id,
+      vehicleId: vehicle._id,
       requestedAmount,
-      totalAmountToPayBack,
+      totalAmountToPayBack: monthlyPayment * loanTerm,
       loanTerm,
       monthlyPayment,
-      weeklyPayment, // Add weeklyPayment to loan creation
+      weeklyPayment,
       interestRate,
       purpose,
       creditScore,
@@ -136,119 +150,117 @@ export async function POST(request: NextRequest) {
       status: "Pending",
       submittedDate: new Date(),
       totalFunded: 0,
-      fundingProgress: 0
+      fundingProgress: 0,
     })
 
-    const savedLoan = await newLoan.save()
-
-    // Update vehicle status to Reserved
-    await Vehicle.findByIdAndUpdate(vehicleId, {
+    await Vehicle.findByIdAndUpdate(vehicle._id, {
       status: "Reserved",
-      driverId: driverId
+      driverId: user._id,
     })
 
-    // Populate the saved loan with user and vehicle details
-    const populatedLoan = await Loan.findById(savedLoan._id)
-      .populate('driverId', 'name email')
-      .populate('vehicleId', 'name type year price image')
+    const populatedLoan = await Loan.findById(newLoan._id)
+      .populate("driverId", "name email")
+      .populate("vehicleId", "name type year price image")
 
-    // Format the loan data with string IDs for frontend compatibility
-    const formattedLoan = {
-      ...populatedLoan.toObject(),
-      id: populatedLoan._id.toString(),
-      // Keep populated objects intact:
-      driverId: populatedLoan.driverId,
-      vehicleId: populatedLoan.vehicleId
-    }
+    await logAuditEvent({
+      actor: user,
+      action: "loan.create",
+      targetType: "loan",
+      targetId: newLoan._id.toString(),
+      ipAddress: getClientIpAddress(request),
+      metadata: {
+        vehicleId: vehicle._id.toString(),
+        requestedAmount,
+        loanTerm,
+      },
+    })
 
-    return NextResponse.json({ 
-      message: "Loan application submitted successfully",
-      loan: formattedLoan 
-    }, { status: 201 })
+    const response = NextResponse.json(
+      {
+        message: "Loan application submitted successfully",
+        loan: populatedLoan ? formatLoan(populatedLoan) : null,
+      },
+      { status: 201 },
+    )
 
+    return shouldRefreshSession ? withSessionRefresh(response, user) : response
   } catch (error) {
-    console.error("Error creating loan application:", error)
+    console.error("LOANS_POST_ERROR", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-// PUT - Update loan status (for admin approval/rejection)
-export async function PUT(request: NextRequest) {
+export async function PUT(request: Request) {
   try {
     await dbConnect()
-    
-    // Verify JWT token
-    const cookieStore = await cookies()
-    const tokenCookie = cookieStore.get("token")?.value
-    
-    if (!tokenCookie) {
+
+    const { user, shouldRefreshSession } = await getAuthenticatedUser(request)
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
-    const { payload } = await jwtVerify(tokenCookie, secret)
-    
-    if (!payload || payload.role !== "admin") {
+
+    if (user.role !== "admin") {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { loanId, status, adminNotes } = body
+    const body = await request.json().catch(() => ({}))
+    const loanId = typeof body.loanId === "string" ? body.loanId : ""
+    const status = typeof body.status === "string" ? body.status : ""
+    const adminNotes = typeof body.adminNotes === "string" ? body.adminNotes.trim() : ""
 
-    if (!loanId || !status) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (!isObjectId(loanId) || !LOAN_STATUS_VALUES.includes(status as (typeof LOAN_STATUS_VALUES)[number])) {
+      return NextResponse.json({ error: "Missing or invalid required fields" }, { status: 400 })
     }
 
-    const updateData: any = {
-      status,
-      ...(adminNotes && { adminNotes })
-    }
-
-    if (status === "Approved") {
-      updateData.approvedDate = new Date()
-    } else if (status === "Rejected") {
-      updateData.reviewedDate = new Date()
-    }
-
-    const updatedLoan = await Loan.findByIdAndUpdate(
-      loanId,
-      updateData,
-      { new: true }
-    ).populate('driverId', 'name email')
-     .populate('vehicleId', 'name type year price image')
-
-    if (!updatedLoan) {
+    const loan = await Loan.findById(loanId)
+    if (!loan) {
       return NextResponse.json({ error: "Loan not found" }, { status: 404 })
     }
 
-    // Update vehicle status based on loan status
+    loan.status = status
+    loan.adminNotes = adminNotes || undefined
+    await loan.save()
+
     if (status === "Approved") {
-      await Vehicle.findByIdAndUpdate(updatedLoan.vehicleId, {
-        status: "Financed"
+      await Vehicle.findByIdAndUpdate(loan.vehicleId, {
+        status: "Financed",
+        driverId: loan.driverId,
       })
     } else if (status === "Rejected") {
-      await Vehicle.findByIdAndUpdate(updatedLoan.vehicleId, {
-        status: "Financed",
-        $unset: { driverId: 1 }
+      await Vehicle.findByIdAndUpdate(loan.vehicleId, {
+        status: "Available",
+        $unset: { driverId: 1 },
       })
     }
 
-    // Format the loan data with string IDs for frontend compatibility
-    const formattedLoan = {
-      ...updatedLoan.toObject(),
-      id: updatedLoan._id.toString(),
-      // Keep populated objects intact:
-      driverId: updatedLoan.driverId,
-      vehicleId: updatedLoan.vehicleId
-    }
+    const populatedLoan = await Loan.findById(loan._id)
+      .populate("driverId", "name email")
+      .populate("vehicleId", "name type year price image")
 
-    return NextResponse.json({ 
-      message: "Loan status updated successfully",
-      loan: formattedLoan 
-    }, { status: 200 })
+    await logAuditEvent({
+      actor: user,
+      action: "loan.status.update",
+      targetType: "loan",
+      targetId: loan._id.toString(),
+      ipAddress: getClientIpAddress(request),
+      metadata: {
+        status,
+        vehicleId: loan.vehicleId.toString(),
+        driverId: loan.driverId.toString(),
+      },
+    })
 
+    const response = NextResponse.json(
+      {
+        message: "Loan status updated successfully",
+        loan: populatedLoan ? formatLoan(populatedLoan) : null,
+      },
+      { status: 200 },
+    )
+
+    return shouldRefreshSession ? withSessionRefresh(response, user) : response
   } catch (error) {
-    console.error("Error updating loan:", error)
+    console.error("LOANS_PUT_ERROR", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

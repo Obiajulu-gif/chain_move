@@ -1,168 +1,393 @@
 "use server"
 
-import User from "@/models/User" // Adjust path as necessary to your User model
-import dbConnect from "@/lib/dbConnect" // Assuming you have a utility to connect to DB
-import { revalidatePath } from "next/cache" // Import revalidatePath
+import { revalidatePath } from "next/cache"
+import { Resend } from "resend"
 
-// Helper function to send email (calls the new API route)
-async function sendEmailNotification(to: string, subject: string, body: string) {
+import { getSessionFromCookies } from "@/lib/auth/session"
+import dbConnect from "@/lib/dbConnect"
+import { logAuditEvent } from "@/lib/security/audit-log"
+import { isSupportedKycDocumentReference } from "@/lib/security/kyc-documents"
+import User from "@/models/User"
+
+type KycStatus = "none" | "pending" | "approved_stage1" | "pending_stage2" | "approved_stage2" | "rejected"
+type PhysicalMeetingStatus = "none" | "scheduled" | "approved" | "rescheduled" | "completed" | "rejected_stage2"
+
+const DRIVER_NOTIFICATION_LINK = "/dashboard/driver/notifications"
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+
+function normalizeDateInput(value: Date | string | null | undefined) {
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return date
+}
+
+function isFutureCalendarDate(date: Date) {
+  const requested = new Date(date)
+  requested.setHours(0, 0, 0, 0)
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  return requested > today
+}
+
+function sanitizeDocuments(documents: string[]) {
+  if (!Array.isArray(documents)) return []
+
+  return documents
+    .map((document) => (typeof document === "string" ? document.trim() : ""))
+    .filter((document) => document.length > 0 && isSupportedKycDocumentReference(document))
+    .slice(0, 10)
+}
+
+function normalizeReason(reason: string | null | undefined) {
+  if (typeof reason !== "string") return null
+  const trimmed = reason.trim()
+  return trimmed.length > 0 ? trimmed.slice(0, 500) : null
+}
+
+function buildNotificationId() {
+  return `notif_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+}
+
+function formatMeetingDate(date: Date | null) {
+  if (!date) return "your scheduled date"
+  return date.toLocaleDateString("en-NG", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+}
+
+function buildEmailHtml(name: string, message: string) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
+      <h2 style="color: #E57700; margin-bottom: 16px;">ChainMove Account Update</h2>
+      <p style="margin-bottom: 12px;">Hello ${name},</p>
+      <p style="margin-bottom: 12px; line-height: 1.6;">${message}</p>
+      <p style="margin-bottom: 0;">Please sign in to your dashboard for full details.</p>
+    </div>
+  `
+}
+
+async function sendKycEmail(user: any, subject: string, message: string) {
+  if (!resend || !user?.email) return
+
   try {
-    // Use NEXT_PUBLIC_APP_URL for the base URL, with a fallback for local development
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-    const res = await fetch(`${appUrl}/api/send-email`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ to, subject, body }),
+    await resend.emails.send({
+      from: "onboarding@chainmove.xyz",
+      to: user.email,
+      subject,
+      html: buildEmailHtml(user.name || "there", message),
     })
-    if (!res.ok) {
-      const errorData = await res.json()
-      console.error("Failed to send email:", errorData.message)
-      return { success: false, message: errorData.message }
-    }
-    return { success: true }
   } catch (error) {
-    console.error("Error sending email:", error)
-    return { success: false, message: "Network error or unexpected issue." }
+    console.error("KYC_EMAIL_SEND_ERROR", error)
   }
+}
+
+function buildKycNotification({
+  oldKycStatus,
+  newKycStatus,
+  oldPhysicalMeetingStatus,
+  newPhysicalMeetingStatus,
+  physicalMeetingDate,
+  reason,
+}: {
+  oldKycStatus: KycStatus
+  newKycStatus: KycStatus
+  oldPhysicalMeetingStatus: PhysicalMeetingStatus
+  newPhysicalMeetingStatus: PhysicalMeetingStatus
+  physicalMeetingDate: Date | null
+  reason: string | null
+}) {
+  if ((oldKycStatus === "none" || oldKycStatus === "rejected") && newKycStatus === "pending") {
+    return {
+      title: "KYC Documents Submitted",
+      message: "Your KYC documents have been submitted for review. We will notify you after stage 1 is processed.",
+      subject: "ChainMove: KYC documents received",
+      emailMessage: "Your KYC documents have been submitted for review. We will notify you after stage 1 is processed.",
+    }
+  }
+
+  if (oldKycStatus === "pending" && newKycStatus === "approved_stage1") {
+    return {
+      title: "KYC Stage 1 Approved",
+      message: "Your first KYC stage has been approved. Please schedule your physical meeting for stage 2.",
+      subject: "ChainMove: KYC stage 1 approved",
+      emailMessage: "Your first KYC stage has been approved. Please sign in and schedule your physical meeting for stage 2.",
+    }
+  }
+
+  if (oldKycStatus === "pending" && newKycStatus === "rejected") {
+    const rejectionMessage = reason ? ` Reason: ${reason}` : ""
+    return {
+      title: "KYC Rejected",
+      message: `Your KYC verification was rejected.${rejectionMessage}`,
+      subject: "ChainMove: KYC rejected",
+      emailMessage: `Your KYC verification was rejected.${rejectionMessage}`,
+    }
+  }
+
+  if (oldPhysicalMeetingStatus === "scheduled" && newPhysicalMeetingStatus === "approved") {
+    const dateLabel = formatMeetingDate(physicalMeetingDate)
+    return {
+      title: "Physical Meeting Approved",
+      message: `Your physical meeting for ${dateLabel} has been approved.`,
+      subject: "ChainMove: physical meeting approved",
+      emailMessage: `Your physical meeting for ${dateLabel} has been approved.`,
+    }
+  }
+
+  if (newPhysicalMeetingStatus === "rescheduled") {
+    const dateLabel = formatMeetingDate(physicalMeetingDate)
+    const reasonMessage = reason ? ` Reason: ${reason}` : ""
+    return {
+      title: "Physical Meeting Rescheduled",
+      message: `Your physical meeting has been moved to ${dateLabel}.${reasonMessage}`,
+      subject: "ChainMove: physical meeting rescheduled",
+      emailMessage: `Your physical meeting has been moved to ${dateLabel}.${reasonMessage}`,
+    }
+  }
+
+  if (oldKycStatus === "pending_stage2" && newKycStatus === "approved_stage2") {
+    return {
+      title: "KYC Fully Approved",
+      message: "Your KYC verification is fully approved. You can now access the full driver workflow.",
+      subject: "ChainMove: KYC fully approved",
+      emailMessage: "Your KYC verification is fully approved. You can now access the full driver workflow.",
+    }
+  }
+
+  if (newPhysicalMeetingStatus === "rejected_stage2") {
+    const rejectionMessage = reason ? ` Reason: ${reason}` : ""
+    return {
+      title: "KYC Stage 2 Rejected",
+      message: `Your physical meeting verification was rejected.${rejectionMessage}`,
+      subject: "ChainMove: KYC stage 2 rejected",
+      emailMessage: `Your physical meeting verification was rejected.${rejectionMessage}`,
+    }
+  }
+
+  return null
 }
 
 export async function updateUserKycStatus(
   userId: string,
-  status: "none" | "pending" | "approved_stage1" | "pending_stage2" | "approved_stage2" | "rejected", // Updated status enum
+  status: KycStatus,
   documents: string[] = [],
   rejectionReason: string | null = null,
-  physicalMeetingDate: Date | null = null, // New parameter
-  physicalMeetingStatus:
-    | "none"
-    | "scheduled"
-    | "approved"
-    | "rescheduled"
-    | "completed"
-    | "rejected_stage2"
-    | null = null, // New parameter
+  physicalMeetingDate: Date | string | null = null,
+  physicalMeetingStatus: PhysicalMeetingStatus | null = null,
 ) {
   try {
-    await dbConnect() // Ensure database connection is established
+    await dbConnect()
 
-    const user = await User.findById(userId)
+    const session = await getSessionFromCookies()
+    if (!session?.userId) {
+      return { success: false, message: "Unauthorized." }
+    }
+
+    const [actor, user] = await Promise.all([User.findById(session.userId), User.findById(userId)])
+
+    if (!actor) {
+      return { success: false, message: "Authenticated user not found." }
+    }
 
     if (!user) {
       return { success: false, message: "User not found." }
     }
 
-    const oldKycStatus = user.kycStatus
-    const oldPhysicalMeetingStatus = user.physicalMeetingStatus
-
-    // Update kycStatus if explicitly provided and different from current,
-    // unless it's a specific physical meeting transition that overrides it.
-    if (status !== user.kycStatus) {
-      user.kycStatus = status
+    if (user.role !== "driver") {
+      return { success: false, message: "Only driver KYC records can be updated." }
     }
 
-    if (documents.length > 0) {
-      user.kycDocuments = documents
-    }
-    // Set rejection reason only if status is rejected
-    user.kycRejectionReason =
-      status === "rejected" || physicalMeetingStatus === "rejected_stage2" ? rejectionReason : null
+    const oldKycStatus = (user.kycStatus || "none") as KycStatus
+    const oldPhysicalMeetingStatus = (user.physicalMeetingStatus || "none") as PhysicalMeetingStatus
+    const normalizedDocuments = sanitizeDocuments(documents)
+    const normalizedReason = normalizeReason(rejectionReason)
+    const normalizedMeetingDate = normalizeDateInput(physicalMeetingDate)
 
-    // Update physical meeting details if provided
-    if (physicalMeetingDate !== null) {
-      user.physicalMeetingDate = physicalMeetingDate
-    }
-
-    // Handle physicalMeetingStatus and its impact on kycStatus
-    if (physicalMeetingStatus !== null) {
-      user.physicalMeetingStatus = physicalMeetingStatus
-
-      // Specific transition: If admin approves a scheduled meeting, move kycStatus to pending_stage2
-      if (oldPhysicalMeetingStatus === "scheduled" && physicalMeetingStatus === "approved") {
-        user.kycStatus = "pending_stage2" // This is the key change for the admin flow
+    if (actor.role === "driver") {
+      if (actor._id.toString() !== user._id.toString()) {
+        return { success: false, message: "Drivers can only update their own KYC." }
       }
+
+      const isInitialSubmission = status === "pending" && physicalMeetingStatus === null
+      const isMeetingSchedule = status === "approved_stage1" && physicalMeetingStatus === "scheduled"
+
+      if (isInitialSubmission) {
+        if (oldKycStatus !== "none" && oldKycStatus !== "rejected") {
+          return { success: false, message: "This KYC state cannot be resubmitted right now." }
+        }
+
+        if (normalizedDocuments.length === 0) {
+          return { success: false, message: "KYC documents are required." }
+        }
+
+        user.kycStatus = "pending"
+        user.kycDocuments = normalizedDocuments
+        user.kycRejectionReason = null
+        user.physicalMeetingDate = null
+        user.physicalMeetingStatus = "none"
+        user.isKycVerified = false
+        user.kycVerified = false
+      } else if (isMeetingSchedule) {
+        if (oldKycStatus !== "approved_stage1") {
+          return { success: false, message: "Stage 1 must be approved before scheduling a meeting." }
+        }
+
+        if (oldPhysicalMeetingStatus !== "none" && oldPhysicalMeetingStatus !== "rescheduled") {
+          return { success: false, message: "A physical meeting has already been requested." }
+        }
+
+        if (!normalizedMeetingDate || !isFutureCalendarDate(normalizedMeetingDate)) {
+          return { success: false, message: "Select a future meeting date." }
+        }
+
+        user.kycStatus = "approved_stage1"
+        user.physicalMeetingStatus = "scheduled"
+        user.physicalMeetingDate = normalizedMeetingDate
+      } else {
+        return { success: false, message: "Drivers cannot perform this KYC update." }
+      }
+    } else if (actor.role === "admin") {
+      if (status === "approved_stage1" && physicalMeetingStatus === null) {
+        if (oldKycStatus !== "pending") {
+          return { success: false, message: "Only pending stage 1 requests can be approved." }
+        }
+
+        user.kycStatus = "approved_stage1"
+        user.kycRejectionReason = null
+        user.physicalMeetingStatus = "none"
+        user.physicalMeetingDate = null
+        user.isKycVerified = false
+        user.kycVerified = false
+      } else if (status === "rejected" && physicalMeetingStatus === null) {
+        if (oldKycStatus !== "pending") {
+          return { success: false, message: "Only pending stage 1 requests can be rejected." }
+        }
+
+        if (!normalizedReason) {
+          return { success: false, message: "A rejection reason is required." }
+        }
+
+        user.kycStatus = "rejected"
+        user.kycRejectionReason = normalizedReason
+        user.physicalMeetingStatus = "none"
+        user.physicalMeetingDate = null
+        user.isKycVerified = false
+        user.kycVerified = false
+      } else if (physicalMeetingStatus === "approved") {
+        if (oldPhysicalMeetingStatus !== "scheduled") {
+          return { success: false, message: "Only scheduled meetings can be approved." }
+        }
+
+        if (!user.physicalMeetingDate && !normalizedMeetingDate) {
+          return { success: false, message: "A physical meeting date is required." }
+        }
+
+        user.physicalMeetingStatus = "approved"
+        user.physicalMeetingDate = normalizedMeetingDate || user.physicalMeetingDate
+        user.kycStatus = "pending_stage2"
+        user.kycRejectionReason = null
+      } else if (physicalMeetingStatus === "rescheduled") {
+        if (oldPhysicalMeetingStatus !== "scheduled" && oldPhysicalMeetingStatus !== "approved") {
+          return { success: false, message: "Only active meeting requests can be rescheduled." }
+        }
+
+        if (!normalizedMeetingDate || !isFutureCalendarDate(normalizedMeetingDate)) {
+          return { success: false, message: "Select a future meeting date for the reschedule." }
+        }
+
+        user.physicalMeetingStatus = "rescheduled"
+        user.physicalMeetingDate = normalizedMeetingDate
+        user.kycStatus = "approved_stage1"
+        user.kycRejectionReason = null
+      } else if (status === "approved_stage2" && physicalMeetingStatus === "completed") {
+        if (oldKycStatus !== "pending_stage2" || oldPhysicalMeetingStatus !== "approved") {
+          return { success: false, message: "Only approved stage 2 meetings can be completed." }
+        }
+
+        user.kycStatus = "approved_stage2"
+        user.physicalMeetingStatus = "completed"
+        user.kycRejectionReason = null
+        user.isKycVerified = true
+        user.kycVerified = true
+      } else if (status === "rejected" && physicalMeetingStatus === "rejected_stage2") {
+        if (oldKycStatus !== "pending_stage2" || oldPhysicalMeetingStatus !== "approved") {
+          return { success: false, message: "Only approved stage 2 meetings can be rejected." }
+        }
+
+        if (!normalizedReason) {
+          return { success: false, message: "A rejection reason is required." }
+        }
+
+        user.kycStatus = "rejected"
+        user.physicalMeetingStatus = "rejected_stage2"
+        user.kycRejectionReason = normalizedReason
+        user.isKycVerified = false
+        user.kycVerified = false
+      } else {
+        return { success: false, message: "Unsupported admin KYC transition." }
+      }
+
+      if (normalizedDocuments.length > 0) {
+        user.kycDocuments = normalizedDocuments
+      }
+    } else {
+      return { success: false, message: "This account cannot manage KYC." }
+    }
+
+    const notification = buildKycNotification({
+      oldKycStatus,
+      newKycStatus: user.kycStatus,
+      oldPhysicalMeetingStatus,
+      newPhysicalMeetingStatus: user.physicalMeetingStatus || "none",
+      physicalMeetingDate: normalizeDateInput(user.physicalMeetingDate),
+      reason: normalizedReason,
+    })
+
+    if (notification) {
+      user.notifications = Array.isArray(user.notifications) ? user.notifications : []
+      user.notifications.push({
+        id: buildNotificationId(),
+        title: notification.title,
+        message: notification.message,
+        read: false,
+        timestamp: new Date(),
+        link: DRIVER_NOTIFICATION_LINK,
+      })
     }
 
     await user.save()
 
-    // --- Notification and Email Logic ---
-    let notificationTitle = ""
-    let notificationMessage = ""
-    let emailSubject = ""
-    let emailBody = ""
-    let sendNotification = false
-    const notificationLink = "/dashboard/driver/notifications" // Link to the new dedicated notifications page
+    await logAuditEvent({
+      actor,
+      action: "kyc.status.update",
+      targetType: "user",
+      targetId: user._id.toString(),
+      metadata: {
+        oldKycStatus,
+        newKycStatus: user.kycStatus,
+        oldPhysicalMeetingStatus,
+        newPhysicalMeetingStatus: user.physicalMeetingStatus || "none",
+      },
+    })
 
-    // Notification for initial KYC submission (Stage 1)
-    if (oldKycStatus === "none" && user.kycStatus === "pending") {
-      notificationTitle = "KYC Documents Submitted!"
-      notificationMessage =
-        "Your KYC documents have been successfully submitted for review. We will notify you once Stage 1 verification is complete."
-      emailSubject = "ChainMove: KYC Documents Received"
-      emailBody = `Dear ${user.name},\n\nThank you for submitting your KYC documents. Your Stage 1 verification is now under review. We will send you another notification once it's processed.\n\nThank you,\nChainMove Team`
-      sendNotification = true
-    } else if (oldKycStatus === "pending" && user.kycStatus === "approved_stage1") {
-      notificationTitle = "KYC Stage 1 Approved!"
-      notificationMessage =
-        "Your first stage KYC verification has been successfully approved. Please proceed to schedule your physical meeting for the second stage."
-      emailSubject = "ChainMove: KYC Stage 1 Approved!"
-      emailBody = `Dear ${user.name},\n\nYour first stage KYC verification has been successfully approved. Please log in to your dashboard to schedule your physical meeting for the second stage of verification.\n\nThank you,\nChainMove Team`
-      sendNotification = true
-    } else if (oldKycStatus === "pending" && user.kycStatus === "rejected") {
-      notificationTitle = "KYC Rejected"
-      notificationMessage = `Your KYC verification was rejected. Reason: ${rejectionReason || "No reason provided"}. Please re-submit.`
-      emailSubject = "ChainMove: KYC Rejected"
-      emailBody = `Dear ${user.name},\n\nUnfortunately, your KYC verification was rejected. Reason: ${rejectionReason || "No reason provided"}. Please log in to your dashboard to review the requirements and re-submit your documents.\n\nThank you,\nChainMove Team`
-      sendNotification = true
-    } else if (oldPhysicalMeetingStatus === "scheduled" && user.physicalMeetingStatus === "approved") {
-      notificationTitle = "Physical Meeting Date Approved!"
-      notificationMessage = `Your physical meeting for KYC Stage 2 on ${new Date(physicalMeetingDate!).toLocaleDateString()} has been approved.`
-      emailSubject = "ChainMove: Physical Meeting Date Approved"
-      emailBody = `Dear ${user.name},\n\nYour physical meeting for KYC Stage 2 on ${new Date(physicalMeetingDate!).toLocaleDateString()} has been approved. Please prepare for the inspection.\n\nThank you,\nChainMove Team`
-      sendNotification = true
-    } else if (oldPhysicalMeetingStatus === "scheduled" && user.physicalMeetingStatus === "rescheduled") {
-      notificationTitle = "Physical Meeting Rescheduled"
-      notificationMessage = `Your physical meeting for KYC Stage 2 has been rescheduled to ${new Date(physicalMeetingDate!).toLocaleDateString()}.`
-      emailSubject = "ChainMove: Physical Meeting Rescheduled"
-      emailBody = `Dear ${user.name},\n\nYour physical meeting for KYC Stage 2 has been rescheduled to ${new Date(physicalMeetingDate!).toLocaleDateString()}. Please check your dashboard for details.\n\nThank you,\nChainMove Team`
-      sendNotification = true
-    } else if (oldKycStatus === "pending_stage2" && user.kycStatus === "approved_stage2") {
-      notificationTitle = "KYC Fully Approved!"
-      notificationMessage = "Congratulations! Your KYC verification is fully approved. You can now access all features."
-      emailSubject = "ChainMove: KYC Fully Approved!"
-      emailBody = `Dear ${user.name},\n\nCongratulations! Your KYC verification has been successfully approved. You can now fully access all features, including applying for vehicle loans.\n\nThank you,\nChainMove Team`
-      sendNotification = true
-    } else if (oldKycStatus === "pending_stage2" && user.physicalMeetingStatus === "rejected_stage2") {
-      notificationTitle = "KYC Stage 2 Rejected"
-      notificationMessage = `Your second stage KYC (physical meeting) was rejected. Reason: ${rejectionReason || "No reason provided"}. Please contact support.`
-      emailSubject = "ChainMove: KYC Stage 2 Rejected"
-      emailBody = `Dear ${user.name},\n\nUnfortunately, your second stage KYC (physical meeting) was rejected. Reason: ${rejectionReason || "No reason provided"}. Please contact support for assistance.\n\nThank you,\nChainMove Team`
-      sendNotification = true
+    if (notification) {
+      await sendKycEmail(user, notification.subject, notification.emailMessage)
     }
 
-    if (sendNotification) {
-      user.notifications.push({
-        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        title: notificationTitle,
-        message: notificationMessage,
-        read: false,
-        timestamp: new Date(),
-        link: notificationLink, // Link to the new dedicated notifications page
-      })
-      await user.save() // Save user with new notification
-
-      // Send email
-      await sendEmailNotification(user.email, emailSubject, emailBody)
-
-      // Revalidate paths for the driver's dashboard and notifications page
-      revalidatePath(`/dashboard/driver`)
-      revalidatePath(`/dashboard/driver/notifications`)
-      revalidatePath(`/dashboard/driver/kyc/status`) // Also revalidate KYC status page
-    }
+    revalidatePath("/dashboard/driver")
+    revalidatePath("/dashboard/driver/kyc")
+    revalidatePath("/dashboard/driver/kyc/status")
+    revalidatePath("/dashboard/driver/notifications")
+    revalidatePath("/dashboard/admin/kyc-management")
 
     return { success: true, message: `KYC status updated to ${user.kycStatus}.` }
   } catch (error) {
-    console.error("Failed to update KYC status:", error)
+    console.error("KYC_STATUS_UPDATE_ERROR", error)
     return { success: false, message: "Failed to update KYC status." }
   }
 }

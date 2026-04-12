@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
+import { AdminUserRoleManager } from "@/app/dashboard/admin/admincomponents/AdminUserRoleManager"
 import { PageHeader } from "@/components/dashboard/admin/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,7 +25,7 @@ function getDisplayName(user: any) {
 }
 
 export default async function AdminUserDetailsPage({ params }: UserDetailsPageProps) {
-  await requireAdminAccess()
+  const adminSession = await requireAdminAccess()
   await dbConnect()
 
   const { id } = await params
@@ -121,7 +122,20 @@ export default async function AdminUserDetailsPage({ params }: UserDetailsPagePr
           </CardContent>
         </Card>
       </section>
+
+      <Card className="border-border/70">
+        <CardHeader>
+          <CardTitle className="text-base">Role Management</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AdminUserRoleManager
+            userId={user._id.toString()}
+            displayName={getDisplayName(user)}
+            initialRole={user.role}
+            isSelf={adminSession.id === user._id.toString()}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }
-

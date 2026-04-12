@@ -16,6 +16,14 @@ function toAuthResponse(user: any) {
     availableBalance: user.availableBalance || 0,
     totalInvested: user.totalInvested || 0,
     totalReturns: user.totalReturns || 0,
+    kycStatus: user.kycStatus || "none",
+    kycDocuments: Array.isArray(user.kycDocuments) ? user.kycDocuments : [],
+    kycRejectionReason: user.kycRejectionReason || null,
+    physicalMeetingDate: user.physicalMeetingDate || null,
+    physicalMeetingStatus: user.physicalMeetingStatus || "none",
+    isKycVerified: user.isKycVerified === true,
+    kycVerified: user.kycVerified === true,
+    notifications: Array.isArray(user.notifications) ? user.notifications : [],
   }
 }
 
@@ -26,7 +34,7 @@ export async function GET(request: Request) {
     const session = await getSessionFromCookies()
     if (session?.userId) {
       const user = await User.findById(session.userId).select(
-        "name fullName email phoneNumber role walletAddress walletaddress availableBalance totalInvested totalReturns privyUserId",
+        "name fullName email phoneNumber role walletAddress walletaddress availableBalance totalInvested totalReturns privyUserId kycStatus kycDocuments kycRejectionReason physicalMeetingDate physicalMeetingStatus isKycVerified kycVerified notifications",
       )
 
       if (!user) {
@@ -47,7 +55,9 @@ export async function GET(request: Request) {
 
     const user = await User.findOne({
       $or: [{ privyUserId: profile.privyUserId }, ...(profile.email ? [{ email: profile.email.toLowerCase() }] : [])],
-    }).select("name fullName email phoneNumber role walletAddress walletaddress availableBalance totalInvested totalReturns privyUserId")
+    }).select(
+      "name fullName email phoneNumber role walletAddress walletaddress availableBalance totalInvested totalReturns privyUserId kycStatus kycDocuments kycRejectionReason physicalMeetingDate physicalMeetingStatus isKycVerified kycVerified notifications",
+    )
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })

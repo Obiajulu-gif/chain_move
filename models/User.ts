@@ -1,5 +1,38 @@
 import mongoose from "mongoose"
 
+const NotificationSchema = new mongoose.Schema(
+  {
+    id: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    message: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    read: {
+      type: Boolean,
+      default: false,
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now,
+    },
+    link: {
+      type: String,
+      trim: true,
+    },
+  },
+  { _id: false },
+)
+
 const UserSchema = new mongoose.Schema(
   {
     name: {
@@ -66,6 +99,43 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0,
+    },
+    kycStatus: {
+      type: String,
+      enum: ["none", "pending", "approved_stage1", "pending_stage2", "approved_stage2", "rejected"],
+      default: "none",
+      index: true,
+    },
+    kycDocuments: {
+      type: [String],
+      default: [],
+    },
+    kycRejectionReason: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    physicalMeetingDate: {
+      type: Date,
+      default: null,
+    },
+    physicalMeetingStatus: {
+      type: String,
+      enum: ["none", "scheduled", "approved", "rescheduled", "completed", "rejected_stage2"],
+      default: "none",
+      index: true,
+    },
+    isKycVerified: {
+      type: Boolean,
+      default: false,
+    },
+    kycVerified: {
+      type: Boolean,
+      default: false,
+    },
+    notifications: {
+      type: [NotificationSchema],
+      default: [],
     },
   },
   { timestamps: true },
