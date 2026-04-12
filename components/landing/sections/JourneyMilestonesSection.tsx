@@ -18,7 +18,7 @@ const milestones = [
     body: "Successfully deployed on Lisk mainnet with first vehicle fundings.",
   },
   {
-    title: "20256 — Revenue Milestone",
+    title: "2026 — Revenue Milestone",
     body: "We reach $1 million in revenue in just 110 days of operation.",
   },
  
