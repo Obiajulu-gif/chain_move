@@ -24,6 +24,52 @@ async function requireAdmin(request: Request) {
   return auth
 }
 
+function normalizeRequiredString(value: unknown) {
+  return typeof value === "string" ? value.trim() : ""
+}
+
+function normalizeOptionalString(value: unknown) {
+  if (typeof value !== "string") return undefined
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
+function normalizeEmail(value: unknown) {
+  const email = normalizeOptionalString(value)
+  return email ? email.toLowerCase() : undefined
+}
+
+function normalizeWalletAddress(value: unknown) {
+  const walletAddress = normalizeOptionalString(value)
+  return walletAddress ? walletAddress.toLowerCase() : undefined
+}
+
+function isDuplicateKeyError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof (error as { code?: unknown }).code === "number" &&
+    (error as { code: number }).code === 11000
+  )
+}
+
+function resolveDuplicateKeyMessage(error: unknown) {
+  if (!isDuplicateKeyError(error)) return "A unique user field is already in use."
+
+  const duplicateField = typeof error === "object" && error !== null && "keyPattern" in error
+    ? Object.keys((error as { keyPattern?: Record<string, unknown> }).keyPattern || {})[0]
+    : null
+
+  if (duplicateField === "email") return "That email address is already assigned to another user."
+  if (duplicateField === "privyUserId") return "That Privy ID is already assigned to another user."
+  if (duplicateField === "walletAddress" || duplicateField === "walletaddress") {
+    return "That wallet address is already assigned to another user."
+  }
+
+  return "A unique user field is already in use."
+}
+
 export async function GET(request: Request, { params }: RouteContext) {
   try {
     const auth = await requireAdmin(request)
@@ -61,54 +107,142 @@ export async function PUT(request: Request, { params }: RouteContext) {
     await dbConnect()
 
     const body = await request.json().catch(() => ({}))
-    const role = typeof body.role === "string" ? (body.role as UserRole) : null
+    const hasRole = Object.prototype.hasOwnProperty.call(body, "role")
+    const hasName = Object.prototype.hasOwnProperty.call(body, "name")
+    const hasFullName = Object.prototype.hasOwnProperty.call(body, "fullName")
+    const hasEmail = Object.prototype.hasOwnProperty.call(body, "email")
+    const hasPhoneNumber = Object.prototype.hasOwnProperty.call(body, "phoneNumber")
+    const hasPrivyUserId = Object.prototype.hasOwnProperty.call(body, "privyUserId")
+    const hasWalletAddress = Object.prototype.hasOwnProperty.call(body, "walletAddress")
 
-    if (!role || !VALID_ROLES.includes(role)) {
+    const role = hasRole && typeof body.role === "string" ? (body.role as UserRole) : null
+    if (hasRole && (!role || !VALID_ROLES.includes(role))) {
       return NextResponse.json({ message: "Invalid role specified" }, { status: 400 })
     }
 
-    if (params.id === auth.user._id.toString() && role !== "admin") {
+    if (!hasRole && !hasName && !hasFullName && !hasEmail && !hasPhoneNumber && !hasPrivyUserId && !hasWalletAddress) {
+      return NextResponse.json({ message: "No user changes were provided." }, { status: 400 })
+    }
+
+    if (params.id === auth.user._id.toString() && hasRole && role !== "admin") {
       return NextResponse.json({ message: "You cannot remove your own admin access." }, { status: 403 })
     }
 
-    const existingUser = await User.findById(params.id).select("role")
+    const existingUser = await User.findById(params.id).select(
+      "name fullName email phoneNumber role walletAddress walletaddress privyUserId",
+    )
     if (!existingUser) {
       return NextResponse.json({ message: "User not found" }, { status: 404 })
     }
 
-    if (existingUser.role === "admin" && role !== "admin") {
+    if (hasRole && existingUser.role === "admin" && role !== "admin") {
       const adminCount = await User.countDocuments({ role: "admin" })
       if (adminCount <= 1) {
         return NextResponse.json({ message: "At least one admin account must remain active." }, { status: 400 })
       }
     }
 
-    existingUser.role = role
+    const changedFields: string[] = []
+
+    if (hasName) {
+      const normalizedName = normalizeRequiredString(body.name)
+      if (!normalizedName) {
+        return NextResponse.json({ message: "Name is required." }, { status: 400 })
+      }
+
+      if (existingUser.name !== normalizedName) {
+        existingUser.name = normalizedName
+        changedFields.push("name")
+      }
+    }
+
+    if (hasFullName) {
+      const normalizedFullName = normalizeOptionalString(body.fullName)
+      const nextFullName = normalizedFullName || existingUser.name
+      if (existingUser.fullName !== nextFullName) {
+        existingUser.fullName = nextFullName
+        changedFields.push("fullName")
+      }
+    }
+
+    if (hasEmail) {
+      const normalizedEmail = normalizeEmail(body.email)
+      if ((existingUser.email || undefined) !== normalizedEmail) {
+        existingUser.email = normalizedEmail
+        changedFields.push("email")
+      }
+    }
+
+    if (hasPhoneNumber) {
+      const normalizedPhoneNumber = normalizeOptionalString(body.phoneNumber)
+      if ((existingUser.phoneNumber || undefined) !== normalizedPhoneNumber) {
+        existingUser.phoneNumber = normalizedPhoneNumber
+        changedFields.push("phoneNumber")
+      }
+    }
+
+    if (hasPrivyUserId) {
+      const normalizedPrivyUserId = normalizeOptionalString(body.privyUserId)
+      if ((existingUser.privyUserId || undefined) !== normalizedPrivyUserId) {
+        existingUser.privyUserId = normalizedPrivyUserId
+        changedFields.push("privyUserId")
+      }
+    }
+
+    if (hasWalletAddress) {
+      const normalizedWalletAddress = normalizeWalletAddress(body.walletAddress)
+      const currentWalletAddress = existingUser.walletAddress || existingUser.walletaddress || undefined
+      if (currentWalletAddress !== normalizedWalletAddress) {
+        existingUser.walletAddress = normalizedWalletAddress
+        existingUser.walletaddress = normalizedWalletAddress
+        changedFields.push("walletAddress")
+      }
+    }
+
+    if (hasRole && role && existingUser.role !== role) {
+      existingUser.role = role
+      changedFields.push("role")
+    }
+
+    if (changedFields.length === 0) {
+      return NextResponse.json({ message: "No user changes were detected." }, { status: 200 })
+    }
+
     await existingUser.save()
 
     await logAuditEvent({
       actor: auth.user,
-      action: "user.role.update",
+      action: "user.update",
       targetType: "user",
       targetId: params.id,
       ipAddress: getClientIpAddress(request),
       metadata: {
-        newRole: role,
+        changedFields,
+        newRole: hasRole ? role : existingUser.role,
       },
     })
 
     const updatedUser = await User.findById(params.id)
-      .select("name fullName email role privyUserId createdAt")
+      .select("name fullName email phoneNumber role privyUserId walletAddress walletaddress createdAt")
       .lean()
 
     const response = NextResponse.json({
-      message: role === "admin" ? "User promoted to admin successfully" : "User role updated successfully",
+      message: hasRole && role === "admin" && !changedFields.includes("role")
+        ? "User updated successfully"
+        : hasRole && role === "admin"
+          ? "User updated and promoted to admin successfully"
+          : "User updated successfully",
       user: updatedUser,
     })
 
     return auth.shouldRefreshSession ? withSessionRefresh(response, auth.user) : response
   } catch (error) {
     console.error("USER_ROLE_UPDATE_ERROR", error)
+
+    if (isDuplicateKeyError(error)) {
+      return NextResponse.json({ message: resolveDuplicateKeyMessage(error) }, { status: 409 })
+    }
+
     return NextResponse.json({ message: "Server error" }, { status: 500 })
   }
 }
