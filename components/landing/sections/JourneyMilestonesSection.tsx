@@ -18,6 +18,10 @@ const milestones = [
     body: "Successfully deployed on Lisk mainnet with first vehicle fundings.",
   },
   {
+    title: "2025 — Revenue Milestone",
+    body: "We were about to reach $1 million in revenue.",
+  },
+  {
     title: "2025 — Global Expansion",
     body: "Expanding operations to 5 new countries across Africa.",
   },
