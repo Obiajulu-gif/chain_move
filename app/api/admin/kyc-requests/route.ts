@@ -13,9 +13,11 @@ export async function GET(request: Request) {
     })
     if ("response" in authContext) return authContext.response
 
-    const kycRequests = await User.find({ role: "driver" }).select(
-      "name email kycStatus kycDocuments kycRejectionReason createdAt updatedAt physicalMeetingDate physicalMeetingStatus",
-    )
+    const kycRequests = await User.find({ role: { $in: ["driver", "investor"] } })
+      .select(
+        "role name fullName email phoneNumber kycStatus kycDocuments kycRejectionReason createdAt updatedAt physicalMeetingDate physicalMeetingStatus",
+      )
+      .sort({ updatedAt: -1 })
 
     const response = NextResponse.json(kycRequests, { status: 200 })
     return finalizeAuthenticatedResponse(response, authContext)

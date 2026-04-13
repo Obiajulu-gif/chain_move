@@ -1,10 +1,12 @@
 import Link from "next/link"
 import { Eye, Search } from "lucide-react"
 
+import { CopyButton } from "@/components/dashboard/admin/copy-button"
 import { PageHeader } from "@/components/dashboard/admin/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { formatNaira } from "@/lib/currency"
 import { cn } from "@/lib/utils"
 import dbConnect from "@/lib/dbConnect"
 import HirePurchaseContract from "@/models/HirePurchaseContract"
@@ -51,13 +53,12 @@ function getDriverName(driver: any) {
   return driver.fullName || driver.name || driver.email || "Unnamed driver"
 }
 
-function getDriverRegion(driver: any) {
-  const city = typeof driver.city === "string" ? driver.city : ""
-  const region = typeof driver.region === "string" ? driver.region : typeof driver.state === "string" ? driver.state : ""
-  if (city && region) return `${city}, ${region}`
-  if (city) return city
-  if (region) return region
-  return "Not provided"
+function getDriverEmail(driver: any) {
+  return driver.email || "No email"
+}
+
+function getDriverWallet(driver: any) {
+  return driver.walletAddress || driver.walletaddress || "Not linked"
 }
 
 function normalizeKycStatus(driver: any) {
@@ -66,6 +67,34 @@ function normalizeKycStatus(driver: any) {
   if (["approved", "approved_stage2", "verified", "complete", "completed"].includes(raw)) return "Approved"
   if (["rejected", "rejected_stage2"].includes(raw)) return "Rejected"
   return "Pending"
+}
+
+function getKycFilterClause(kyc: string) {
+  if (kyc === "approved") {
+    return {
+      $or: [
+        { isKycVerified: true },
+        { kycVerified: true },
+        { kycStatus: { $in: ["approved", "approved_stage2", "verified", "complete", "completed"] } },
+      ],
+    }
+  }
+
+  if (kyc === "pending") {
+    return {
+      $and: [
+        { isKycVerified: { $ne: true } },
+        { kycVerified: { $ne: true } },
+        { kycStatus: { $nin: ["approved", "approved_stage2", "verified", "complete", "completed", "rejected", "rejected_stage2"] } },
+      ],
+    }
+  }
+
+  if (kyc === "rejected") {
+    return { kycStatus: { $in: ["rejected", "rejected_stage2"] } }
+  }
+
+  return null
 }
 
 export default async function AdminDriversPage({ searchParams }: DriversPageProps) {
@@ -77,35 +106,28 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
   const kyc = getParam(resolvedSearchParams.kyc, "all")
   const page = toInt(getParam(resolvedSearchParams.page, "1"), 1)
 
-  const baseQuery: Record<string, unknown> = { role: "driver" }
+  const queryClauses: Record<string, unknown>[] = [{ role: "driver" }]
 
   if (q) {
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
-    baseQuery.$or = [{ name: regex }, { fullName: regex }, { email: regex }, { phoneNumber: regex }]
+    queryClauses.push({
+      $or: [{ name: regex }, { fullName: regex }, { email: regex }, { phoneNumber: regex }, { privyUserId: regex }],
+    })
   }
 
-  if (kyc === "approved") {
-    baseQuery.$or = [
-      { isKycVerified: true },
-      { kycVerified: true },
-      { kycStatus: { $in: ["approved", "approved_stage2", "verified", "complete", "completed"] } },
-    ]
-  } else if (kyc === "pending") {
-    baseQuery.$or = [
-      { isKycVerified: { $ne: true } },
-      { kycVerified: { $ne: true } },
-      { kycStatus: { $in: [null, "", "pending", "pending_stage2", "none"] } },
-    ]
-  } else if (kyc === "rejected") {
-    baseQuery.kycStatus = { $in: ["rejected", "rejected_stage2"] }
+  const kycClause = getKycFilterClause(kyc)
+  if (kycClause) {
+    queryClauses.push(kycClause)
   }
+
+  const baseQuery = queryClauses.length === 1 ? queryClauses[0] : { $and: queryClauses }
 
   const totalCount = await User.countDocuments(baseQuery)
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
 
   const drivers = await User.find(baseQuery)
-    .select("name fullName email phoneNumber city region state kycStatus isKycVerified kycVerified createdAt")
+    .select("name fullName email phoneNumber privyUserId walletAddress walletaddress availableBalance kycStatus isKycVerified kycVerified createdAt")
     .sort({ createdAt: -1 })
     .skip((currentPage - 1) * PAGE_SIZE)
     .limit(PAGE_SIZE)
@@ -114,18 +136,16 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
   const driverIds = drivers.map((driver: any) => driver._id)
   const contracts = driverIds.length
     ? await HirePurchaseContract.find({ driverUserId: { $in: driverIds } })
-      .select("driverUserId vehicleDisplayName status createdAt")
-      .sort({ createdAt: -1 })
-      .lean()
+        .select("driverUserId vehicleDisplayName status createdAt")
+        .sort({ createdAt: -1 })
+        .lean()
     : []
 
   const latestContractByDriver = new Map<string, any>()
   for (const contract of contracts) {
     const driverId = contract.driverUserId?.toString?.()
-    if (!driverId) continue
-    if (!latestContractByDriver.has(driverId)) {
-      latestContractByDriver.set(driverId, contract)
-    }
+    if (!driverId || latestContractByDriver.has(driverId)) continue
+    latestContractByDriver.set(driverId, contract)
   }
 
   const from = totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1
@@ -135,15 +155,15 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
     <div className="space-y-5">
       <PageHeader
         title="Drivers"
-        subtitle="Registered drivers and verification status."
+        subtitle="Live driver records from the user database, including wallet, KYC, and contract status."
         actions={
           <form action="/dashboard/admin/drivers" className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-            <div className="relative min-w-[220px] flex-1 sm:w-[280px] sm:flex-none">
+            <div className="relative min-w-[220px] flex-1 sm:w-[300px] sm:flex-none">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 name="q"
                 defaultValue={q}
-                placeholder="Search name, email, phone"
+                placeholder="Search name, email, phone, Privy ID"
                 className="h-9 pl-9"
               />
             </div>
@@ -177,16 +197,18 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
             <div className="px-4 py-12 text-center text-sm text-muted-foreground">No drivers registered yet.</div>
           ) : (
             drivers.map((driver: any) => {
+              const id = driver._id.toString()
               const kycStatus = normalizeKycStatus(driver)
-              const contract = latestContractByDriver.get(driver._id.toString())
+              const contract = latestContractByDriver.get(id)
               const contractLabel = contract ? `${contract.vehicleDisplayName} (${contract.status})` : "Not assigned"
+              const wallet = getDriverWallet(driver)
 
               return (
-                <article key={driver._id.toString()} className="space-y-3 px-4 py-4">
+                <article key={id} className="space-y-3 px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium text-foreground">{getDriverName(driver)}</p>
-                      <p className="text-xs text-muted-foreground">{driver.email || "No email"}</p>
+                      <p className="text-xs text-muted-foreground">{getDriverEmail(driver)}</p>
                     </div>
                     <Badge
                       variant={kycStatus === "Approved" ? "default" : "secondary"}
@@ -200,7 +222,9 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
                   </div>
                   <div className="grid gap-1 text-xs text-muted-foreground">
                     <p>Phone: {driver.phoneNumber || "Not provided"}</p>
-                    <p>Region: {getDriverRegion(driver)}</p>
+                    <p className="truncate">Wallet: {wallet}</p>
+                    <p className="truncate">Privy: {driver.privyUserId || "Not linked"}</p>
+                    <p>Internal balance: {formatNaira(Number(driver.availableBalance || 0))}</p>
                     <p>Vehicle: {contractLabel}</p>
                     <p>
                       Registered:{" "}
@@ -212,7 +236,7 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
                     </p>
                   </div>
                   <Button asChild variant="outline" size="sm" className="w-full">
-                    <Link href={`/dashboard/admin/drivers/${driver._id.toString()}`}>
+                    <Link href={`/dashboard/admin/drivers/${id}`}>
                       <Eye className="mr-2 h-4 w-4" />
                       View details
                     </Link>
@@ -224,13 +248,14 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
         </div>
 
         <div className="hidden max-h-[calc(100vh-280px)] overflow-auto md:block">
-          <table className="w-full min-w-[960px] border-collapse text-sm">
+          <table className="w-full min-w-[1180px] border-collapse text-sm">
             <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur supports-[backdrop-filter]:bg-muted/65">
               <tr className="border-b border-border/70 text-left">
                 <th className="px-4 py-3 font-medium text-muted-foreground">Full Name</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Phone</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">City / Region</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">KYC Status</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Contact</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Wallet / Privy</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">KYC</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Internal Balance</th>
                 <th className="px-4 py-3 font-medium text-muted-foreground">Assigned Vehicle / Contract</th>
                 <th className="px-4 py-3 font-medium text-muted-foreground">Date Registered</th>
                 <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
@@ -239,26 +264,43 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
             <tbody>
               {drivers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                     No drivers registered yet.
                   </td>
                 </tr>
               ) : (
                 drivers.map((driver: any) => {
+                  const id = driver._id.toString()
                   const kycStatus = normalizeKycStatus(driver)
-                  const contract = latestContractByDriver.get(driver._id.toString())
+                  const contract = latestContractByDriver.get(id)
                   const contractLabel = contract ? `${contract.vehicleDisplayName} (${contract.status})` : "Not assigned"
+                  const wallet = getDriverWallet(driver)
 
                   return (
-                    <tr key={driver._id.toString()} className="border-b border-border/60">
+                    <tr key={id} className="border-b border-border/60">
                       <td className="px-4 py-3">
                         <div>
                           <p className="font-medium text-foreground">{getDriverName(driver)}</p>
-                          <p className="text-xs text-muted-foreground">{driver.email || "No email"}</p>
+                          <p className="text-xs text-muted-foreground">{driver.role || "driver"}</p>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-foreground">{driver.phoneNumber || "Not provided"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{getDriverRegion(driver)}</td>
+                      <td className="px-4 py-3">
+                        <div className="space-y-0.5">
+                          <p className="text-foreground">{getDriverEmail(driver)}</p>
+                          <p className="text-xs text-muted-foreground">{driver.phoneNumber || "No phone number"}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          <div className="space-y-0.5">
+                            <p className="max-w-[220px] truncate text-foreground">{wallet}</p>
+                            <p className="max-w-[220px] truncate text-xs text-muted-foreground">
+                              {driver.privyUserId || "Privy not linked"}
+                            </p>
+                          </div>
+                          {driver.email ? <CopyButton value={driver.email} /> : null}
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         <Badge
                           variant={kycStatus === "Approved" ? "default" : "secondary"}
@@ -270,6 +312,9 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
                           {kycStatus}
                         </Badge>
                       </td>
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        {formatNaira(Number(driver.availableBalance || 0))}
+                      </td>
                       <td className="px-4 py-3 text-muted-foreground">{contractLabel}</td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {new Date(driver.createdAt).toLocaleDateString("en-NG", {
@@ -280,7 +325,7 @@ export default async function AdminDriversPage({ searchParams }: DriversPageProp
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Button asChild variant="ghost" size="sm" className="h-8">
-                          <Link href={`/dashboard/admin/drivers/${driver._id.toString()}`}>
+                          <Link href={`/dashboard/admin/drivers/${id}`}>
                             <Eye className="mr-2 h-4 w-4" />
                             View details
                           </Link>

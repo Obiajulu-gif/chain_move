@@ -55,7 +55,9 @@ export default async function InvestorDetailsPage({ params }: InvestorDetailsPag
 
   const { id } = await params
   const investor = await User.findOne({ _id: id, role: "investor" })
-    .select("name fullName email phoneNumber privyUserId walletAddress walletaddress createdAt availableBalance totalReturns totalInvested kycStatus isKycVerified kycVerified")
+    .select(
+      "name fullName email phoneNumber privyUserId walletAddress walletaddress address bio createdAt availableBalance totalReturns totalInvested kycStatus isKycVerified kycVerified",
+    )
     .lean()
 
   if (!investor) {
@@ -153,8 +155,10 @@ export default async function InvestorDetailsPage({ params }: InvestorDetailsPag
           <CardHeader>
             <CardTitle className="text-base">Notes / Flags</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            No manual flags are recorded for this investor yet.
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p><span className="text-foreground">Address:</span> {(investor as any).address || "Not provided"}</p>
+            <p><span className="text-foreground">Profile note:</span> {(investor as any).bio || "No profile note saved."}</p>
+            <p>No manual flags are recorded for this investor yet.</p>
           </CardContent>
         </Card>
       </section>

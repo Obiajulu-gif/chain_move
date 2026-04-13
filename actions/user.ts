@@ -11,8 +11,12 @@ import User from "@/models/User"
 
 type KycStatus = "none" | "pending" | "approved_stage1" | "pending_stage2" | "approved_stage2" | "rejected"
 type PhysicalMeetingStatus = "none" | "scheduled" | "approved" | "rescheduled" | "completed" | "rejected_stage2"
+type KycUserRole = "driver" | "investor"
 
-const DRIVER_NOTIFICATION_LINK = "/dashboard/driver/notifications"
+const KYC_NOTIFICATION_LINK: Record<KycUserRole, string> = {
+  driver: "/dashboard/driver/kyc/status",
+  investor: "/dashboard/investor/kyc/status",
+}
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 function normalizeDateInput(value: Date | string | null | undefined) {
@@ -87,6 +91,7 @@ async function sendKycEmail(user: any, subject: string, message: string) {
 }
 
 function buildKycNotification({
+  role,
   oldKycStatus,
   newKycStatus,
   oldPhysicalMeetingStatus,
@@ -94,6 +99,7 @@ function buildKycNotification({
   physicalMeetingDate,
   reason,
 }: {
+  role: KycUserRole
   oldKycStatus: KycStatus
   newKycStatus: KycStatus
   oldPhysicalMeetingStatus: PhysicalMeetingStatus
@@ -101,6 +107,38 @@ function buildKycNotification({
   physicalMeetingDate: Date | null
   reason: string | null
 }) {
+  if (role === "investor") {
+    if ((oldKycStatus === "none" || oldKycStatus === "rejected") && newKycStatus === "pending") {
+      return {
+        title: "KYC Documents Submitted",
+        message: "Your investor KYC documents have been submitted for review.",
+        subject: "ChainMove: investor KYC documents received",
+        emailMessage: "Your investor KYC documents have been submitted for review.",
+      }
+    }
+
+    if (oldKycStatus === "pending" && newKycStatus === "approved_stage2") {
+      return {
+        title: "KYC Approved",
+        message: "Your investor KYC verification has been approved. You can continue funding and investing.",
+        subject: "ChainMove: investor KYC approved",
+        emailMessage: "Your investor KYC verification has been approved. You can continue funding and investing.",
+      }
+    }
+
+    if (oldKycStatus === "pending" && newKycStatus === "rejected") {
+      const rejectionMessage = reason ? ` Reason: ${reason}` : ""
+      return {
+        title: "KYC Rejected",
+        message: `Your investor KYC verification was rejected.${rejectionMessage}`,
+        subject: "ChainMove: investor KYC rejected",
+        emailMessage: `Your investor KYC verification was rejected.${rejectionMessage}`,
+      }
+    }
+
+    return null
+  }
+
   if ((oldKycStatus === "none" || oldKycStatus === "rejected") && newKycStatus === "pending") {
     return {
       title: "KYC Documents Submitted",
@@ -198,8 +236,9 @@ export async function updateUserKycStatus(
       return { success: false, message: "User not found." }
     }
 
-    if (user.role !== "driver") {
-      return { success: false, message: "Only driver KYC records can be updated." }
+    const userRole = user.role === "driver" || user.role === "investor" ? (user.role as KycUserRole) : null
+    if (!userRole) {
+      return { success: false, message: "This account does not support KYC updates." }
     }
 
     const oldKycStatus = (user.kycStatus || "none") as KycStatus
@@ -208,15 +247,35 @@ export async function updateUserKycStatus(
     const normalizedReason = normalizeReason(rejectionReason)
     const normalizedMeetingDate = normalizeDateInput(physicalMeetingDate)
 
-    if (actor.role === "driver") {
+    if (actor.role === userRole) {
       if (actor._id.toString() !== user._id.toString()) {
-        return { success: false, message: "Drivers can only update their own KYC." }
+        return { success: false, message: "Users can only update their own KYC." }
       }
 
       const isInitialSubmission = status === "pending" && physicalMeetingStatus === null
       const isMeetingSchedule = status === "approved_stage1" && physicalMeetingStatus === "scheduled"
 
-      if (isInitialSubmission) {
+      if (userRole === "investor") {
+        if (!isInitialSubmission) {
+          return { success: false, message: "Investors can only submit or resubmit their own KYC documents." }
+        }
+
+        if (oldKycStatus !== "none" && oldKycStatus !== "rejected") {
+          return { success: false, message: "This KYC state cannot be resubmitted right now." }
+        }
+
+        if (normalizedDocuments.length === 0) {
+          return { success: false, message: "KYC documents are required." }
+        }
+
+        user.kycStatus = "pending"
+        user.kycDocuments = normalizedDocuments
+        user.kycRejectionReason = null
+        user.physicalMeetingDate = null
+        user.physicalMeetingStatus = "none"
+        user.isKycVerified = false
+        user.kycVerified = false
+      } else if (isInitialSubmission) {
         if (oldKycStatus !== "none" && oldKycStatus !== "rejected") {
           return { success: false, message: "This KYC state cannot be resubmitted right now." }
         }
@@ -252,7 +311,37 @@ export async function updateUserKycStatus(
         return { success: false, message: "Drivers cannot perform this KYC update." }
       }
     } else if (actor.role === "admin") {
-      if (status === "approved_stage1" && physicalMeetingStatus === null) {
+      if (userRole === "investor") {
+        if (status === "approved_stage2" && physicalMeetingStatus === null) {
+          if (oldKycStatus !== "pending") {
+            return { success: false, message: "Only pending investor KYC requests can be approved." }
+          }
+
+          user.kycStatus = "approved_stage2"
+          user.kycRejectionReason = null
+          user.physicalMeetingStatus = "none"
+          user.physicalMeetingDate = null
+          user.isKycVerified = true
+          user.kycVerified = true
+        } else if (status === "rejected" && physicalMeetingStatus === null) {
+          if (oldKycStatus !== "pending") {
+            return { success: false, message: "Only pending investor KYC requests can be rejected." }
+          }
+
+          if (!normalizedReason) {
+            return { success: false, message: "A rejection reason is required." }
+          }
+
+          user.kycStatus = "rejected"
+          user.kycRejectionReason = normalizedReason
+          user.physicalMeetingStatus = "none"
+          user.physicalMeetingDate = null
+          user.isKycVerified = false
+          user.kycVerified = false
+        } else {
+          return { success: false, message: "Unsupported investor KYC transition." }
+        }
+      } else if (status === "approved_stage1" && physicalMeetingStatus === null) {
         if (oldKycStatus !== "pending") {
           return { success: false, message: "Only pending stage 1 requests can be approved." }
         }
@@ -340,6 +429,7 @@ export async function updateUserKycStatus(
     }
 
     const notification = buildKycNotification({
+      role: userRole,
       oldKycStatus,
       newKycStatus: user.kycStatus,
       oldPhysicalMeetingStatus,
@@ -356,7 +446,7 @@ export async function updateUserKycStatus(
         message: notification.message,
         read: false,
         timestamp: new Date(),
-        link: DRIVER_NOTIFICATION_LINK,
+        link: KYC_NOTIFICATION_LINK[userRole],
       })
     }
 
@@ -383,7 +473,13 @@ export async function updateUserKycStatus(
     revalidatePath("/dashboard/driver/kyc")
     revalidatePath("/dashboard/driver/kyc/status")
     revalidatePath("/dashboard/driver/notifications")
+    revalidatePath("/dashboard/investor")
+    revalidatePath("/dashboard/investor/kyc")
+    revalidatePath("/dashboard/investor/kyc/status")
+    revalidatePath("/dashboard/investor/settings")
     revalidatePath("/dashboard/admin/kyc-management")
+    revalidatePath("/dashboard/admin/investors")
+    revalidatePath("/dashboard/admin/drivers")
 
     return { success: true, message: `KYC status updated to ${user.kycStatus}.` }
   } catch (error) {

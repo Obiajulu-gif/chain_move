@@ -33,7 +33,7 @@ export default async function AdminUserDetailsPage({ params }: UserDetailsPagePr
 
   const { id } = await params
   const user = await User.findById(id)
-    .select("name fullName email phoneNumber role walletAddress walletaddress privyUserId createdAt")
+    .select("name fullName email phoneNumber role walletAddress walletaddress privyUserId address bio availableBalance totalInvested totalReturns createdAt")
     .lean()
 
   if (!user) {
@@ -129,12 +129,25 @@ export default async function AdminUserDetailsPage({ params }: UserDetailsPagePr
             <CardTitle className="text-base">Financials</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
+            <p><span className="text-muted-foreground">Internal Balance:</span> {formatNaira(Number((user as any).availableBalance || 0))}</p>
+            <p><span className="text-muted-foreground">Stored Total Invested:</span> {formatNaira(Number((user as any).totalInvested || 0))}</p>
+            <p><span className="text-muted-foreground">Stored Total Returns:</span> {formatNaira(Number((user as any).totalReturns || 0))}</p>
             <p><span className="text-muted-foreground">Total Deposits:</span> {formatNaira(totalDeposits)}</p>
-            <p><span className="text-muted-foreground">Total Invested:</span> {formatNaira(totalInvested)}</p>
-            <p><span className="text-muted-foreground">Total Returns:</span> {formatNaira(totalReturns)}</p>
+            <p><span className="text-muted-foreground">Derived Total Invested:</span> {formatNaira(totalInvested)}</p>
+            <p><span className="text-muted-foreground">Derived Total Returns:</span> {formatNaira(totalReturns)}</p>
           </CardContent>
         </Card>
       </section>
+
+      <Card className="border-border/70">
+        <CardHeader>
+          <CardTitle className="text-base">Profile Notes</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p><span className="text-foreground">Address:</span> {(user as any).address || "Not provided"}</p>
+          <p><span className="text-foreground">Bio:</span> {(user as any).bio || "No profile note saved."}</p>
+        </CardContent>
+      </Card>
 
       <Card className="border-border/70">
         <CardHeader>

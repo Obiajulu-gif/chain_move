@@ -445,7 +445,7 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5 text-[#E57700]" />
+                <Wallet className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 Wallet funding
               </CardTitle>
               <CardDescription>
@@ -472,13 +472,13 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
 
           <div className="rounded-xl border bg-muted/20 p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Wallet address</p>
-            <p className="mt-2 font-mono text-sm">{walletAddress ? truncateAddress(walletAddress) : "Not available"}</p>
-            <div className="mt-2 flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleCopyAddress} disabled={!walletAddress}>
+            <p className="mt-2 break-all font-mono text-sm">{walletAddress ? truncateAddress(walletAddress) : "Not available"}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={handleCopyAddress} disabled={!walletAddress}>
                 <Copy className="mr-1.5 h-3.5 w-3.5" />
                 Copy
               </Button>
-              <Button variant="outline" size="sm" onClick={handleOpenWalletView} disabled={!walletAddress}>
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={handleOpenWalletView} disabled={!walletAddress}>
                 <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                 Open wallet
               </Button>
@@ -492,7 +492,15 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
           </div>
         </div>
 
-        <InvestorWalletDedicatedAccountCard internalBalanceNgn={internalBalance} />
+        <InvestorWalletDedicatedAccountCard
+          internalBalanceNgn={internalBalance}
+          profileFullName={authUser?.fullName || authUser?.name || ""}
+          profilePhoneNumber={authUser?.phoneNumber || ""}
+          onProfileUpdated={async () => {
+            await loadWalletSummary()
+            refetchAuth?.()
+          }}
+        />
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-xl border p-4">
@@ -501,7 +509,7 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
               Use Privy on-ramp where supported, or copy your wallet address to receive funds on-chain.
             </p>
             <Button
-              className="mt-3 bg-[#E57700] text-white hover:bg-[#E57700]/90"
+              className="mt-3 w-full bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400 sm:w-auto"
               onClick={handlePrivyFunding}
               disabled={isPrivyFunding || !walletAddress}
             >
@@ -547,7 +555,7 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
               />
             </div>
             <Button
-              className="mt-3 bg-[#E57700] text-white hover:bg-[#E57700]/90"
+              className="mt-3 w-full bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400 sm:w-auto"
               onClick={handlePaystackFunding}
               disabled={isPaystackFunding}
             >
@@ -567,9 +575,9 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
         </div>
 
         <div className="rounded-xl border">
-          <div className="flex items-center justify-between border-b px-4 py-3">
+          <div className="flex flex-col gap-2 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="font-semibold">Recent funding transactions</h3>
-            <Button variant="outline" size="sm" onClick={loadWalletSummary}>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={loadWalletSummary}>
               Refresh
             </Button>
           </div>

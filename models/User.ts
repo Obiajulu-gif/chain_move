@@ -61,6 +61,16 @@ const UserSchema = new mongoose.Schema(
       sparse: true,
       trim: true,
     },
+    address: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    bio: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     privyUserId: {
       type: String,
       unique: true,

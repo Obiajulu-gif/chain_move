@@ -16,11 +16,15 @@ export interface AuthUser {
   fullName?: string
   email?: string
   phoneNumber?: string
+  privyUserId?: string
+  address?: string | null
+  bio?: string | null
   role?: string
   walletAddress?: string
   availableBalance?: number
   totalInvested?: number
   totalReturns?: number
+  createdAt?: string | null
   kycStatus?: string
   kycDocuments?: string[]
   kycRejectionReason?: string | null
@@ -62,7 +66,7 @@ export function useAuth() {
     setLoading(true)
     try {
       // This endpoint should return the full user object from your database
-      const response = await fetch("/api/auth/me")
+      const response = await fetch("/api/auth/me", { cache: "no-store" })
       if (response.ok) {
         const userData = await response.json()
         setUser(userData)

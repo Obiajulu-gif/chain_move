@@ -125,7 +125,7 @@ export default async function DriverDashboardPage() {
       sidebarWidth="compact"
       header={<DashboardHeader title="Dashboard" welcomeName={driverName} />}
     >
-      <main className="space-y-4 p-4 md:p-6">
+      <main className="min-w-0 space-y-4 p-4 md:p-6">
         {showDueAlert ? (
           <section className="rounded-[10px] border border-red-300 bg-red-50 px-4 py-3 text-red-700 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-300">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -139,7 +139,7 @@ export default async function DriverDashboardPage() {
                   </p>
                 </div>
               </div>
-              <Button asChild size="sm" className="w-full bg-[#E57A00] text-white hover:bg-[#D77200] sm:w-auto">
+              <Button asChild size="sm" className="w-full bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400 sm:w-auto">
                 <Link href="/dashboard/driver/repayment">Pay now</Link>
               </Button>
             </div>
@@ -155,7 +155,7 @@ export default async function DriverDashboardPage() {
               </p>
             </div>
 
-            <Button asChild className="h-10 w-full bg-[#E57A00] text-white hover:bg-[#D77200] sm:w-auto">
+            <Button asChild className="h-10 w-full bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400 sm:w-auto">
               <Link href="/dashboard/driver/repayment">
                 <Wallet className="mr-2 h-4 w-4" />
                 Make Payment
@@ -214,7 +214,7 @@ export default async function DriverDashboardPage() {
                   </p>
                 </article>
 
-                <Button asChild className="h-10 w-full bg-[#E57A00] text-white hover:bg-[#D77200]">
+                <Button asChild className="h-10 w-full bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400">
                   <Link href="/dashboard/driver/repayment">
                     Continue to payment
                     <ArrowRight className="ml-2 h-4 w-4" />

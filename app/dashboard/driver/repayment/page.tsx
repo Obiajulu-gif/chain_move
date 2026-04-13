@@ -126,7 +126,7 @@ export default async function DriverRepaymentPage() {
         />
       }
     >
-      <main className="space-y-4 p-4 md:p-6">
+      <main className="min-w-0 space-y-4 p-4 md:p-6">
         <section className="rounded-[10px] border border-border/70 bg-card px-4 py-4 md:px-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>

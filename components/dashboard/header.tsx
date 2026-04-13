@@ -16,6 +16,7 @@ import {
 import { Bell, ChevronLeft, Menu, MoreVertical, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getUserDisplayName, useAuth } from "@/hooks/use-auth"
+import { resolveDashboardUserStatus } from "@/lib/users/user-profile"
 import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import dynamic from "next/dynamic"
@@ -34,6 +35,7 @@ interface HeaderProps {
 }
 
 const STATUS_VARIANTS = new Set(["verified", "verified investor", "verified driver", "system administrator"])
+const GENERIC_STATUS_LABELS = new Set(["active", "investor", "driver", "verified investor", "verified driver"])
 
 function inferRoleLabel(pathname: string, userStatus: string, role?: string) {
   if (role === "investor") return "Investor"
@@ -65,8 +67,13 @@ export function Header({
 
   const roleLabel = inferRoleLabel(pathname, userStatus, authUser?.role)
   const resolvedUserName = getUserDisplayName(authUser, roleLabel)
+  const normalizedRequestedStatus = userStatus.toLowerCase()
+  const effectiveUserStatus =
+    authUser && GENERIC_STATUS_LABELS.has(normalizedRequestedStatus)
+      ? resolveDashboardUserStatus(authUser)
+      : userStatus
 
-  const normalizedStatus = userStatus.toLowerCase()
+  const normalizedStatus = effectiveUserStatus.toLowerCase()
   const isVerified = STATUS_VARIANTS.has(normalizedStatus)
   const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light")
 
@@ -77,7 +84,7 @@ export function Header({
         className,
       )}
     >
-      <div className="flex h-12 items-center justify-between gap-3">
+      <div className="flex min-h-12 items-center justify-between gap-2 sm:gap-3">
         <div className="flex min-w-0 items-center gap-2 sm:gap-4">
           <Button
             type="button"
@@ -117,7 +124,7 @@ export function Header({
                 isVerified ? "bg-green-600 text-white hover:bg-green-600" : "bg-yellow-600 text-white hover:bg-yellow-600",
               )}
             >
-              {userStatus}
+              {effectiveUserStatus}
             </Badge>
           </div>
 
@@ -126,7 +133,7 @@ export function Header({
           <Button
             variant="ghost"
             size="icon"
-            className="relative h-9 w-9 rounded-full"
+            className="relative h-9 w-9 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
             aria-label="Notifications"
           >
             <Bell className="h-[1.2rem] w-[1.2rem]" />
@@ -141,7 +148,7 @@ export function Header({
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
               <User className="h-4 w-4" />
             </div>
-            <div className="hidden lg:block">
+            <div className="hidden min-w-0 lg:block">
               <p className="max-w-[140px] truncate text-sm font-medium text-foreground">{resolvedUserName}</p>
             </div>
           </div>
@@ -159,7 +166,7 @@ export function Header({
             <DropdownMenuContent align="end" className="w-56 md:hidden">
               <DropdownMenuLabel className="truncate">{resolvedUserName}</DropdownMenuLabel>
               <DropdownMenuItem disabled className="text-xs">
-                {userStatus}
+                {effectiveUserStatus}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={toggleTheme}>Toggle theme</DropdownMenuItem>

@@ -66,13 +66,13 @@ export function PortfolioActivityCard({
         <div className="space-y-3">
           {activities.map((activity) => (
             <article key={activity.id} className="rounded-[10px] border border-border/70 px-4 py-3.5">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h4 className="text-lg font-semibold leading-none text-foreground">{activity.title}</h4>
                   <p className="mt-1.5 text-sm text-muted-foreground">{activity.startedLabel}</p>
                 </div>
 
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <p className="text-lg font-semibold leading-none text-foreground">{activity.amountLabel}</p>
                   <p className="mt-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">{activity.monthlyReturnsLabel}</p>
                 </div>

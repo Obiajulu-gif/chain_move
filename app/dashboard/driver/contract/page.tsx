@@ -101,9 +101,13 @@ export default async function DriverContractPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar role="driver" mobileWidth="w-[212px]" className="md:w-[212px] lg:w-[212px]" />
+      <Sidebar
+        role="driver"
+        mobileWidth="w-[calc(100vw-1rem)] max-w-[212px]"
+        className="md:w-[212px] lg:w-[212px]"
+      />
 
-      <div className="md:ml-[212px]">
+      <div className="min-w-0 md:ml-[212px]">
         <DashboardHeader
           title="My Vehicle / Contract"
           welcomeName={resolveDisplayName({
@@ -113,7 +117,7 @@ export default async function DriverContractPage() {
           })}
         />
 
-        <main className="space-y-4 p-4 md:p-6">
+        <main className="min-w-0 space-y-4 p-4 md:p-6">
           <section className="rounded-[10px] border border-border/70 bg-card px-4 py-4 md:px-5">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
@@ -123,7 +127,7 @@ export default async function DriverContractPage() {
                 </p>
               </div>
 
-              <Button asChild className="h-10 bg-[#E57A00] text-white hover:bg-[#D77200]">
+              <Button asChild className="h-10 w-full bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400 sm:w-auto">
                 <Link href="/dashboard/driver/repayment">
                   Make Payment
                   <ArrowRight className="ml-2 h-4 w-4" />

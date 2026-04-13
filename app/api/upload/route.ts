@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   try {
     const authContext = await requireAuthenticatedUser(
       request,
-      scope === "vehicle" ? ["admin"] : ["driver", "admin"],
+      scope === "vehicle" ? ["admin"] : ["driver", "investor", "admin"],
       {
         forbiddenMessage: scope === "vehicle" ? "Admin access required" : "Authenticated KYC access required",
       },
