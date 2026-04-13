@@ -3,19 +3,11 @@ import dbConnect from "@/lib/dbConnect"
 import User from "@/models/User"
 import { extractPrivyTokenFromRequest, getPrivyProfileFromPayload, verifyPrivyToken } from "@/lib/auth/privy"
 import { getSessionFromCookies, setSessionCookie, signSessionToken } from "@/lib/auth/session"
+import { toUserProfileSnapshot, USER_PROFILE_SELECT } from "@/lib/users/user-profile"
 
 function toAuthResponse(user: any) {
   return {
-    id: user._id.toString(),
-    name: user.name,
-    fullName: user.fullName || user.name,
-    email: user.email,
-    phoneNumber: user.phoneNumber,
-    role: user.role,
-    walletAddress: user.walletAddress || user.walletaddress,
-    availableBalance: user.availableBalance || 0,
-    totalInvested: user.totalInvested || 0,
-    totalReturns: user.totalReturns || 0,
+    ...toUserProfileSnapshot(user),
     kycStatus: user.kycStatus || "none",
     kycDocuments: Array.isArray(user.kycDocuments) ? user.kycDocuments : [],
     kycRejectionReason: user.kycRejectionReason || null,
@@ -34,7 +26,7 @@ export async function GET(request: Request) {
     const session = await getSessionFromCookies()
     if (session?.userId) {
       const user = await User.findById(session.userId).select(
-        "name fullName email phoneNumber role walletAddress walletaddress availableBalance totalInvested totalReturns privyUserId kycStatus kycDocuments kycRejectionReason physicalMeetingDate physicalMeetingStatus isKycVerified kycVerified notifications",
+        `${USER_PROFILE_SELECT} kycStatus kycDocuments kycRejectionReason physicalMeetingDate physicalMeetingStatus isKycVerified kycVerified notifications`,
       )
 
       if (!user) {
@@ -56,7 +48,7 @@ export async function GET(request: Request) {
     const user = await User.findOne({
       $or: [{ privyUserId: profile.privyUserId }, ...(profile.email ? [{ email: profile.email.toLowerCase() }] : [])],
     }).select(
-      "name fullName email phoneNumber role walletAddress walletaddress availableBalance totalInvested totalReturns privyUserId kycStatus kycDocuments kycRejectionReason physicalMeetingDate physicalMeetingStatus isKycVerified kycVerified notifications",
+      `${USER_PROFILE_SELECT} kycStatus kycDocuments kycRejectionReason physicalMeetingDate physicalMeetingStatus isKycVerified kycVerified notifications`,
     )
 
     if (!user) {

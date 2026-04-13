@@ -284,12 +284,12 @@ export default function InvestorOverviewPage() {
         />
       }
     >
-      <main className="space-y-4 p-4 md:p-6">
+      <main className="min-w-0 space-y-4 p-4 md:p-6">
         {bannerVariant ? (
           <DashboardBanner
             variant={bannerVariant}
             onAction={() =>
-              router.push(bannerVariant === "connect-wallet" ? "/dashboard/investor/wallet" : "/dashboard/investor/settings")
+              router.push(bannerVariant === "connect-wallet" ? "/dashboard/investor/wallet" : "/dashboard/investor/kyc")
             }
           />
         ) : null}
@@ -311,7 +311,7 @@ export default function InvestorOverviewPage() {
               </Button>
               <Button
                 type="button"
-                className="h-10 w-full bg-[#E57A00] text-white hover:bg-[#D77200] sm:w-auto"
+                className="h-10 w-full bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400 sm:w-auto"
                 onClick={() => router.push("/dashboard/investor/wallet")}
               >
                 <PlusCircle className="mr-2 h-4 w-4" />

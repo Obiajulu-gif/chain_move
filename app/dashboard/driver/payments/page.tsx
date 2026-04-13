@@ -96,7 +96,7 @@ export default async function DriverPaymentsPage({ searchParams }: PaymentsPageP
         />
       }
     >
-      <main className="space-y-4 p-4 md:p-6">
+      <main className="min-w-0 space-y-4 p-4 md:p-6">
         <section className="rounded-[10px] border border-border/70 bg-card px-4 py-4 md:px-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
@@ -105,7 +105,7 @@ export default async function DriverPaymentsPage({ searchParams }: PaymentsPageP
                 View Paystack repayment records and confirmation status.
               </p>
             </div>
-            <Button asChild className="h-10 w-full bg-[#E57A00] text-white hover:bg-[#D77200] sm:w-auto">
+            <Button asChild className="h-10 w-full bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400 sm:w-auto">
               <Link href="/dashboard/driver/repayment">Make Payment</Link>
             </Button>
           </div>
@@ -142,7 +142,7 @@ export default async function DriverPaymentsPage({ searchParams }: PaymentsPageP
             </CardHeader>
             <CardContent>
               <p className="inline-flex items-center text-2xl font-semibold text-foreground">
-                <Wallet className="mr-2 h-5 w-5 text-[#E57A00]" />
+                <Wallet className="mr-2 h-5 w-5 text-amber-600 dark:text-amber-400" />
                 {formatNaira(totalPaidNgn)}
               </p>
             </CardContent>

@@ -42,7 +42,7 @@ export default function InvestorWalletPage() {
 
   return (
     <DashboardShell role="investor" header={<Header userStatus="Verified Investor" />}>
-      <main className="p-4 sm:p-6 lg:p-8">
+      <main className="min-w-0 p-4 sm:p-6 lg:p-8">
         <InvestorWalletPanel />
       </main>
     </DashboardShell>

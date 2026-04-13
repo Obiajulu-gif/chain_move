@@ -22,6 +22,10 @@ function displayName(user: any) {
   return user.fullName || user.name || user.email || "Unnamed driver"
 }
 
+function resolveWalletAddress(user: any) {
+  return user.walletAddress || user.walletaddress || "Not linked"
+}
+
 function getKycStatus(user: any) {
   if (user.isKycVerified === true || user.kycVerified === true) return "Approved"
   const raw = typeof user.kycStatus === "string" ? user.kycStatus.toLowerCase() : ""
@@ -36,12 +40,16 @@ export default async function DriverDetailsPage({ params }: DriverDetailsPagePro
 
   const { id } = await params
   const driver = await User.findOne({ _id: id, role: "driver" })
-    .select("name fullName email phoneNumber kycStatus kycDocuments isKycVerified kycVerified createdAt")
+    .select(
+      "name fullName email phoneNumber address bio privyUserId walletAddress walletaddress availableBalance kycStatus kycDocuments isKycVerified kycVerified createdAt",
+    )
     .lean()
 
   if (!driver) {
     notFound()
   }
+
+  const walletAddress = resolveWalletAddress(driver)
 
   const [contracts, payments] = await Promise.all([
     HirePurchaseContract.find({ driverUserId: driver._id })
@@ -75,6 +83,9 @@ export default async function DriverDetailsPage({ params }: DriverDetailsPagePro
           <CardContent className="space-y-2 text-sm">
             <p><span className="text-muted-foreground">Email:</span> {driver.email || "N/A"}</p>
             <p><span className="text-muted-foreground">Phone:</span> {driver.phoneNumber || "N/A"}</p>
+            <p className="break-all"><span className="text-muted-foreground">Privy ID:</span> {(driver as any).privyUserId || "Not linked"}</p>
+            <p className="break-all"><span className="text-muted-foreground">Wallet:</span> {walletAddress}</p>
+            <p><span className="text-muted-foreground">Internal balance:</span> {formatNaira(Number((driver as any).availableBalance || 0))}</p>
             <p><span className="text-muted-foreground">Joined:</span> {new Date(driver.createdAt).toLocaleString()}</p>
           </CardContent>
         </Card>
@@ -97,21 +108,31 @@ export default async function DriverDetailsPage({ params }: DriverDetailsPagePro
 
         <Card className="border-border/70">
           <CardHeader>
-            <CardTitle className="text-base">Contracts Summary</CardTitle>
+            <CardTitle className="text-base">Profile Notes</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p><span className="text-muted-foreground">Total Contracts:</span> {contracts.length}</p>
-            <p>
-              <span className="text-muted-foreground">Active Contracts:</span>{" "}
-              {contracts.filter((contract: any) => contract.status === "ACTIVE").length}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Completed:</span>{" "}
-              {contracts.filter((contract: any) => contract.status === "COMPLETED").length}
-            </p>
+            <p><span className="text-muted-foreground">Address:</span> {(driver as any).address || "Not provided"}</p>
+            <p><span className="text-muted-foreground">Bio:</span> {(driver as any).bio || "No profile note saved."}</p>
           </CardContent>
         </Card>
       </section>
+
+      <Card className="border-border/70">
+        <CardHeader>
+          <CardTitle className="text-base">Contracts Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
+          <p><span className="text-muted-foreground">Total Contracts:</span> {contracts.length}</p>
+          <p>
+            <span className="text-muted-foreground">Active Contracts:</span>{" "}
+            {contracts.filter((contract: any) => contract.status === "ACTIVE").length}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Completed:</span>{" "}
+            {contracts.filter((contract: any) => contract.status === "COMPLETED").length}
+          </p>
+        </CardContent>
+      </Card>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card className="border-border/70">
@@ -169,4 +190,3 @@ export default async function DriverDetailsPage({ params }: DriverDetailsPagePro
     </div>
   )
 }
-

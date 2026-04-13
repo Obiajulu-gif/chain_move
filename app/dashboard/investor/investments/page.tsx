@@ -175,10 +175,10 @@ export default function MyInvestmentsPage() {
     <div className="min-h-screen bg-background">
       <Sidebar role="investor" />
 
-      <div className="md:ml-64 lg:ml-72">
+      <div className="min-w-0 md:ml-64 lg:ml-72">
         <Header userName={investorName} userStatus="Verified Investor" />
 
-        <main className="p-4 sm:p-6 space-y-6">
+        <main className="min-w-0 space-y-6 p-4 sm:p-6">
           <section className="rounded-xl border bg-card p-4 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -291,7 +291,7 @@ export default function MyInvestmentsPage() {
                             <div className="text-left sm:text-right">
                               <Badge variant="secondary">{currentStatus}</Badge>
                               <p className="mt-2 font-semibold">{formatNaira(investment.amount)}</p>
-                              <p className="text-xs text-green-600">
+                              <p className="text-xs text-green-600 dark:text-emerald-400">
                                 +{formatNaira(investment.monthlyReturn || 0)} / month
                               </p>
                             </div>

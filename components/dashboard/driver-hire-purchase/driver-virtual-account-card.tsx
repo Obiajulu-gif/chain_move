@@ -64,7 +64,7 @@ export function DriverVirtualAccountCard({
 
   return (
     <Card className="overflow-hidden rounded-[10px] border border-border/70 bg-card">
-      <CardHeader className="border-b border-border/60 bg-[#FFF7EC]">
+      <CardHeader className="border-b border-border/60 bg-amber-50/80 dark:bg-amber-950/25">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <CardTitle className="text-xl text-foreground">Dedicated Repayment Account</CardTitle>
@@ -84,17 +84,17 @@ export function DriverVirtualAccountCard({
             <div className="grid gap-4 rounded-lg border border-border/60 bg-background p-4 md:grid-cols-[1.2fr_0.8fr]">
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Building2 className="h-4 w-4 text-[#E57A00]" />
+                  <Building2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   {account.bankName}
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Account Number</p>
-                  <p className="mt-2 font-mono text-3xl font-semibold tracking-[0.16em] text-foreground">
+                  <p className="mt-2 break-all font-mono text-[1.65rem] font-semibold tracking-[0.12em] text-foreground sm:text-3xl sm:tracking-[0.16em]">
                     {account.accountNumber}
                   </p>
                 </div>
                 <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-[#E57A00]" />
+                  <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
                   <span>{account.accountName}</span>
                 </div>
               </div>
@@ -124,7 +124,7 @@ export function DriverVirtualAccountCard({
             <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
               <div className="rounded-md border border-border/60 bg-background p-3">
                 <div className="inline-flex items-center gap-2 font-medium text-foreground">
-                  <Wallet className="h-4 w-4 text-[#E57A00]" />
+                  <Wallet className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   Bank transfer first
                 </div>
                 <p className="mt-2">This is now the primary repayment method for the contract.</p>
@@ -138,7 +138,7 @@ export function DriverVirtualAccountCard({
               </div>
               <div className="rounded-md border border-border/60 bg-background p-3">
                 <div className="inline-flex items-center gap-2 font-medium text-foreground">
-                  <Building2 className="h-4 w-4 text-[#E57A00]" />
+                  <Building2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   Provider
                 </div>
                 <p className="mt-2">

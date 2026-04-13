@@ -53,10 +53,10 @@ export function WalletsCard({
           <p className="mt-1.5 text-xl font-semibold leading-none text-foreground">{fiatBalanceLabel}</p>
           <p className="mt-2 text-xs text-muted-foreground">Available for reinvestment or bank withdrawal.</p>
 
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button
               type="button"
-              className="h-9 bg-[#E57A00] text-white hover:bg-[#D77200]"
+              className="h-9 bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400"
               onClick={onFundWallet}
             >
               <PlusCircle className="mr-1.5 h-4 w-4" />
@@ -78,10 +78,10 @@ export function WalletsCard({
           <p className="mt-1.5 text-xl font-semibold leading-none text-foreground">{cryptoBalanceLabel}</p>
           <p className="mt-2 text-xs text-muted-foreground">Connected wallet <span className="font-semibold text-emerald-600 dark:text-emerald-400">{walletAddressLabel}</span></p>
 
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button
               type="button"
-              className="h-9 bg-[#E57A00] text-white hover:bg-[#D77200]"
+              className="h-9 bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400"
               onClick={onDepositCrypto}
               disabled={disableDepositCrypto || isDepositingCrypto}
             >

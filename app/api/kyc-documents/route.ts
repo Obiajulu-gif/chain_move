@@ -22,7 +22,7 @@ function sanitizeFilename(filename: string) {
 
 export async function GET(request: Request) {
   try {
-    const authContext = await requireAuthenticatedUser(request, ["admin", "driver"])
+    const authContext = await requireAuthenticatedUser(request, ["admin", "driver", "investor"])
     if ("response" in authContext) return authContext.response
 
     const rateLimit = consumeRateLimit({
@@ -42,7 +42,6 @@ export async function GET(request: Request) {
     await dbConnect()
 
     const documentOwnerExists = await User.exists({
-      role: "driver",
       kycDocuments: reference,
     })
 

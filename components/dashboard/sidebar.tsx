@@ -8,7 +8,6 @@ import {
   Calendar,
   Car,
   ChevronDown,
-  Coins,
   Compass,
   FileText,
   Layers,
@@ -77,23 +76,22 @@ const SIDEBAR_SECTIONS: Record<DashboardRole, SidebarSectionConfig[]> = {
       items: [
         { label: "Portfolio", href: "/dashboard/investor/investments", icon: Layers },
         { label: "Explore Opportunities", href: "/dashboard/investor/opportunities", icon: Compass },
-        { label: "DAO Zone", href: "/dashboard/investor/dao", icon: Vote },
       ],
     },
     {
       id: "investor-finances",
       label: "Finances",
       defaultExpanded: true,
-      items: [
-        { label: "My Wallet", href: "/dashboard/investor/wallet", icon: Wallet },
-        { label: "Governance Tokens", href: "/dashboard/investor/tokens", icon: Coins },
-      ],
+      items: [{ label: "My Wallet", href: "/dashboard/investor/wallet", icon: Wallet }],
     },
     {
       id: "investor-account",
       label: "Account",
       defaultExpanded: true,
-      items: [{ label: "Settings", href: "/dashboard/investor/settings", icon: Settings }],
+      items: [
+        { label: "Settings", href: "/dashboard/investor/settings", icon: Settings },
+        { label: "KYC", href: "/dashboard/investor/kyc", icon: UserCheck },
+      ],
     },
   ],
   driver: [
@@ -119,7 +117,7 @@ const SIDEBAR_SECTIONS: Record<DashboardRole, SidebarSectionConfig[]> = {
       defaultExpanded: true,
       items: [
         { label: "Settings", href: "/dashboard/driver/settings", icon: Settings },
-        { label: "Verification", href: "/dashboard/driver/kyc", icon: UserCheck },
+        { label: "KYC", href: "/dashboard/driver/kyc", icon: UserCheck },
       ],
     },
   ],
@@ -205,7 +203,7 @@ export function SidebarSection({ section, pathname, onNavigate }: SidebarSection
   )
 }
 
-export function Sidebar({ role, className, mobileWidth = "w-[18rem]" }: SidebarProps) {
+export function Sidebar({ role, className, mobileWidth = "w-[calc(100vw-1rem)] max-w-[18rem]" }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
@@ -262,7 +260,7 @@ export function Sidebar({ role, className, mobileWidth = "w-[18rem]" }: SidebarP
     <>
       {isOpen ? (
         <div
-          className="fixed inset-0 z-40 bg-[#0D1422]/35 backdrop-blur-[1px] md:hidden"
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-[1px] md:hidden"
           onClick={closeMobileSidebar}
           aria-hidden="true"
         />
@@ -270,7 +268,7 @@ export function Sidebar({ role, className, mobileWidth = "w-[18rem]" }: SidebarP
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 border-r border-border bg-[#F8FAFD] transition-transform duration-300 ease-out dark:bg-[#0B1220]",
+          "fixed inset-y-0 left-0 z-50 border-r border-border bg-background/95 shadow-xl shadow-black/5 transition-transform duration-300 ease-out supports-[backdrop-filter]:bg-background/90 dark:shadow-black/30",
           mobileWidth,
           "md:w-64 md:translate-x-0 lg:w-72",
           isOpen ? "translate-x-0" : "-translate-x-full",

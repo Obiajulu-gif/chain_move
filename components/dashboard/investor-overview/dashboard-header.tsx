@@ -81,7 +81,7 @@ export function DashboardHeader({
             <button
               type="button"
               onClick={onWalletChipClick}
-              className="hidden h-8 items-center rounded-md bg-[#E57A00] px-4 text-xs font-semibold text-white hover:bg-[#D77200] md:inline-flex"
+              className="hidden h-8 items-center rounded-md bg-amber-600 px-4 text-xs font-semibold text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400 md:inline-flex"
             >
               {walletChipLabel}
             </button>
