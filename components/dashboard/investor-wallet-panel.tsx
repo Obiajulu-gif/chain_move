@@ -157,6 +157,10 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
     }
   }, [])
 
+  const handleProfileUpdated = useCallback(async () => {
+    await Promise.all([loadWalletSummary(), refetchAuth?.()])
+  }, [loadWalletSummary, refetchAuth])
+
   const clearReferenceQuery = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString())
     params.delete("reference")
@@ -492,7 +496,12 @@ export function InvestorWalletPanel({ sectionId = "wallet", className, showTitle
           </div>
         </div>
 
-        <InvestorWalletDedicatedAccountCard internalBalanceNgn={internalBalance} />
+        <InvestorWalletDedicatedAccountCard
+          internalBalanceNgn={internalBalance}
+          userId={authUser?.id || null}
+          currentPhoneNumber={authUser?.phoneNumber || null}
+          onPhoneSaved={handleProfileUpdated}
+        />
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-xl border p-4">

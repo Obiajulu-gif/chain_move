@@ -4,6 +4,7 @@ import { getAuthenticatedUser, withSessionRefresh } from "@/lib/auth/current-use
 import dbConnect from "@/lib/dbConnect"
 import { logAuditEvent } from "@/lib/security/audit-log"
 import { getClientIpAddress } from "@/lib/security/rate-limit"
+import { validatePhoneNumberInput } from "@/lib/validation/phone"
 import User from "@/models/User"
 
 type RouteContext = { params: { id: string } }
@@ -22,6 +23,21 @@ async function requireAdmin(request: Request) {
   }
 
   return auth
+}
+
+async function requireUserUpdateAccess(request: Request, targetUserId: string) {
+  const auth = await getAuthenticatedUser(request)
+  if (!auth.user) {
+    return { error: NextResponse.json({ message: "Unauthorized" }, { status: 401 }) }
+  }
+
+  const isSelf = auth.user._id.toString() === targetUserId
+  const isAdmin = auth.user.role === "admin"
+  if (!isAdmin && !isSelf) {
+    return { error: NextResponse.json({ message: "Forbidden" }, { status: 403 }) }
+  }
+
+  return { ...auth, isAdmin, isSelf }
 }
 
 function normalizeRequiredString(value: unknown) {
@@ -101,7 +117,7 @@ export async function GET(request: Request, { params }: RouteContext) {
 
 export async function PUT(request: Request, { params }: RouteContext) {
   try {
-    const auth = await requireAdmin(request)
+    const auth = await requireUserUpdateAccess(request, params.id)
     if ("error" in auth) return auth.error
 
     await dbConnect()
@@ -120,6 +136,13 @@ export async function PUT(request: Request, { params }: RouteContext) {
       return NextResponse.json({ message: "Invalid role specified" }, { status: 400 })
     }
 
+    if (!auth.isAdmin && (hasRole || hasEmail || hasPrivyUserId || hasWalletAddress)) {
+      return NextResponse.json(
+        { message: "You can only update your own name and phone number from this screen." },
+        { status: 403 },
+      )
+    }
+
     if (!hasRole && !hasName && !hasFullName && !hasEmail && !hasPhoneNumber && !hasPrivyUserId && !hasWalletAddress) {
       return NextResponse.json({ message: "No user changes were provided." }, { status: 400 })
     }
@@ -133,6 +156,16 @@ export async function PUT(request: Request, { params }: RouteContext) {
     )
     if (!existingUser) {
       return NextResponse.json({ message: "User not found" }, { status: 404 })
+    }
+
+    const normalizedPhoneNumberResult = hasPhoneNumber
+      ? validatePhoneNumberInput(body.phoneNumber, {
+          required: auth.isSelf,
+          allowEmpty: auth.isAdmin,
+        })
+      : { value: undefined as string | undefined, error: null as string | null }
+    if (normalizedPhoneNumberResult.error) {
+      return NextResponse.json({ message: normalizedPhoneNumberResult.error }, { status: 400 })
     }
 
     if (hasRole && existingUser.role === "admin" && role !== "admin") {
@@ -174,7 +207,7 @@ export async function PUT(request: Request, { params }: RouteContext) {
     }
 
     if (hasPhoneNumber) {
-      const normalizedPhoneNumber = normalizeOptionalString(body.phoneNumber)
+      const normalizedPhoneNumber = normalizedPhoneNumberResult.value
       if ((existingUser.phoneNumber || undefined) !== normalizedPhoneNumber) {
         existingUser.phoneNumber = normalizedPhoneNumber
         changedFields.push("phoneNumber")
@@ -212,7 +245,7 @@ export async function PUT(request: Request, { params }: RouteContext) {
 
     await logAuditEvent({
       actor: auth.user,
-      action: "user.update",
+      action: auth.isSelf ? "user.self_update" : "user.update",
       targetType: "user",
       targetId: params.id,
       ipAddress: getClientIpAddress(request),
@@ -227,13 +260,20 @@ export async function PUT(request: Request, { params }: RouteContext) {
       .lean()
 
     const response = NextResponse.json({
-      message: hasRole && role === "admin" && !changedFields.includes("role")
-        ? "User updated successfully"
-        : hasRole && role === "admin"
-          ? "User updated and promoted to admin successfully"
-          : "User updated successfully",
+      message:
+        auth.isSelf
+          ? "Profile updated successfully"
+          : hasRole && role === "admin" && !changedFields.includes("role")
+            ? "User updated successfully"
+            : hasRole && role === "admin"
+              ? "User updated and promoted to admin successfully"
+              : "User updated successfully",
       user: updatedUser,
     })
+
+    if (auth.isSelf) {
+      return withSessionRefresh(response, existingUser)
+    }
 
     return auth.shouldRefreshSession ? withSessionRefresh(response, auth.user) : response
   } catch (error) {

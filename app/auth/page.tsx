@@ -4,33 +4,40 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useIdentityToken, usePrivy } from "@privy-io/react-auth"
-import { AlertCircle, ArrowRight, Car, Loader2, TrendingUp, User } from "lucide-react"
+import { AlertCircle, ArrowRight, Car, Loader2, Phone, TrendingUp, User } from "lucide-react"
 
 import { AuthInput } from "@/components/auth/AuthInput"
 import { AuthLayout } from "@/components/auth/AuthLayout"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { resolvePrivyAccessToken } from "@/lib/auth/privy-client"
+import { validatePhoneNumberInput } from "@/lib/validation/phone"
 
 type UserRole = "driver" | "investor"
 
 const SIGNUP_DRAFT_KEY = "chainmove_signup_draft"
 
+type SignupDraft = {
+  fullName: string
+  phoneNumber: string
+  role: UserRole
+}
+
 function safeReadSignupDraft() {
-  if (typeof window === "undefined") return null as { fullName: string; role: UserRole } | null
+  if (typeof window === "undefined") return null as SignupDraft | null
 
   try {
     const raw = window.sessionStorage.getItem(SIGNUP_DRAFT_KEY)
     if (!raw) return null
-    const parsed = JSON.parse(raw) as { fullName?: string; role?: UserRole }
-    if (!parsed.fullName || !parsed.role) return null
-    return { fullName: parsed.fullName, role: parsed.role }
+    const parsed = JSON.parse(raw) as { fullName?: string; phoneNumber?: string; role?: UserRole }
+    if (!parsed.fullName || !parsed.phoneNumber || !parsed.role) return null
+    return { fullName: parsed.fullName, phoneNumber: parsed.phoneNumber, role: parsed.role }
   } catch {
     return null
   }
 }
 
-function saveSignupDraft(draft: { fullName: string; role: UserRole }) {
+function saveSignupDraft(draft: SignupDraft) {
   if (typeof window === "undefined") return
   window.sessionStorage.setItem(SIGNUP_DRAFT_KEY, JSON.stringify(draft))
 }
@@ -48,11 +55,17 @@ export default function AuthPage() {
   const { identityToken } = useIdentityToken()
 
   const roleParam = searchParams.get("role")
-  const [selectedRole, setSelectedRole] = useState<UserRole>(roleParam === "driver" ? "driver" : "investor")
+  const [selectedRole, setSelectedRole] = useState<UserRole>(() => {
+    const savedDraft = safeReadSignupDraft()
+    if (roleParam === "driver") return "driver"
+    if (savedDraft?.role) return savedDraft.role
+    return "investor"
+  })
   const roleLabel = useMemo(() => (selectedRole === "driver" ? "Driver" : "Investor"), [selectedRole])
   const RoleIcon = selectedRole === "driver" ? Car : TrendingUp
 
-  const [fullName, setFullName] = useState("")
+  const [fullName, setFullName] = useState(() => safeReadSignupDraft()?.fullName || "")
+  const [phoneNumber, setPhoneNumber] = useState(() => safeReadSignupDraft()?.phoneNumber || "")
   const [formError, setFormError] = useState("")
   const [isLaunchingPrivy, setIsLaunchingPrivy] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -60,7 +73,7 @@ export default function AuthPage() {
   const isSyncInFlightRef = useRef(false)
 
   const syncPrivyUser = useCallback(
-    async (payload: { fullName?: string; role?: UserRole }) => {
+    async (payload: { fullName?: string; phoneNumber?: string; role?: UserRole }) => {
       if (isSyncInFlightRef.current) return
       isSyncInFlightRef.current = true
       setIsSyncing(true)
@@ -115,7 +128,13 @@ export default function AuthPage() {
       return
     }
 
-    const draft = { fullName: trimmedName, role: selectedRole }
+    const phoneValidation = validatePhoneNumberInput(phoneNumber, { required: true })
+    if (phoneValidation.error || !phoneValidation.value) {
+      setFormError(phoneValidation.error || "Phone number is required.")
+      return
+    }
+
+    const draft = { fullName: trimmedName, phoneNumber: phoneValidation.value, role: selectedRole }
     saveSignupDraft(draft)
 
     if (ready && authenticated) {
@@ -135,7 +154,15 @@ export default function AuthPage() {
   }
 
   useEffect(() => {
-    setSelectedRole(roleParam === "driver" ? "driver" : "investor")
+    if (roleParam === "driver" || roleParam === "investor") {
+      setSelectedRole(roleParam)
+      return
+    }
+
+    const savedDraft = safeReadSignupDraft()
+    if (savedDraft?.role) {
+      setSelectedRole(savedDraft.role)
+    }
   }, [roleParam])
 
   useEffect(() => {
@@ -150,7 +177,7 @@ export default function AuthPage() {
   return (
     <AuthLayout
       title="Create your ChainMove account"
-      description="Start with your full name, then complete secure signup with Privy."
+      description="Start with your full name and contact phone number, then complete secure signup with Privy."
       badge={`${roleLabel} sign up`}
       sideTitle="Built for drivers, investors, and operators"
       sideDescription="ChainMove connects real mobility assets to transparent financing and ownership tracking."
@@ -216,6 +243,20 @@ export default function AuthPage() {
           value={fullName}
           onChange={(event) => {
             setFullName(event.target.value)
+            if (formError) setFormError("")
+          }}
+        />
+
+        <AuthInput
+          id="phone-number"
+          label="Contact phone number"
+          icon={Phone}
+          type="tel"
+          autoComplete="tel"
+          placeholder="+234 801 234 5678"
+          value={phoneNumber}
+          onChange={(event) => {
+            setPhoneNumber(event.target.value)
             if (formError) setFormError("")
           }}
         />

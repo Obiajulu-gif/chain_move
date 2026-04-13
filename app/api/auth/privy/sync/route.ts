@@ -7,12 +7,14 @@ import { extractPrivyTokenFromRequest, getPrivyProfileFromPayload, verifyPrivyTo
 import { setSessionCookie, signSessionToken } from "@/lib/auth/session"
 import { parseJsonBody } from "@/lib/api/validation"
 import { buildRateLimitKey, consumeRateLimit, getClientIpAddress, rateLimitExceededResponse } from "@/lib/security/rate-limit"
+import { validatePhoneNumberInput } from "@/lib/validation/phone"
 
 type RequestedUserRole = "driver" | "investor"
 
 const bodySchema = z.object({
   fullName: z.string().trim().min(1).max(120).optional(),
   role: z.enum(["driver", "investor"]).optional(),
+  phoneNumber: z.string().trim().max(32).optional(),
 })
 
 let ensureUserEmailIndexPromise: Promise<void> | null = null
@@ -135,6 +137,16 @@ export async function POST(request: Request) {
 
     const fullName = body.data.fullName?.trim() || undefined
     const requestedRole = normalizeRequestedRole(body.data.role as RequestedUserRole | undefined)
+    const phoneNumberWasSubmitted = Object.prototype.hasOwnProperty.call(body.data, "phoneNumber")
+    const submittedPhoneNumber = validatePhoneNumberInput(body.data.phoneNumber, {
+      required: phoneNumberWasSubmitted,
+    })
+    if (submittedPhoneNumber.error) {
+      return NextResponse.json({ message: submittedPhoneNumber.error }, { status: 400 })
+    }
+
+    const privyPhoneNumber = validatePhoneNumberInput(profile.phoneNumber, { allowEmpty: true }).value
+    const preferredPhoneNumber = submittedPhoneNumber.value || privyPhoneNumber
     const normalizedEmail = profile.email?.toLowerCase()
     const normalizedWalletAddress = normalizeWalletAddress(profile.walletAddress)
     const defaultName = fallbackName(fullName, normalizedEmail, normalizedWalletAddress)
@@ -153,13 +165,20 @@ export async function POST(request: Request) {
     })
 
     if (!user) {
+      if (!preferredPhoneNumber) {
+        return NextResponse.json(
+          { message: "Phone number is required to finish creating your account." },
+          { status: 400 },
+        )
+      }
+
       try {
         user = await User.create({
           name: defaultName,
           fullName: defaultName,
           role: requestedRole,
           email: normalizedEmail,
-          phoneNumber: profile.phoneNumber,
+          phoneNumber: preferredPhoneNumber,
           privyUserId: profile.privyUserId,
           walletAddress: normalizedWalletAddress,
           walletaddress: normalizedWalletAddress,
@@ -200,7 +219,11 @@ export async function POST(request: Request) {
       }
     }
 
-    if (profile.phoneNumber && !user.phoneNumber) user.phoneNumber = profile.phoneNumber
+    if (submittedPhoneNumber.value) {
+      user.phoneNumber = submittedPhoneNumber.value
+    } else if (!user.phoneNumber && privyPhoneNumber) {
+      user.phoneNumber = privyPhoneNumber
+    }
 
     if (normalizedWalletAddress) {
       const currentWallet = normalizeWalletAddress(user.walletAddress || user.walletaddress)

@@ -1,14 +1,17 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { AlertCircle, Building2, CheckCircle2, Copy, Landmark, Loader2, Wallet } from "lucide-react"
+import { AlertCircle, Building2, CheckCircle2, Copy, Landmark, Loader2, Phone, Wallet } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatNaira } from "@/lib/currency"
+import { validatePhoneNumberInput } from "@/lib/validation/phone"
 import { useToast } from "@/hooks/use-toast"
 
 interface DedicatedFundingAccount {
@@ -21,6 +24,9 @@ interface DedicatedFundingAccount {
 
 interface InvestorWalletDedicatedAccountCardProps {
   internalBalanceNgn: number
+  userId?: string | null
+  currentPhoneNumber?: string | null
+  onPhoneSaved?: () => Promise<void> | void
 }
 
 function resolveStatusBadgeVariant(status?: string | null) {
@@ -30,21 +36,31 @@ function resolveStatusBadgeVariant(status?: string | null) {
   return "secondary" as const
 }
 
-export function InvestorWalletDedicatedAccountCard({ internalBalanceNgn }: InvestorWalletDedicatedAccountCardProps) {
+export function InvestorWalletDedicatedAccountCard({
+  internalBalanceNgn,
+  userId,
+  currentPhoneNumber,
+  onPhoneSaved,
+}: InvestorWalletDedicatedAccountCardProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [isCopying, setIsCopying] = useState(false)
+  const [isSavingPhone, setIsSavingPhone] = useState(false)
+  const [errorCode, setErrorCode] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [phoneNumberInput, setPhoneNumberInput] = useState(currentPhoneNumber || "")
   const [account, setAccount] = useState<DedicatedFundingAccount | null>(null)
 
   const loadAccount = async () => {
     setIsLoading(true)
+    setErrorCode(null)
     setErrorMessage(null)
 
     try {
       const response = await fetch("/api/investor/virtual-account")
       const payload = await response.json()
       if (!response.ok) {
+        setErrorCode(typeof payload?.code === "string" ? payload.code : null)
         throw new Error(payload.message || "Unable to load dedicated funding account.")
       }
 
@@ -72,6 +88,10 @@ export function InvestorWalletDedicatedAccountCard({ internalBalanceNgn }: Inves
     void loadAccount()
   }, [])
 
+  useEffect(() => {
+    setPhoneNumberInput(currentPhoneNumber || "")
+  }, [currentPhoneNumber])
+
   const handleCopy = async () => {
     if (!account?.accountNumber) return
 
@@ -90,6 +110,57 @@ export function InvestorWalletDedicatedAccountCard({ internalBalanceNgn }: Inves
       })
     } finally {
       setIsCopying(false)
+    }
+  }
+
+  const handlePhoneSave = async () => {
+    const phoneValidation = validatePhoneNumberInput(phoneNumberInput, { required: true })
+    if (phoneValidation.error || !phoneValidation.value) {
+      setErrorMessage(phoneValidation.error || "Phone number is required.")
+      setErrorCode("MISSING_PHONE_NUMBER")
+      return
+    }
+
+    if (!userId) {
+      setErrorMessage("We could not determine which investor profile to update. Refresh the page and try again.")
+      setErrorCode("MISSING_PHONE_NUMBER")
+      return
+    }
+
+    setIsSavingPhone(true)
+    setErrorMessage(null)
+
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phoneNumber: phoneValidation.value,
+        }),
+      })
+
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload.message || "Unable to save your phone number.")
+      }
+
+      toast({
+        title: "Phone number saved",
+        description: "We updated your profile and are retrying dedicated account provisioning now.",
+      })
+
+      if (onPhoneSaved) {
+        await onPhoneSaved()
+      }
+
+      await loadAccount()
+    } catch (error) {
+      setErrorCode("MISSING_PHONE_NUMBER")
+      setErrorMessage(error instanceof Error ? error.message : "Unable to save your phone number.")
+    } finally {
+      setIsSavingPhone(false)
     }
   }
 
@@ -185,13 +256,62 @@ export function InvestorWalletDedicatedAccountCard({ internalBalanceNgn }: Inves
               </div>
             </div>
           </>
+        ) : errorCode === "MISSING_PHONE_NUMBER" ? (
+          <Alert>
+            <Phone className="h-4 w-4" />
+            <AlertTitle>Add a phone number to finish setup</AlertTitle>
+            <AlertDescription className="space-y-4">
+              <p>
+                Your investor profile needs a contact phone number before Paystack can assign a dedicated funding
+                account.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="wallet-phone-number">Contact phone number</Label>
+                <Input
+                  id="wallet-phone-number"
+                  type="tel"
+                  placeholder="+234 801 234 5678"
+                  value={phoneNumberInput}
+                  onChange={(event) => {
+                    setPhoneNumberInput(event.target.value)
+                    if (errorMessage) {
+                      setErrorMessage(null)
+                    }
+                  }}
+                />
+              </div>
+              {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button type="button" onClick={() => void handlePhoneSave()} disabled={isSavingPhone}>
+                  {isSavingPhone ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving phone number...
+                    </>
+                  ) : (
+                    "Save phone number and retry"
+                  )}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => void loadAccount()} disabled={isSavingPhone}>
+                  Refresh account status
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
         ) : (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Dedicated funding account unavailable</AlertTitle>
             <AlertDescription>
-              {errorMessage ||
-                "We could not assign a dedicated funding account yet. You can still use the checkout fallback below."}
+              <div className="space-y-3">
+                <p>
+                  {errorMessage ||
+                    "We could not assign a dedicated funding account yet. You can still use the checkout fallback below."}
+                </p>
+                <Button type="button" variant="outline" onClick={() => void loadAccount()}>
+                  Refresh account details
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}

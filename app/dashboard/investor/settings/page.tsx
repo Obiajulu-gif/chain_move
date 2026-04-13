@@ -22,14 +22,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
 import { getUserDisplayName, useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
+import { validatePhoneNumberInput } from "@/lib/validation/phone"
 
 export default function InvestorSettingsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { user: authUser } = useAuth()
+  const { user: authUser, refetch: refetchAuth } = useAuth()
 
   const [isLoading, setIsLoading] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
@@ -40,9 +40,7 @@ export default function InvestorSettingsPage() {
     firstName: "",
     lastName: "",
     email: "",
-    phone: "+1 555 123 4567",
-    address: "456 Wall Street, New York, NY 10005",
-    bio: "Experienced investor focused on emerging markets and blockchain technology.",
+    phone: "",
   })
 
   const [investmentPreferences, setInvestmentPreferences] = useState({
@@ -83,21 +81,74 @@ export default function InvestorSettingsPage() {
       firstName: firstName || previous.firstName || "Investor",
       lastName: lastName || previous.lastName,
       email: authUser.email || previous.email,
+      phone: authUser.phoneNumber || "",
     }))
   }, [authUser])
 
   const handleProfileSave = async () => {
+    if (!authUser?.id) {
+      toast({
+        title: "Profile unavailable",
+        description: "We could not determine which account to update. Refresh and try again.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const fullName = `${profileData.firstName} ${profileData.lastName}`.trim()
+    if (!fullName) {
+      toast({
+        title: "Full name required",
+        description: "Enter your first and last name before saving.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const phoneValidation = validatePhoneNumberInput(profileData.phone, { required: true })
+    if (phoneValidation.error || !phoneValidation.value) {
+      toast({
+        title: "Invalid phone number",
+        description: phoneValidation.error || "Enter a valid phone number.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await fetch(`/api/users/${authUser.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: fullName,
+          fullName,
+          phoneNumber: phoneValidation.value,
+        }),
+      })
+
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload.message || "Unable to update profile right now.")
+      }
+
+      setProfileData((previous) => ({
+        ...previous,
+        email: payload.user?.email || authUser.email || previous.email,
+        phone: payload.user?.phoneNumber || phoneValidation.value,
+      }))
+
+      refetchAuth?.()
       toast({
         title: "Profile updated",
-        description: "Your profile information has been updated successfully.",
+        description: "Your contact details were updated successfully.",
       })
-    } catch {
+    } catch (error) {
       toast({
         title: "Update failed",
-        description: "Unable to update profile right now. Please try again.",
+        description: error instanceof Error ? error.message : "Unable to update profile right now. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -219,36 +270,24 @@ export default function InvestorSettingsPage() {
                     id="email"
                     type="email"
                     value={profileData.email}
-                    onChange={(event) => setProfileData((prev) => ({ ...prev, email: event.target.value }))}
+                    readOnly
+                    disabled
                   />
+                  <p className="text-xs text-muted-foreground">Email is managed through your Privy identity.</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone number</Label>
                   <Input
                     id="phone"
+                    type="tel"
                     value={profileData.phone}
                     onChange={(event) => setProfileData((prev) => ({ ...prev, phone: event.target.value }))}
+                    placeholder="+234 801 234 5678"
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input
-                    id="address"
-                    value={profileData.address}
-                    onChange={(event) => setProfileData((prev) => ({ ...prev, address: event.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Investment bio</Label>
-                  <Textarea
-                    id="bio"
-                    rows={3}
-                    value={profileData.bio}
-                    onChange={(event) => setProfileData((prev) => ({ ...prev, bio: event.target.value }))}
-                  />
+                  <p className="text-xs text-muted-foreground">
+                    This contact phone number is used when provisioning your dedicated funding account.
+                  </p>
                 </div>
 
                 <Button
@@ -532,4 +571,3 @@ export default function InvestorSettingsPage() {
     </div>
   )
 }
-
