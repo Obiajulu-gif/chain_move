@@ -2,15 +2,13 @@
 
 import { landingAssets } from "@/components/landing/assets"
 import { Container } from "@/components/landing/Container"
-import { motion, useInView } from "framer-motion"
+import { motion } from "framer-motion"
 import Image from "next/image"
 import * as SliderPrimitive from "@radix-ui/react-slider"
-import { startTransition, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 const INTEREST_RATE = 34.36
 const DURATION_WEEKS = 80
-const AUTO_PLAY_INTERVAL_MS = 1800
-const AUTO_PLAY_RESUME_DELAY_MS = 6000
 
 const SIMULATOR_STEPS = [
   { totalReturn: 1_477_960, initialDeposit: 1_100_000 },
@@ -102,10 +100,7 @@ function buildSmoothPath(points: Array<{ x: number; y: number }>) {
 
 export function InvestmentReturnsSection() {
   const sectionRef = useRef<HTMLElement | null>(null)
-  const resumeTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
-  const isInView = useInView(sectionRef, { amount: 0.35, once: false })
   const [stepIndex, setStepIndex] = useState(0)
-  const [autoPlayEnabled, setAutoPlayEnabled] = useState(true)
 
   const currentStep = SIMULATOR_STEPS[stepIndex]
   const totalReturn = useAnimatedValue(currentStep.totalReturn)
@@ -114,43 +109,10 @@ export function InvestmentReturnsSection() {
   const chartPath = useMemo(() => buildSmoothPath(CHART_POINTS), [])
   const activePoint = CHART_POINTS[stepIndex]
 
-  useEffect(() => {
-    if (!isInView || !autoPlayEnabled) {
-      return
-    }
-
-    const intervalId = window.setInterval(() => {
-      startTransition(() => {
-        setStepIndex((previous) => (previous + 1) % SIMULATOR_STEPS.length)
-      })
-    }, AUTO_PLAY_INTERVAL_MS)
-
-    return () => {
-      window.clearInterval(intervalId)
-    }
-  }, [autoPlayEnabled, isInView])
-
-  useEffect(() => {
-    return () => {
-      if (resumeTimeoutRef.current) {
-        window.clearTimeout(resumeTimeoutRef.current)
-      }
-    }
-  }, [])
-
   const handleSliderChange = (values: number[]) => {
     const nextIndex = values[0] ?? 0
 
     setStepIndex(nextIndex)
-    setAutoPlayEnabled(false)
-
-    if (resumeTimeoutRef.current) {
-      window.clearTimeout(resumeTimeoutRef.current)
-    }
-
-    resumeTimeoutRef.current = window.setTimeout(() => {
-      setAutoPlayEnabled(true)
-    }, AUTO_PLAY_RESUME_DELAY_MS)
   }
 
   return (
@@ -277,17 +239,7 @@ export function InvestmentReturnsSection() {
                 />
               </svg>
 
-              <motion.div
-                animate={{
-                  y: [0, -8, 0],
-                }}
-                transition={{
-                  duration: 5,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "easeInOut",
-                }}
-                className="absolute right-[-4%] bottom-0 z-10 w-[92%] max-w-[470px] sm:right-0 sm:w-[85%] lg:w-[92%]"
-              >
+              <div className="absolute right-[-4%] bottom-0 z-10 w-[92%] max-w-[470px] sm:right-0 sm:w-[85%] lg:w-[92%]">
                 <div className="absolute left-[8%] top-[12%] -z-10 h-[52%] w-[58%] rounded-full border-2 border-[#ff7d00]/75" />
                 <Image
                   src={landingAssets.earningsSimulatorFigure}
@@ -298,17 +250,15 @@ export function InvestmentReturnsSection() {
                   sizes="(min-width: 1024px) 42vw, (min-width: 640px) 75vw, 92vw"
                   priority={false}
                 />
-              </motion.div>
+              </div>
 
               <div className="absolute bottom-6 left-0 z-20 rounded-2xl border border-white/80 bg-white/88 px-4 py-3 shadow-[0_18px_38px_rgba(108,43,4,0.12)] backdrop-blur sm:left-4">
-                <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#b19376]">Live Step</p>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#b19376]">Selected Step</p>
                 <p className="mt-1 text-[22px] font-bold tracking-[-0.04em] text-[#6c2b04]">
                   {stepIndex + 1}
                   <span className="text-[15px] font-medium text-[#7d6d5e]"> / {SIMULATOR_STEPS.length}</span>
                 </p>
-                <p className="mt-1 text-[13px] text-[#6f6a65]">
-                  {autoPlayEnabled ? "Auto demo running" : "Paused for manual input"}
-                </p>
+                <p className="mt-1 text-[13px] text-[#6f6a65]">Move the slider to update the return estimate.</p>
               </div>
             </div>
           </div>
