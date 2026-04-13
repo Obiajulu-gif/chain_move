@@ -123,13 +123,13 @@ export function InvestmentReturnsSection() {
 
           <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)] lg:gap-8">
             <div className="max-w-[530px]">
-              <p className="text-[13px] font-semibold uppercase tracking-[0.28em] text-[#9f6a3f]">Investment Preview</p>
-              <h2 className="mt-4 text-[34px] font-bold leading-[0.98] tracking-[-0.05em] text-[#6c2b04] sm:text-[44px]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#9f6a3f]">Investment Preview</p>
+              <h2 className="mt-4 text-[30px] font-bold leading-[1.02] tracking-[-0.04em] text-[#6c2b04] sm:text-[36px] lg:text-[40px]">
                 See How Much
                 <br />
                 Your Investment Can Earn
               </h2>
-              <p className="mt-4 max-w-[430px] text-[15px] leading-[1.35] text-[#6f6a65] sm:text-[17px]">
+              <p className="mt-3 max-w-[430px] text-[14px] leading-[1.28] text-[#6f6a65] sm:text-[15px] lg:text-[16px]">
                 Use our earnings simulator to estimate your potential returns from owning a transport asset before you invest.
               </p>
 
@@ -140,27 +140,27 @@ export function InvestmentReturnsSection() {
                 transition={{ duration: 0.35, ease: "easeOut" }}
                 className="mt-8"
               >
-                <div className="text-[40px] font-bold leading-none tracking-[-0.05em] text-cm-orange sm:text-[56px]">
+                <div className="text-[34px] font-bold leading-none tracking-[-0.05em] text-cm-orange sm:text-[44px] lg:text-[48px]">
                   {formatNaira(totalReturn)}
                 </div>
-                <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-3 text-[16px] text-[#6f6a65]">
-                  <span className="font-semibold text-[#333]">{formatNaira(earned)}</span>
+                <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-3 text-[14px] text-[#6f6a65] sm:text-[15px]">
+                  <span className="text-[15px] font-semibold text-[#333] sm:text-[16px]">{formatNaira(earned)}</span>
                   <span>Earned in</span>
-                  <div className="inline-flex min-h-9 items-center rounded-lg border border-[#ddd0c3] bg-white px-3 text-[14px] font-medium text-[#7d6d5e] shadow-sm">
+                  <div className="inline-flex min-h-8 items-center rounded-lg border border-[#ddd0c3] bg-white px-3 text-[13px] font-medium text-[#7d6d5e] shadow-sm">
                     {DURATION_WEEKS} Weeks
                   </div>
                 </div>
               </motion.div>
 
-              <div className="mt-8 rounded-[24px] border border-[#ece2d7] bg-white p-4 shadow-[0_12px_34px_rgba(108,43,4,0.08)] sm:p-5">
+              <div className="mt-8 max-w-[430px] rounded-[24px] border border-[#ece2d7] bg-white p-4 shadow-[0_12px_34px_rgba(108,43,4,0.08)] sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-[14px] font-semibold text-[#2d2d2d]">Initial Deposit</p>
-                    <p className="mt-2 text-[28px] font-bold tracking-[-0.04em] text-[#3a3a3a]">
+                    <p className="text-[12px] font-semibold text-[#2d2d2d] sm:text-[13px]">Initial Deposit</p>
+                    <p className="mt-2 text-[24px] font-bold tracking-[-0.04em] text-[#3a3a3a] sm:text-[28px]">
                       {formatNaira(initialDeposit)}
                     </p>
                   </div>
-                  <div className="inline-flex min-h-10 items-center rounded-lg border border-[#ddd0c3] bg-[#fcfaf8] px-3 text-[13px] font-medium text-[#7d6d5e]">
+                  <div className="inline-flex min-h-9 items-center rounded-lg border border-[#ddd0c3] bg-[#fcfaf8] px-3 text-[12px] font-medium text-[#7d6d5e] sm:text-[13px]">
                     Naira (₦)
                   </div>
                 </div>
@@ -173,7 +173,7 @@ export function InvestmentReturnsSection() {
                     step={1}
                     aria-label="Initial deposit range"
                     onValueChange={handleSliderChange}
-                    className="relative flex h-9 w-full touch-none select-none items-center"
+                    className="relative flex h-8 w-full touch-none select-none items-center"
                   >
                     <SliderPrimitive.Track className="relative h-[10px] w-full grow overflow-hidden rounded-full bg-[#eef1f3]">
                       <SliderPrimitive.Range className="absolute h-full rounded-full bg-gradient-to-r from-[#ff7d00] to-[#ff5a00]" />
@@ -181,14 +181,14 @@ export function InvestmentReturnsSection() {
                     <SliderPrimitive.Thumb className="block h-7 w-7 rounded-full border border-[#e8ded5] bg-white shadow-[0_10px_24px_rgba(108,43,4,0.18)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff7d00]/40" />
                   </SliderPrimitive.Root>
 
-                  <div className="mt-3 flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.18em] text-[#b19376]">
+                  <div className="mt-3 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.14em] text-[#b19376] sm:text-[11px]">
                     <span>{formatNaira(SIMULATOR_STEPS[0].initialDeposit)}</span>
                     <span>{formatNaira(SIMULATOR_STEPS[SIMULATOR_STEPS.length - 1].initialDeposit)}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-[#6f6a65]">
+              <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-[#6f6a65] sm:text-[15px]">
                 <span>Interest Rate:</span>
                 <span className="font-semibold text-[#333]">{INTEREST_RATE}%</span>
                 <span>over</span>
