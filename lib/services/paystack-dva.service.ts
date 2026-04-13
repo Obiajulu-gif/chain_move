@@ -3,7 +3,7 @@ import mongoose from "mongoose"
 import dbConnect from "@/lib/dbConnect"
 import HirePurchaseContract from "@/models/HirePurchaseContract"
 import DriverVirtualAccount from "@/models/DriverVirtualAccount"
-import User from "@/models/User"
+import { resolveDvaUserIdentity } from "@/lib/services/dva-user-identity.service"
 
 export interface DriverVirtualAccountSnapshot {
   id: string
@@ -389,19 +389,21 @@ export async function provisionDriverVirtualAccount(input: ProvisionDriverVirtua
     return mapDriverVirtualAccountSnapshot(existingAccount)
   }
 
-  const user = await User.findById(contract.driverUserId).select("email fullName name phoneNumber")
-  if (!user) {
+  const identity = await resolveDvaUserIdentity(contract.driverUserId.toString(), {
+    requiredRole: "driver",
+  })
+  if (!identity.user || identity.user.role !== "driver") {
     throw new DriverVirtualAccountProvisionError("Driver record not found.", {
       code: "DRIVER_NOT_FOUND",
       statusCode: 404,
     })
   }
 
-  const email = normalizeEmail(user.email)
-  const phoneNumber = normalizePhoneNumber(user.phoneNumber)
+  const email = normalizeEmail(identity.email)
+  const phoneNumber = normalizePhoneNumber(identity.phoneNumber)
   const { fullName, firstName, lastName } = splitDisplayName({
-    fullName: user.fullName,
-    name: user.name,
+    fullName: identity.fullName,
+    name: identity.user.name,
   })
 
   const customer = await createOrUpdatePaystackCustomer({

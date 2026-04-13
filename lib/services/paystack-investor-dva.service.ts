@@ -1,8 +1,8 @@
 import mongoose from "mongoose"
 
 import dbConnect from "@/lib/dbConnect"
+import { resolveDvaUserIdentity } from "@/lib/services/dva-user-identity.service"
 import InvestorVirtualAccount from "@/models/InvestorVirtualAccount"
-import User from "@/models/User"
 
 export interface InvestorVirtualAccountSnapshot {
   id: string
@@ -346,21 +346,21 @@ export async function provisionInvestorVirtualAccount(input: ProvisionInvestorVi
     return mapInvestorVirtualAccountSnapshot(existingAccount)
   }
 
-  const investor = await User.findOne({ _id: investorObjectId, role: "investor" }).select(
-    "email fullName name phoneNumber availableBalance role",
-  )
-  if (!investor) {
+  const identity = await resolveDvaUserIdentity(investorObjectId.toString(), {
+    requiredRole: "investor",
+  })
+  if (!identity.user || identity.user.role !== "investor") {
     throw new InvestorVirtualAccountProvisionError("Investor record not found.", {
       code: "INVESTOR_NOT_FOUND",
       statusCode: 404,
     })
   }
 
-  const email = normalizeEmail(investor.email)
-  const phoneNumber = normalizePhoneNumber(investor.phoneNumber)
+  const email = normalizeEmail(identity.email)
+  const phoneNumber = normalizePhoneNumber(identity.phoneNumber)
   const { fullName, firstName, lastName } = splitDisplayName({
-    fullName: investor.fullName,
-    name: investor.name,
+    fullName: identity.fullName,
+    name: identity.user.name,
   })
 
   const customer = await createOrUpdatePaystackCustomer({
@@ -371,9 +371,9 @@ export async function provisionInvestorVirtualAccount(input: ProvisionInvestorVi
     existingCustomerCode: existingAccount?.paystackCustomerCode || null,
     metadata: {
       source: "investor_wallet_dva",
-      investorUserId: investor._id.toString(),
+      investorUserId: identity.user._id.toString(),
       fullName,
-      role: investor.role,
+      role: identity.user.role,
     },
   })
 
@@ -396,7 +396,7 @@ export async function provisionInvestorVirtualAccount(input: ProvisionInvestorVi
   if (!dedicatedAccount?.account_number || !dedicatedAccount?.account_name) {
     await InvestorVirtualAccount.findOneAndUpdate(
       {
-        investorUserId: investor._id,
+        investorUserId: identity.user._id,
         provider: "PAYSTACK",
       },
       {
@@ -423,7 +423,7 @@ export async function provisionInvestorVirtualAccount(input: ProvisionInvestorVi
 
   const savedDoc = await InvestorVirtualAccount.findOneAndUpdate(
     {
-      investorUserId: investor._id,
+      investorUserId: identity.user._id,
       provider: "PAYSTACK",
     },
     {

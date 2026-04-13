@@ -26,13 +26,36 @@ function displayName(user: any) {
   return user.fullName || user.name || user.email || "Unnamed investor"
 }
 
+function looksLikeEmail(value: unknown) {
+  return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+}
+
+function resolveInvestorEmail(user: any) {
+  if (looksLikeEmail(user.email)) return user.email.trim().toLowerCase()
+  if (looksLikeEmail(user.name)) return user.name.trim().toLowerCase()
+  if (looksLikeEmail(user.fullName)) return user.fullName.trim().toLowerCase()
+  return null
+}
+
+function resolveInvestorKycStatus(user: any) {
+  if (user.isKycVerified === true || user.kycVerified === true) return "Approved"
+
+  const rawStatus = typeof user.kycStatus === "string" ? user.kycStatus.toLowerCase() : ""
+  if (["approved", "approved_stage1", "approved_stage2", "verified", "complete", "completed"].includes(rawStatus)) {
+    return "Approved"
+  }
+
+  if (["rejected", "rejected_stage2"].includes(rawStatus)) return "Rejected"
+  return "Pending"
+}
+
 export default async function InvestorDetailsPage({ params }: InvestorDetailsPageProps) {
   await requireAdminAccess()
   await dbConnect()
 
   const { id } = await params
   const investor = await User.findOne({ _id: id, role: "investor" })
-    .select("name fullName email phoneNumber privyUserId walletAddress walletaddress createdAt")
+    .select("name fullName email phoneNumber privyUserId walletAddress walletaddress createdAt availableBalance totalReturns totalInvested kycStatus isKycVerified kycVerified")
     .lean()
 
   if (!investor) {
@@ -81,6 +104,10 @@ export default async function InvestorDetailsPage({ params }: InvestorDetailsPag
   const totalCredits = credits.reduce((sum, item: any) => sum + Number(item.amountNgn || 0), 0)
 
   const walletAddress = investor.walletAddress || investor.walletaddress || "Not linked"
+  const investorEmail = resolveInvestorEmail(investor)
+  const kycStatus = resolveInvestorKycStatus(investor)
+  const internalBalance = Number(investor.availableBalance || 0)
+  const lifetimeReturns = Number(investor.totalReturns || 0)
 
   return (
     <div className="space-y-5">
@@ -100,10 +127,11 @@ export default async function InvestorDetailsPage({ params }: InvestorDetailsPag
             <CardTitle className="text-base">Profile</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p><span className="text-muted-foreground">Email:</span> {investor.email || "N/A"}</p>
+            <p><span className="text-muted-foreground">Email:</span> {investorEmail || "No linked email"}</p>
             <p><span className="text-muted-foreground">Phone:</span> {investor.phoneNumber || "N/A"}</p>
             <p className="break-all"><span className="text-muted-foreground">Privy ID:</span> {investor.privyUserId || "Not linked"}</p>
             <p className="break-all"><span className="text-muted-foreground">Wallet:</span> {walletAddress}</p>
+            <p><span className="text-muted-foreground">KYC:</span> {kycStatus}</p>
           </CardContent>
         </Card>
 
@@ -112,9 +140,11 @@ export default async function InvestorDetailsPage({ params }: InvestorDetailsPag
             <CardTitle className="text-base">Totals</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
+            <p><span className="text-muted-foreground">Internal balance:</span> {formatNaira(internalBalance)}</p>
             <p><span className="text-muted-foreground">Deposits:</span> {formatNaira(totalDeposits)}</p>
             <p><span className="text-muted-foreground">Invested:</span> {formatNaira(totalInvested)}</p>
             <p><span className="text-muted-foreground">Credits/Payouts:</span> {formatNaira(totalCredits)}</p>
+            <p><span className="text-muted-foreground">Lifetime returns:</span> {formatNaira(lifetimeReturns)}</p>
             <p><span className="text-muted-foreground">Joined:</span> {new Date(investor.createdAt).toLocaleDateString()}</p>
           </CardContent>
         </Card>
@@ -219,4 +249,3 @@ export default async function InvestorDetailsPage({ params }: InvestorDetailsPag
     </div>
   )
 }
-

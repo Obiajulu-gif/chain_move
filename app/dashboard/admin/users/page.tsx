@@ -2,6 +2,11 @@ import Link from "next/link"
 import { Download, Eye, Search } from "lucide-react"
 
 import { CopyButton } from "@/components/dashboard/admin/copy-button"
+import {
+  AdminUserCrudActions,
+  AdminUserFormDialog,
+  type AdminManagedUser,
+} from "@/app/dashboard/admin/admincomponents/AdminUserCrudControls"
 import { PageHeader } from "@/components/dashboard/admin/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -69,7 +74,7 @@ function truncate(value: string, max = 24) {
 }
 
 export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
-  await requireAdminAccess()
+  const adminSession = await requireAdminAccess()
   await dbConnect()
 
   const resolvedSearchParams = (await searchParams) || {}
@@ -85,7 +90,7 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
 
   if (q) {
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
-    userQuery.$or = [{ name: regex }, { fullName: regex }, { email: regex }, { privyUserId: regex }]
+    userQuery.$or = [{ name: regex }, { fullName: regex }, { email: regex }, { privyUserId: regex }, { phoneNumber: regex }]
   }
 
   const totalCount = await User.countDocuments(userQuery)
@@ -93,7 +98,7 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
   const currentPage = Math.min(page, totalPages)
 
   const users = await User.find(userQuery)
-    .select("name fullName email privyUserId role kycStatus isKycVerified kycVerified createdAt")
+    .select("name fullName email phoneNumber privyUserId role walletAddress walletaddress kycStatus isKycVerified kycVerified createdAt")
     .sort({ createdAt: -1 })
     .skip((currentPage - 1) * PAGE_SIZE)
     .limit(PAGE_SIZE)
@@ -112,12 +117,12 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
             <form action="/dashboard/admin/users" className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <div className="relative min-w-[220px] flex-1 sm:w-[280px] sm:flex-none">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  name="q"
-                  defaultValue={q}
-                  placeholder="Search name, email, Privy ID"
-                  className="h-9 pl-9"
-                />
+              <Input
+                name="q"
+                defaultValue={q}
+                placeholder="Search name, email, phone, Privy ID"
+                className="h-9 pl-9"
+              />
               </div>
               <select
                 name="role"
@@ -133,6 +138,12 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
                 Apply
               </Button>
             </form>
+            <AdminUserFormDialog
+              mode="create"
+              buttonText="Create User"
+              buttonVariant="default"
+              buttonSize="sm"
+            />
             <Button asChild variant="outline" className="h-9">
               <Link href="/api/admin/users/export">
                 <Download className="mr-2 h-4 w-4" />
@@ -158,6 +169,17 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
             users.map((user: any) => {
               const emailOrPrivy = user.email || user.privyUserId || "N/A"
               const statusLabel = deriveUserStatus(user)
+              const managedUser: AdminManagedUser = {
+                id: user._id.toString(),
+                name: user.name || user.fullName || user.email || "Unnamed user",
+                fullName: user.fullName || null,
+                email: user.email || null,
+                phoneNumber: user.phoneNumber || null,
+                role: user.role,
+                privyUserId: user.privyUserId || null,
+                walletAddress: user.walletAddress || user.walletaddress || null,
+              }
+              const isSelf = adminSession.id === managedUser.id
 
               return (
                 <article key={user._id.toString()} className="space-y-3 px-4 py-4">
@@ -187,12 +209,15 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
                   </div>
                   <p className="truncate text-sm text-muted-foreground">{truncate(emailOrPrivy, 42)}</p>
                   {user.privyUserId ? <p className="truncate text-xs text-muted-foreground">{truncate(user.privyUserId, 42)}</p> : null}
-                  <Button asChild variant="outline" size="sm" className="w-full">
-                    <Link href={`/dashboard/admin/users/${user._id.toString()}`}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View user
-                    </Link>
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="outline" size="sm" className="flex-1">
+                      <Link href={`/dashboard/admin/users/${user._id.toString()}`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View user
+                      </Link>
+                    </Button>
+                    <AdminUserCrudActions user={managedUser} isSelf={isSelf} compact className="w-full" />
+                  </div>
                 </article>
               )
             })
@@ -222,6 +247,17 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
                 users.map((user: any) => {
                   const emailOrPrivy = user.email || user.privyUserId || "N/A"
                   const statusLabel = deriveUserStatus(user)
+                  const managedUser: AdminManagedUser = {
+                    id: user._id.toString(),
+                    name: user.name || user.fullName || user.email || "Unnamed user",
+                    fullName: user.fullName || null,
+                    email: user.email || null,
+                    phoneNumber: user.phoneNumber || null,
+                    role: user.role,
+                    privyUserId: user.privyUserId || null,
+                    walletAddress: user.walletAddress || user.walletaddress || null,
+                  }
+                  const isSelf = adminSession.id === managedUser.id
 
                   return (
                     <tr key={user._id.toString()} className="border-b border-border/60">
@@ -258,12 +294,15 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
                         })}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button asChild variant="ghost" size="sm" className="h-8">
-                          <Link href={`/dashboard/admin/users/${user._id.toString()}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View
-                          </Link>
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button asChild variant="ghost" size="sm" className="h-8">
+                            <Link href={`/dashboard/admin/users/${user._id.toString()}`}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View
+                            </Link>
+                          </Button>
+                          <AdminUserCrudActions user={managedUser} isSelf={isSelf} compact />
+                        </div>
                       </td>
                     </tr>
                   )

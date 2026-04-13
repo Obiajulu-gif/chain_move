@@ -1,7 +1,10 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
-import { AdminUserRoleManager } from "@/app/dashboard/admin/admincomponents/AdminUserRoleManager"
+import {
+  AdminUserCrudActions,
+  type AdminManagedUser,
+} from "@/app/dashboard/admin/admincomponents/AdminUserCrudControls"
 import { PageHeader } from "@/components/dashboard/admin/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -72,6 +75,16 @@ export default async function AdminUserDetailsPage({ params }: UserDetailsPagePr
   const totalReturns = Number(returnsTotal[0]?.total || 0)
   const totalInvested = Number(poolInvestmentTotal[0]?.total || 0) + Number(legacyInvestmentTotal[0]?.total || 0)
   const walletAddress = user.walletAddress || user.walletaddress || "Not linked"
+  const managedUser: AdminManagedUser = {
+    id: user._id.toString(),
+    name: user.name || user.fullName || user.email || "Unnamed user",
+    fullName: user.fullName || null,
+    email: user.email || null,
+    phoneNumber: user.phoneNumber || null,
+    role: user.role,
+    privyUserId: user.privyUserId || null,
+    walletAddress: user.walletAddress || user.walletaddress || null,
+  }
 
   return (
     <div className="space-y-5">
@@ -125,13 +138,14 @@ export default async function AdminUserDetailsPage({ params }: UserDetailsPagePr
 
       <Card className="border-border/70">
         <CardHeader>
-          <CardTitle className="text-base">Role Management</CardTitle>
+          <CardTitle className="text-base">Management</CardTitle>
         </CardHeader>
-        <CardContent>
-          <AdminUserRoleManager
-            userId={user._id.toString()}
-            displayName={getDisplayName(user)}
-            initialRole={user.role}
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Edit this user, promote them to admin, or delete the account. Your own admin account cannot be deleted here.
+          </p>
+          <AdminUserCrudActions
+            user={managedUser}
             isSelf={adminSession.id === user._id.toString()}
           />
         </CardContent>

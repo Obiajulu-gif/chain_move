@@ -8,6 +8,18 @@ type RawLinkedAccount = {
   email?: string
   phoneNumber?: string
   phone_number?: string
+  number?: string
+  name?: string
+  display_name?: string
+  first_name?: string
+  last_name?: string
+  username?: string
+}
+
+interface RawPrivyUser {
+  id: string
+  linked_accounts?: RawLinkedAccount[] | string
+  custom_metadata?: Record<string, unknown> | null
 }
 
 export interface PrivyIdentityPayload extends JWTPayload {
@@ -22,6 +34,20 @@ export interface ParsedPrivyProfile {
   email?: string
   phoneNumber?: string
   walletAddress?: string
+  fullName?: string
+}
+
+function normalizeString(value: unknown) {
+  if (typeof value !== "string") return undefined
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
+function isProbablyRealName(value: string | undefined) {
+  if (!value) return false
+  if (value.includes("@")) return false
+  if (value.startsWith("did:privy:")) return false
+  return true
 }
 
 function getPrivyAppId() {
@@ -33,6 +59,11 @@ function getPrivyAppId() {
 
   const match = jwksUrl.match(/\/apps\/([^/]+)\/jwks\.json$/)
   return match?.[1] ?? null
+}
+
+function getPrivyAppSecret() {
+  const secret = process.env.PRIVY_APP_SECRET?.trim()
+  return secret || null
 }
 
 function getPrivyJwksUrl() {
@@ -60,6 +91,108 @@ function readBearerToken(headerValue: string | null): string | null {
   return token
 }
 
+function parseLinkedAccounts(linkedAccounts: PrivyIdentityPayload["linked_accounts"] | RawPrivyUser["linked_accounts"]) {
+  if (!linkedAccounts) return [] as RawLinkedAccount[]
+  if (Array.isArray(linkedAccounts)) return linkedAccounts
+
+  if (typeof linkedAccounts === "string") {
+    try {
+      const parsed = JSON.parse(linkedAccounts)
+      return Array.isArray(parsed) ? (parsed as RawLinkedAccount[]) : []
+    } catch {
+      return []
+    }
+  }
+
+  return []
+}
+
+function resolvePrivyEmail(linkedAccounts: RawLinkedAccount[], payloadEmail?: string) {
+  const directEmail = normalizeString(payloadEmail)?.toLowerCase()
+  if (directEmail) return directEmail
+
+  for (const account of linkedAccounts) {
+    if (account.type === "email") {
+      const emailAddress = normalizeString(account.address || account.email)?.toLowerCase()
+      if (emailAddress) return emailAddress
+    }
+
+    const oauthEmail = normalizeString(account.email)?.toLowerCase()
+    if (oauthEmail) return oauthEmail
+  }
+
+  return undefined
+}
+
+function resolvePrivyPhone(linkedAccounts: RawLinkedAccount[], payloadPhoneNumber?: string) {
+  const directPhone = normalizeString(payloadPhoneNumber)
+  if (directPhone) return directPhone
+
+  for (const account of linkedAccounts) {
+    const phoneNumber = normalizeString(account.phoneNumber || account.phone_number || account.number)
+    if (phoneNumber) return phoneNumber
+  }
+
+  return undefined
+}
+
+function resolvePrivyWalletAddress(linkedAccounts: RawLinkedAccount[]) {
+  const walletAccount = linkedAccounts.find((account) => account.type === "wallet" && typeof account.address === "string")
+  return normalizeString(walletAccount?.address)?.toLowerCase()
+}
+
+function resolvePrivyFullName(
+  linkedAccounts: RawLinkedAccount[],
+  customMetadata?: Record<string, unknown> | null,
+) {
+  const metadataNameCandidates = [
+    normalizeString(customMetadata?.["fullName"]),
+    normalizeString(customMetadata?.["full_name"]),
+    normalizeString(customMetadata?.["name"]),
+  ]
+  const metadataName = metadataNameCandidates.find(isProbablyRealName)
+  if (metadataName) return metadataName
+
+  for (const account of linkedAccounts) {
+    const composedName = [normalizeString(account.first_name), normalizeString(account.last_name)].filter(Boolean).join(" ")
+    if (isProbablyRealName(composedName)) return composedName
+
+    const namedCandidate = [normalizeString(account.name), normalizeString(account.display_name)].find(isProbablyRealName)
+    if (namedCandidate) return namedCandidate
+  }
+
+  return undefined
+}
+
+function parsePrivyProfile(input: {
+  privyUserId: string
+  linkedAccounts?: RawLinkedAccount[] | string
+  payloadEmail?: string
+  payloadPhoneNumber?: string
+  customMetadata?: Record<string, unknown> | null
+}): ParsedPrivyProfile {
+  const linkedAccounts = parseLinkedAccounts(input.linkedAccounts)
+
+  return {
+    privyUserId: input.privyUserId,
+    email: resolvePrivyEmail(linkedAccounts, input.payloadEmail),
+    phoneNumber: resolvePrivyPhone(linkedAccounts, input.payloadPhoneNumber),
+    walletAddress: resolvePrivyWalletAddress(linkedAccounts),
+    fullName: resolvePrivyFullName(linkedAccounts, input.customMetadata),
+  }
+}
+
+async function parseJsonResponse(response: Response) {
+  const text = await response.text()
+  if (!text) return null
+
+  try {
+    return JSON.parse(text) as Record<string, unknown>
+  } catch {
+    return { message: text }
+  }
+}
+
 export function extractPrivyTokenFromRequest(request: Request) {
   return (
     request.headers.get("privy-id-token") ||
@@ -77,36 +210,47 @@ export async function verifyPrivyToken(token: string) {
   return payload as PrivyIdentityPayload
 }
 
-function parseLinkedAccounts(linkedAccounts: PrivyIdentityPayload["linked_accounts"]) {
-  if (!linkedAccounts) return [] as RawLinkedAccount[]
-  if (Array.isArray(linkedAccounts)) return linkedAccounts
-
-  if (typeof linkedAccounts === "string") {
-    try {
-      const parsed = JSON.parse(linkedAccounts)
-      return Array.isArray(parsed) ? (parsed as RawLinkedAccount[]) : []
-    } catch {
-      return []
-    }
-  }
-
-  return []
+export function getPrivyProfileFromPayload(payload: PrivyIdentityPayload): ParsedPrivyProfile {
+  return parsePrivyProfile({
+    privyUserId: payload.sub,
+    linkedAccounts: payload.linked_accounts,
+    payloadEmail: payload.email,
+    payloadPhoneNumber: payload.phone_number,
+  })
 }
 
-export function getPrivyProfileFromPayload(payload: PrivyIdentityPayload): ParsedPrivyProfile {
-  const linkedAccounts = parseLinkedAccounts(payload.linked_accounts)
+export async function fetchPrivyProfileByUserId(privyUserId: string) {
+  const normalizedPrivyUserId = normalizeString(privyUserId)
+  if (!normalizedPrivyUserId) return null
 
-  const walletAccount = linkedAccounts.find((account) => account.type === "wallet" && typeof account.address === "string")
-  const emailAccount = linkedAccounts.find((account) => account.type === "email" && typeof account.email === "string")
-  const phoneAccount = linkedAccounts.find(
-    (account) =>
-      account.type === "phone" && (typeof account.phoneNumber === "string" || typeof account.phone_number === "string"),
-  )
+  const appId = getPrivyAppId()
+  const appSecret = getPrivyAppSecret()
+  if (!appId || !appSecret) return null
 
-  return {
-    privyUserId: payload.sub,
-    email: payload.email || emailAccount?.email,
-    phoneNumber: payload.phone_number || phoneAccount?.phoneNumber || phoneAccount?.phone_number,
-    walletAddress: walletAccount?.address?.toLowerCase(),
+  const response = await fetch(`https://api.privy.io/v1/users/${encodeURIComponent(normalizedPrivyUserId)}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${appId}:${appSecret}`).toString("base64")}`,
+      "privy-app-id": appId,
+    },
+    cache: "no-store",
+  })
+
+  if (response.status === 404) return null
+
+  const payload = await parseJsonResponse(response)
+  if (!response.ok) {
+    const message =
+      payload && typeof payload.message === "string"
+        ? payload.message
+        : `Failed to fetch Privy user ${normalizedPrivyUserId}.`
+    throw new Error(message)
   }
+
+  const user = payload as unknown as RawPrivyUser
+  return parsePrivyProfile({
+    privyUserId: user.id || normalizedPrivyUserId,
+    linkedAccounts: user.linked_accounts,
+    customMetadata: user.custom_metadata || null,
+  })
 }
