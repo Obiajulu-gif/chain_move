@@ -15,7 +15,7 @@ export const landingAssets = {
 	dashboard: "/images/Dashboard_image.png",
 	monitorDashboard: "/images/monitor-dashboard.png",
 	riskAwareness: "/images/investor-dashboard.jpg",
-	earningsSimulatorFigure: "/images/person_pressing_phone.png",
+	earningsSimulatorFigure: "/images/person_pressing_phone.svg",
 	whoIsThisFor: "/images/mechanic.jpg",
 	builtForDrivers: "/images/driver_display.mp4",
 	whyDrive: "/images/outside.jpg",
