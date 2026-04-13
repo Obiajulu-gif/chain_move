@@ -8,6 +8,7 @@ import {
   Calendar,
   Car,
   ChevronDown,
+  Coins,
   Compass,
   FileText,
   Layers,

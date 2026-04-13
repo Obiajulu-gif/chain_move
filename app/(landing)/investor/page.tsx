@@ -5,6 +5,7 @@ import { AboutChainMoveSection } from "@/components/landing/sections/AboutChainM
 import { HowItWorksSection } from "@/components/landing/sections/HowItWorksSection"
 import { MonitorPerformanceSection } from "@/components/landing/sections/MonitorPerformanceSection"
 import { ReadyToJoinSection } from "@/components/landing/sections/ReadyToJoinSection"
+import { InvestmentReturnsSection } from "@/components/landing/sections/InvestmentReturnsSection"
 import { RiskAwarenessSection } from "@/components/landing/sections/RiskAwarenessSection"
 import { VehicleOptionsSection } from "@/components/landing/sections/VehicleOptionsSection"
 import { WhoIsThisForSection } from "@/components/landing/sections/WhoIsThisForSection"
@@ -54,6 +55,9 @@ export default function InvestorLandingPage() {
       </MotionSection>
       <MotionSection as="div">
         <RiskAwarenessSection />
+      </MotionSection>
+      <MotionSection as="div">
+        <InvestmentReturnsSection />
       </MotionSection>
       <MotionSection as="div">
         <WhoIsThisForSection />
