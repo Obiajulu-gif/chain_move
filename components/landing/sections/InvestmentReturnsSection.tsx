@@ -196,12 +196,12 @@ export function InvestmentReturnsSection() {
               </div>
             </div>
 
-            <div className="relative min-h-[360px] sm:min-h-[420px] lg:min-h-[520px]">
-              <div className="absolute inset-x-6 top-3 h-24 rounded-full bg-[#ff8a1f]/10 blur-3xl sm:inset-x-14" />
+            <div className="relative min-h-[380px] pt-6 sm:min-h-[450px] sm:pt-8 lg:min-h-[560px] lg:pt-10">
+              <div className="absolute inset-x-6 top-8 h-24 rounded-full bg-[#ff8a1f]/10 blur-3xl sm:inset-x-14 lg:top-12" />
 
               <svg
                 viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-                className="absolute inset-x-0 top-6 h-[68%] w-full overflow-visible sm:h-[72%] lg:top-10"
+                className="absolute inset-x-0 top-12 h-[64%] w-full overflow-visible sm:top-14 sm:h-[69%] lg:top-16 lg:h-[72%]"
                 aria-hidden="true"
               >
                 <defs>
@@ -239,14 +239,14 @@ export function InvestmentReturnsSection() {
                 />
               </svg>
 
-              <div className="absolute right-[-4%] bottom-0 z-10 w-[92%] max-w-[470px] sm:right-0 sm:w-[85%] lg:w-[92%]">
-                <div className="absolute left-[8%] top-[12%] -z-10 h-[52%] w-[58%] rounded-full border-2 border-[#ff7d00]/75" />
+              <div className="absolute right-[-2%] bottom-0 top-8 z-10 flex w-[92%] max-w-[470px] items-end sm:right-0 sm:top-10 sm:w-[85%] lg:top-12 lg:w-[92%]">
+                <div className="absolute left-[10%] top-[10%] -z-10 h-[52%] w-[58%] rounded-full border-2 border-[#ff7d00]/75" />
                 <Image
                   src={landingAssets.earningsSimulatorFigure}
                   alt="Investor preview visual"
                   width={1100}
                   height={900}
-                  className="h-auto w-full object-contain drop-shadow-[0_26px_34px_rgba(108,43,4,0.12)]"
+                  className="max-h-full h-auto w-full object-contain object-bottom drop-shadow-[0_26px_34px_rgba(108,43,4,0.12)]"
                   sizes="(min-width: 1024px) 42vw, (min-width: 640px) 75vw, 92vw"
                   priority={false}
                 />
