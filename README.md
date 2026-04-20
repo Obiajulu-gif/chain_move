@@ -1,8 +1,8 @@
 # ChainMove
 
-ChainMove is a mobility finance platform being positioned for Arbitrum. It combines fractional vehicle ownership, pay-to-own driver financing, and operations tooling for investors, drivers, and administrators in one product stack.
+ChainMove is a mobility finance platform being positioned for the Stellar blockchain. It combines fractional vehicle ownership, pay-to-own driver financing, investor pool management, and operations tooling for a transport finance marketplace.
 
-The repository currently contains the application layer: onboarding, wallets, pool investing flows, payment rails, dashboards, and backend APIs. The Arbitrum contract layer is the next major integration step.
+The repository currently contains the application layer: onboarding, authentication, internal wallets, pool investing flows, payment rails, dashboards, and backend APIs. The Stellar integration layer is the next major product milestone.
 
 ## Why ChainMove
 
@@ -12,18 +12,21 @@ ChainMove addresses that gap with:
 
 - asset-backed investment pools for transport vehicles
 - pay-to-own driver workflows with clearer repayment visibility
-- embedded wallet onboarding for non-technical users
+- wallet-enabled onboarding for non-technical users
 - internal wallet and payment rails for recurring funding flows
 - admin and reporting surfaces for platform operations
+- a planned Stellar-backed record of ownership, repayments, payouts, and governance activity
 
-## Why Arbitrum
+## Why Stellar
 
-Arbitrum is the intended onchain home for ChainMove because it fits the product's transaction pattern and developer needs:
+Stellar is the intended blockchain home for ChainMove because its network model fits payment-heavy, asset-backed finance workflows:
 
-- low-fee execution for frequent repayment, contribution, and distribution flows
-- EVM compatibility for wallet tooling, contract development, and integrations
-- strong fit for tokenized real-world asset primitives, governance, and treasury logic
-- clear path from testnet development on Arbitrum Sepolia to production deployment on Arbitrum One
+- issued assets can represent vehicle pool interests, repayment receipts, or platform settlement instruments
+- fast, low-cost payments are suitable for frequent contributions, repayments, and investor distributions
+- Stellar Testnet provides a stable development path before moving production flows to Mainnet
+- Horizon and Stellar RPC can support ledger reads, payment history, and smart contract interactions
+- Soroban smart contracts can enforce ownership, payout, treasury, and governance logic
+- Stellar anchors and ecosystem standards provide a path for regulated fiat on-ramps and off-ramps when the platform is ready
 
 ## Current Product Surface
 
@@ -37,17 +40,17 @@ The current codebase already supports a meaningful offchain and wallet-enabled p
 - Paystack dedicated virtual accounts for driver repayment collection
 - MongoDB-backed APIs for pools, investments, transactions, and user state
 
-## Arbitrum Alignment Note
+## Stellar Alignment Note
 
-This README reflects the target Arbitrum direction of the project.
+This README reflects the target Stellar direction of the project.
 
-Today, the repo already uses EVM-compatible tooling such as `Privy` and `viem`, but the full Arbitrum contract integration is not yet wired end-to-end in this repository. Some development wallet configuration still points to a temporary non-Arbitrum testnet and should be switched to Arbitrum Sepolia as part of the next integration pass.
+The full Stellar integration is not yet wired end-to-end in this repository. The app still contains temporary EVM-oriented wallet plumbing through `Privy`, `viem`, and Lisk Sepolia configuration, and `package.json` still includes non-Stellar chain dependencies. Those pieces should be treated as transitional until the Stellar wallet, asset, and smart contract layer lands.
 
 In practical terms:
 
 - the product and backend foundations are here
-- the Arbitrum ownership, payout, and governance contracts are the next layer
-- README language, roadmap, and contribution guidance below are written for that Arbitrum path
+- Stellar asset issuance, account flows, payout tracking, and Soroban contracts are the next chain layer
+- README language, roadmap, and contribution guidance below are written for the Stellar path
 
 ## Tech Stack
 
@@ -56,10 +59,10 @@ In practical terms:
 - TypeScript
 - Tailwind CSS + Radix UI
 - MongoDB + Mongoose
-- Privy for auth and embedded wallets
-- `viem` for EVM wallet and chain interactions
+- Privy for current auth and embedded wallet onboarding
 - Paystack for fiat payment flows
 - Resend for email delivery
+- Stellar SDK, Horizon, Stellar RPC, and Soroban planned for chain integration
 
 ## Architecture Overview
 
@@ -76,8 +79,8 @@ Auth | Pools | Investments | Payments | Wallets | Reports
 Users | Pools | Investments | Transactions | Operations data
                 |
                 v
-[Arbitrum Integration Layer - planned]
-Ownership contracts | Treasury flows | Payouts | Governance
+[Stellar Integration Layer - planned]
+Issuer accounts | Distribution accounts | Soroban contracts | Horizon/RPC reads
 ```
 
 ## Local Development
@@ -122,14 +125,15 @@ npm run dev
 ## Environment Notes
 
 - `MONGODB_URI` and `JWT_SECRET` are required for application and session state.
-- `NEXT_PUBLIC_PRIVY_APP_ID`, `PRIVY_APP_SECRET`, and `PRIVY_JWKS_URL` are required for Privy-backed auth and embedded wallets.
+- `NEXT_PUBLIC_PRIVY_APP_ID`, `PRIVY_APP_SECRET`, and `PRIVY_JWKS_URL` are required for the current Privy-backed auth flow.
 - `PAYSTACK_SECRET_KEY` is required for wallet funding flows.
 - `PAYSTACK_DVA_PREFERRED_BANK` optionally overrides the bank slug used when provisioning Paystack dedicated virtual accounts. For test keys, the app defaults to `test-bank`.
 - `RESEND_API_KEY` is only needed for email features.
+- Stellar variables are not required by the current code yet. The expected integration pass should introduce explicit values such as `STELLAR_NETWORK`, `STELLAR_HORIZON_URL`, `STELLAR_RPC_URL`, issuer account public keys, distribution account public keys, and contract IDs.
 
 ## Driver Dedicated Repayment Accounts
 
-Drivers with an active hire-purchase contract can now receive a Paystack dedicated virtual account in the repayment center.
+Drivers with an active hire-purchase contract can receive a Paystack dedicated virtual account in the repayment center.
 
 - the account is provisioned automatically when the driver loads the repayment center and has the required profile fields
 - bank transfers into that account are matched to the driver's active contract through the Paystack webhook
@@ -147,13 +151,23 @@ The dedicated virtual account flows currently require:
 
 If Paystack DVA eligibility for the business requires additional customer identification beyond those fields, the app surfaces the upstream error and leaves the fallback checkout flow available.
 
-## Suggested Arbitrum Integration Path
+## Suggested Stellar Integration Path
 
-- switch supported wallet chains and explorer links to Arbitrum Sepolia
-- add contract interfaces for vehicle pool ownership and payout logic
-- move governance voting from app state to contract-backed execution
-- anchor payout receipts and treasury actions to Arbitrum events
-- promote production settlement flows to Arbitrum One when the contract layer is ready
+- replace temporary EVM/Lisk Sepolia wallet configuration with Stellar account and wallet support
+- add Stellar Testnet configuration for Horizon, Stellar RPC, Friendbot-funded development accounts, and explorer links
+- define issuer and distribution account strategy for ChainMove vehicle pool assets
+- publish asset metadata through a domain-hosted `/.well-known/stellar.toml` before public asset listings
+- add Soroban contracts for vehicle pool ownership, payout rules, treasury actions, and governance execution
+- index payment, repayment, payout, and contract events from Horizon or Stellar RPC into MongoDB
+- map Paystack fiat funding and repayment events to Stellar settlement records where compliance and product rules allow
+- promote production settlement flows to Stellar Mainnet when contracts, custody, compliance, and monitoring are ready
+
+## Stellar References
+
+- [Stellar Networks](https://developers.stellar.org/docs/networks)
+- [Stellar Contract SDKs](https://developers.stellar.org/docs/tools/sdks/contract-sdks)
+- [Publishing Stellar Asset Information](https://developers.stellar.org/docs/tokens/publishing-asset-info)
+- [Anchor Integration](https://developers.stellar.org/docs/build/apps/example-application-tutorial/anchor-integration)
 
 ## Contribution Guide
 
@@ -162,13 +176,14 @@ When contributing, keep changes small and explicit, and document whether your wo
 - application UX
 - backend and payment behavior
 - wallet flows
-- Arbitrum integration assumptions
+- Stellar integration assumptions
 
 If you touch chain-related code or docs, keep naming consistent with the target stack:
 
-- use `Arbitrum Sepolia` for development references
-- use `Arbitrum One` for production references
-- avoid reintroducing stale Stellar wording into product or architecture docs
+- use `Stellar Testnet` for development references
+- use `Stellar Mainnet` for production references
+- use `Soroban` for Stellar smart contract references
+- avoid reintroducing stale Arbitrum, Lisk, or Solana positioning into product or architecture docs
 
 Before opening a PR, run:
 
@@ -180,16 +195,18 @@ npm run lint
 
 ### Near-term
 
-- finalize wallet configuration for Arbitrum Sepolia
+- finalize Stellar account and wallet integration strategy
 - harden investor and driver onboarding flows
 - improve pool investing and wallet funding UX
 - add clearer payout and ownership reporting
+- remove temporary non-Stellar chain dependencies once replacement code is ready
 
 ### Mid-term
 
-- implement Arbitrum-backed ownership contracts
+- implement Stellar-backed pool assets and Soroban ownership contracts
 - add automated payout and treasury accounting flows
 - wire governance actions to onchain execution
+- publish asset and organization metadata through `stellar.toml`
 - improve analytics for investor transparency and driver repayment performance
 
 ## License
