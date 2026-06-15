@@ -1,0 +1,35 @@
+name: Security hardening task
+description: Non-sensitive security improvement for public tracking
+title: "Security: "
+labels: ["security", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this only for general hardening tasks. Keep sensitive details private.
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What area needs hardening?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected improvement
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Files likely involved
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
