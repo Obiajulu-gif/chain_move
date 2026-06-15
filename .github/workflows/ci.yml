@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,15 +17,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  contributor-checks:
-    name: Contributor PR checks
+  quality-checks:
+    name: Lint, typecheck, and build
     runs-on: ubuntu-latest
 
-    # This job intentionally uses safe placeholder values. It does not expose repository secrets
-    # to untrusted pull requests or forks.
+    # Use deterministic mock values so CI never depends on maintainer-only secrets.
+    # Production deployments should be handled by Vercel or a separate protected workflow.
     env:
       NEXT_PUBLIC_APP_URL: http://localhost:3000
-      NODE_ENV: test
       MONGODB_URI: mongodb://127.0.0.1:27017/chainmove_ci
       JWT_SECRET: ci_mock_jwt_secret_do_not_use_in_production
       AUTH_SESSION_SECRET: ci_mock_session_secret_do_not_use_in_production
@@ -48,63 +48,7 @@ jobs:
       ENABLE_MOCK_PAYMENTS: "true"
       ENABLE_MOCK_EMAILS: "true"
       ENABLE_MOCK_STELLAR: "true"
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: TypeScript check
-        run: npx tsc --noEmit
-
-      - name: Build
-        run: npm run build
-
-  trusted-main-checks:
-    name: Trusted main checks with repository secrets
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    # This job runs only after code is merged/pushed to main. It may use app-level secrets.
-    # Maintainer-only private signer keys must not be used in generic CI unless a separate,
-    # protected deployment workflow needs them.
-    env:
-      NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
-      NODE_ENV: production
-      MONGODB_URI: ${{ secrets.MONGODB_URI }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      AUTH_SESSION_SECRET: ${{ secrets.AUTH_SESSION_SECRET }}
-      KYC_DOCUMENT_ENCRYPTION_KEY: ${{ secrets.KYC_DOCUMENT_ENCRYPTION_KEY }}
-      NEXT_PUBLIC_PRIVY_APP_ID: ${{ secrets.NEXT_PUBLIC_PRIVY_APP_ID }}
-      PRIVY_APP_ID: ${{ secrets.NEXT_PUBLIC_PRIVY_APP_ID }}
-      PRIVY_APP_SECRET: ${{ secrets.PRIVY_APP_SECRET }}
-      PRIVY_JWKS_URL: ${{ secrets.PRIVY_JWKS_URL }}
-      PAYSTACK_PUBLIC_KEY: ${{ secrets.PAYSTACK_PUBLIC_KEY }}
-      PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}
-      PAYSTACK_DVA_PREFERRED_BANK: ${{ secrets.PAYSTACK_DVA_PREFERRED_BANK }}
-      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-      STELLAR_NETWORK: ${{ secrets.STELLAR_NETWORK }}
-      STELLAR_HORIZON_URL: ${{ secrets.STELLAR_HORIZON_URL }}
-      STELLAR_RPC_URL: ${{ secrets.STELLAR_RPC_URL || secrets.RPC_URL }}
-      STELLAR_ASSET_CODE: ${{ secrets.STELLAR_ASSET_CODE }}
-      STELLAR_ISSUER_PUBLIC_KEY: ${{ secrets.STELLAR_ISSUER_PUBLIC_KEY }}
-      STELLAR_DISTRIBUTION_PUBLIC_KEY: ${{ secrets.STELLAR_DISTRIBUTION_PUBLIC_KEY }}
-      STELLAR_CONTRACT_ID: ${{ secrets.STELLAR_CONTRACT_ID || secrets.CHAINMOVE_CA }}
-      ENABLE_MOCK_PAYMENTS: "false"
-      ENABLE_MOCK_EMAILS: "false"
-      ENABLE_MOCK_STELLAR: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
 
     steps:
       - name: Checkout
