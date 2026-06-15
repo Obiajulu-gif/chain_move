@@ -21,30 +21,28 @@ jobs:
     name: Lint and build
     runs-on: ubuntu-latest
 
-    # Use deterministic mock values so CI never depends on maintainer-only secrets.
-    # Production deployments should be handled by Vercel or a separate protected workflow.
+    # Keep this list aligned with the repository secrets currently configured.
+    # Do not add STELLAR_* variables here until those secrets exist in GitHub/Vercel.
     env:
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
-      MONGODB_URI: mongodb://127.0.0.1:27017/chainmove_ci
-      JWT_SECRET: ci_mock_jwt_secret_do_not_use_in_production
-      AUTH_SESSION_SECRET: ci_mock_session_secret_do_not_use_in_production
-      KYC_DOCUMENT_ENCRYPTION_KEY: ci_mock_kyc_secret_do_not_use_in_production
-      NEXT_PUBLIC_PRIVY_APP_ID: ci_mock_privy_app_id
-      PRIVY_APP_ID: ci_mock_privy_app_id
-      PRIVY_APP_SECRET: ci_mock_privy_secret
-      PRIVY_JWKS_URL: https://auth.privy.io/api/v1/apps/ci_mock_privy_app_id/jwks.json
-      PAYSTACK_PUBLIC_KEY: pk_test_mock
-      PAYSTACK_SECRET_KEY: sk_test_mock
-      PAYSTACK_DVA_PREFERRED_BANK: test-bank
-      RESEND_API_KEY: re_mock
-      BLOB_READ_WRITE_TOKEN: vercel_blob_mock
-      STELLAR_NETWORK: testnet
-      STELLAR_HORIZON_URL: https://horizon-testnet.stellar.org
-      STELLAR_RPC_URL: https://soroban-testnet.stellar.org
-      STELLAR_ASSET_CODE: CMOVE
-      STELLAR_ISSUER_PUBLIC_KEY: GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF
-      STELLAR_DISTRIBUTION_PUBLIC_KEY: GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF
-      STELLAR_CONTRACT_ID: CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      ACCOUNT_FACTORY_ADDRESS: ${{ secrets.ACCOUNT_FACTORY_ADDRESS }}
+      ALGORITHM: ${{ secrets.ALGORITHM }}
+      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+      CHAINMOVE_CA: ${{ secrets.CHAINMOVE_CA }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+      NEXT_PUBLIC_PRIVY_APP_ID: ${{ secrets.NEXT_PUBLIC_PRIVY_APP_ID }}
+      PAYSTACK_PUBLIC_KEY: ${{ secrets.PAYSTACK_PUBLIC_KEY }}
+      PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}
+      PRIVY_APP_SECRET: ${{ secrets.PRIVY_APP_SECRET }}
+      PRIVY_JWKS_URL: ${{ secrets.PRIVY_JWKS_URL }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      RPC_URL: ${{ secrets.RPC_URL }}
+      SECRET_KEY_HEX: ${{ secrets.SECRET_KEY_HEX }}
+      THIRDWEB_CLIENT_ID: ${{ secrets.THIRDWEB_CLIENT_ID }}
+      THIRDWEB_SECRET_KEY: ${{ secrets.THIRDWEB_SECRET_KEY }}
+      TREASURY_ADDRESS: ${{ secrets.TREASURY_ADDRESS }}
+      TREASURY_PK_KEY: ${{ secrets.TREASURY_PK_KEY }}
       ENABLE_MOCK_PAYMENTS: "true"
       ENABLE_MOCK_EMAILS: "true"
       ENABLE_MOCK_STELLAR: "true"
