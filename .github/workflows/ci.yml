@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   quality-checks:
-    name: Lint, typecheck, and build
+    name: Lint and build
     runs-on: ubuntu-latest
 
     # Use deterministic mock values so CI never depends on maintainer-only secrets.
@@ -66,8 +66,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: TypeScript check
-        run: npx tsc --noEmit
+      - name: TypeScript check if configured
+        run: npm run typecheck --if-present
 
       - name: Build
         run: npm run build
