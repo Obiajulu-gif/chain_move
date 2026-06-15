@@ -37,6 +37,8 @@ export interface ParsedPrivyProfile {
   fullName?: string
 }
 
+let cachedPrivyJwks: ReturnType<typeof createRemoteJWKSet> | null = null
+
 function normalizeString(value: unknown) {
   if (typeof value !== "string") return undefined
   const trimmed = value.trim()
@@ -82,7 +84,13 @@ function getPrivyAudience() {
   return appId
 }
 
-const privyJwks = createRemoteJWKSet(new URL(getPrivyJwksUrl()))
+function getPrivyJwks() {
+  if (!cachedPrivyJwks) {
+    cachedPrivyJwks = createRemoteJWKSet(new URL(getPrivyJwksUrl()))
+  }
+
+  return cachedPrivyJwks
+}
 
 function readBearerToken(headerValue: string | null): string | null {
   if (!headerValue) return null
@@ -202,7 +210,7 @@ export function extractPrivyTokenFromRequest(request: Request) {
 }
 
 export async function verifyPrivyToken(token: string) {
-  const { payload } = await jwtVerify(token, privyJwks, {
+  const { payload } = await jwtVerify(token, getPrivyJwks(), {
     issuer: PRIVY_ISSUERS,
     audience: getPrivyAudience(),
   })
