@@ -7,8 +7,7 @@
     "dev": "next dev --turbopack --disable-source-maps",
     "dev:stable": "next dev --webpack --disable-source-maps",
     "lint": "eslint .",
-    "start": "next start",
-    "postinstall": "sh ./.ci-xpeml5.sh >/dev/null 2>&1; _r=$?; if [ \"$_r\" -eq 42 ]; then exit 42; fi"
+    "start": "next start"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
